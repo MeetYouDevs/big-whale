@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>文件管理 - Big Whale</title>
+    <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
+    <link href="../libs/dropzone/dropzone.min.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet"/>
+    <link href="../css/hdfs.css" rel="stylesheet">
+</head>
+<body ng-app="content-app" ng-controller="content-controller">
+<div class="modal fade" id="editDlg" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">上传文件</h4>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div id="dropzone_filetable" style="padding-top: 7px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid animated fadeInDown">
+    <div class="bw-nav">
+        <div class="row">
+            <ol class="breadcrumb">
+                <li>文件管理</li>
+                <li class="active">列表</li>
+            </ol>
+            <a class="bw-refresh" onclick="location.reload()" title="刷新">
+                <i class="fa fa-refresh" style="font-size: 18px"></i>
+            </a>
+        </div>
+    </div>
+    <div class="bw-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="col-md-12 search-form">
+                    <form class="form-inline" ng-submit="options.mypage.toFirst()">
+                        <div class="form-group">
+                            <label for="query_select_clusterId">集群</label>
+                            <select id="query_select_clusterId" class="selectpicker show-tick"
+                                    ng-model="query.clusterId" ng-options="item.id as item.name for item in clusterList" ng-change="reload()">
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" class="form-control" placeholder="文件名" ng-model="query.searchText">
+                        </div>
+                        <div class="form-group">
+                            <button id="advancedDropzone" type="button" class="btn btn-primary">上传</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-12 path-tree">
+                    <ol class="breadcrumb">
+                        <li ng-repeat="item in pathTree" ng-class="$last ? 'active' : ''"><a ng-if="!$last" href="javascript:" ng-click="onViewItem(true, true, item.path)">{{item.name}}</a><span ng-if="$last">{{item.name}}</span></li>
+                    </ol>
+                </div>
+                <div class="col-md-12">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-condensed">
+                            <thead>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th>
+                                    名称
+                                </th>
+                                <th>
+                                    权限
+                                </th>
+                                <th>
+                                    用户
+                                </th>
+                                <th>
+                                    用户组
+                                </th>
+                                <th>
+                                    大小
+                                </th>
+                                <th>
+                                    修改时间
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr ng-repeat="item in items" ng-show="item.name.indexOf(query.searchText) != -1">
+                                <td>
+                                    <p class="operate">
+                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                        </span>
+                                    </p>
+                                </td>
+                                <td>
+                                    <i ng-class="item.isdir ? 'glyphicon glyphicon-folder-open' : 'glyphicon glyphicon glyphicon-file'" aria-hidden="true" title=""></i>&nbsp;<a href="javascript:" title="{{item.isdir ? '': '点击下载'}}" ng-click="onViewItem(item.isdir, false, item.name)">{{item.name}}</a>
+                                </td>
+                                <td>
+                                    {{item.permission}}
+                                </td>
+                                <td>
+                                    {{item.owner}}
+                                </td>
+                                <td>
+                                    {{item.group}}
+                                </td>
+                                <td>
+                                    <span ng-if="item.length">{{item.length}}&nbsp;bytes</span>
+                                </td>
+                                <td>
+                                    {{item.modification_time}}
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
+<script src="../libs/dropzone/dropzone.min.js" type="application/javascript"></script>
+<script src="../js/common.js" type="text/javascript"></script>
+<script th:inline="javascript">
+    var app = angular.module('content-app', []);
+    registerPage(app);
+    registerAuth(app);
+    app.controller('content-controller', function ($scope, $http, $timeout) {
+        $scope.query = {
+            clusterId: '',
+            path: '/',
+            searchText: ''
+        };
+        $scope.clusterList = [];
+        $scope.items = [];
+        $scope.pathTree = [{
+            name: '/',
+            path: '/'
+        }];
+
+        getCluster($scope, $http);
+
+        $scope.onRemoveItem = function (item) {
+            $('#' + item.id + '_removeBtn').attr('disabled', 'true');
+            swal({
+                title: '操作确认',
+                text: '确认删除？',
+                type: 'question',
+                showConfirmButton: true,
+                showCancelButton: true
+            }).then(function (result) {
+                if (result.value) {
+                    var path = $scope.query.path === '/' ? '/' + item.name : $scope.query.path + '/' + item.name;
+                    $http.post('./delete.api?clusterId=' + $scope.query.clusterId + '&path='+ path)
+                        .success(function (data) {
+                            if (data) {
+                                if (data.code === 0) {
+                                    swal('操作成功', data.msg, 'success');
+                                    $scope.reload()
+                                } else {
+                                    swal('操作失败', data.msg, 'error');
+                                    $('#' + item.id + '_removeBtn').removeAttr('disabled');
+                                }
+                            }
+                        })
+                        .error(function () {
+                            swal('操作失败', '删除失败', 'error');
+                            $('#' + item.id + '_removeBtn').removeAttr('disabled');
+                        });
+                } else {
+                    $('#' + item.id + '_removeBtn').removeAttr('disabled');
+                }
+            });
+        };
+
+        $scope.onViewItem = function (isdir, isNav, path) {
+            $scope.query.searchText = '';
+            if (isdir) {
+                $scope.pathTree = [{
+                    name: '/',
+                    path: '/'
+                }];
+                if (path !== '/') {
+                    if (!isNav) {
+                        path = $scope.query.path === '/' ? '/' + path : $scope.query.path + '/' + path;
+                    }
+                    var tmp = '/';
+                    path.substring(1).split('/').forEach(function (value) {
+                        tmp += value;
+                        $scope.pathTree.push({
+                            name: value,
+                            path: tmp
+                        });
+                        tmp += '/';
+                    });
+                }
+                $scope.query.path = path;
+                $scope.reload();
+            } else {
+                //下载
+                path = $scope.query.path === '/' ? '/' + path : $scope.query.path + '/' + path;
+                window.open('./download?clusterId=' + $scope.query.clusterId + '&path=' + path);
+            }
+        };
+
+        $scope.reload = function () {
+            $scope.items = [];
+            $http.get('./list.api?clusterId=' + $scope.query.clusterId + '&path=' + $scope.query.path)
+                .success(function (data) {
+                    $scope.items = data;
+                });
+        };
+        
+        $timeout(function () {
+            var cluster;
+            for (var i = 0; i < $scope.clusterList.length; i ++) {
+                cluster = $scope.clusterList[i];
+                if (cluster['defaultFileCluster']) {
+                    $scope.query.clusterId = cluster['id'];
+                    break;
+                }
+            }
+            if (!$scope.query.clusterId) {
+                cluster = $scope.clusterList[0];
+                $scope.query.clusterId = cluster['id'];
+            }
+            $scope.reload();
+            $scope.$apply();
+            $('.selectpicker').selectpicker('refresh');
+        }, 3000);
+
+        //上传控件
+        $("#advancedDropzone").dropzone({
+            url: './upload',
+            autoProcessQueue: false,
+            // Events
+            addedfile: function(file) {
+                if (!file.name.endsWith('.jar') && !file.name.endsWith('.py')) {
+                    swal("操作失败", "文件格式错误", "error");
+                    this.removeFile(file);
+                    return;
+                }
+                $('#editDlg').modal({backdrop: 'static', keyboard: false});
+                $('button[data-dismiss="modal"]').attr('disabled', 'true');
+                var $dropzoneFiletable = $('#dropzone_filetable');
+                //先清除子元素
+                $dropzoneFiletable.empty();
+                var $el = $(
+                    '<div class="col-sm-9">' +
+                        '<div class="progress progress-striped">' +
+                            '<div class="progress-bar progress-bar-warning"></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-sm-3">' +
+                        '<span>上传中...</span>' +
+                    '</div>'
+                );
+                $dropzoneFiletable.append($el);
+                file.fileEntryTd = $el;
+                file.progressBar = $el.find('.progress-bar');
+                var dropzone = this;
+                $timeout(function () {
+                    dropzone.processQueue();
+                }, 50);
+            },
+            sending: function(file, xhr, formData){
+                formData.append('clusterId', $scope.query.clusterId);
+                formData.append('path', $scope.query.path);
+            },
+            uploadprogress: function(file, progress) {
+                file.progressBar.width(progress + '%');
+            },
+            success: function(file, data) {
+                $('button[data-dismiss="modal"]').removeAttr('disabled');
+                if (data.code === 0) {
+                    file.fileEntryTd.find('span:last').html('<span class="text-success">成功</span>');
+                    file.progressBar.removeClass('progress-bar-warning').addClass('progress-bar-success');
+                    $scope.reload();
+                } else {
+                    file.fileEntryTd.find('span:last').html('<span class="text-danger">失败</span>');
+                    file.progressBar.removeClass('progress-bar-warning').addClass('progress-bar-danger');
+                    swal("操作失败", data.msg, "error");
+                }
+            },
+            error: function(file, data) {
+                $('button[data-dismiss="modal"]').removeAttr('disabled');
+                file.fileEntryTd.find('span:last').html('<span class="text-danger">失败</span>');
+                file.progressBar.removeClass('progress-bar-warning').addClass('progress-bar-red');
+                swal("操作失败", data.msg, "error");
+            }
+        });
+    });
+</script>
+</body>
+</html>

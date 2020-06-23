@@ -1,0 +1,56 @@
+server:
+  port: 17070
+  servlet:
+    context-path: /
+    session:
+      timeout: Pt30m
+      cookie:
+        name: JSESSIONID_BW
+
+spring:
+  application:
+    name: Big Whale
+  profiles:
+    active: pro
+  data:
+    rest:
+      returnBodyOnCreate: true
+      returnBodyOnUpdate: true
+  jackson:
+    timeZone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    deserialization:
+      fail-on-unknown-properties: false
+    serialization:
+      fail-on-empty-beans: false
+      write-null-map-values: true
+      write-empty-json-arrays: true
+  thymeleaf:
+    mode: LEGACYHTML5
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 200Mb
+      max-request-size: 200Mb
+  quartz:
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: BigWhaleScheduler
+            instanceId: AUTO
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 100
+            threadPriority: 5
+          jobStore:
+            misfireThreshold: 120000
+
+logging:
+  level:
+    com.ctrip.framework.apollo.internals.RemoteConfigLongPollService: error
+    com.ctrip.framework.apollo.internals.RemoteConfigRepository: error
+
+apollo:
+  bootstrap:
+    enabled: true

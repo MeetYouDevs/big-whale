@@ -1,0 +1,8 @@
+#div_pick_date .bootstrap-select:not([class*=col-]):not([class*=form-control]):not(.input-group-btn) {
+    width: 100px;
+}
+
+#div_pick_date .laydate-icon {
+    vertical-align: middle;
+    margin-left: 2px;
+}

@@ -1,0 +1,17 @@
+<div class="fixed-table-pagination">
+    <div class="pull-right pagination">
+        <ul class="pagination pagination-outline">
+            <li class="page-first{{pagination.first?' disabled':''}}"><a href="javascript:void(0)" ng-click="toFirst()">«</a></li>
+            <li class="page-pre{{!pagination.first?'':' disabled'}}"><a href="javascript:void(0)" ng-click="toPrevious()">‹</a></li>
+            <li class="page-number{{pagination.number==n?' active':''}}" ng-repeat="n in pageNumbers"><a href="javascript:void(0)" ng-click="toPage(n + 1)">{{n + 1}}</a></li>
+            <!--<li class="page-number active"><a href="javascript:void(0)">{{pagination.number}}</a></li>-->
+            <li class="page-next{{!pagination.last?'':' disabled'}}"><a href="javascript:void(0)" ng-click="toNext()">›</a></li>
+            <li class="page-last{{pagination.last?' disabled':''}}"><a href="javascript:void(0)" ng-click="toLast()">»</a></li>
+        </ul>
+    </div>
+    <div class="pull-right pagination-info">
+        <span>总共 {{pagination.totalElements}} 条记录，当前显示第{{pagination.number + 1}} / {{pagination.totalPages}}页，每页</span>
+        <select class="sizeSelector" title="size" ng-model="query.pageSize" ng-options="ps for ps in pageSizes">
+        </select>条记录
+    </div>
+</div>

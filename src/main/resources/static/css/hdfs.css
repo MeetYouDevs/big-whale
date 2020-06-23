@@ -1,0 +1,7 @@
+.path-tree {
+    padding-top: 5px;
+}
+
+.path-tree .breadcrumb > li:first-child+li::before {
+    content: '';
+}

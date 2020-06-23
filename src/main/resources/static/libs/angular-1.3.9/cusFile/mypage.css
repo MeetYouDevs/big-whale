@@ -1,0 +1,19 @@
+.fixed-table-pagination {
+    float: right;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.pagination {
+    margin: 0 0 !important;
+}
+.pagination-info {
+    margin-right: 10px;
+}
+.pagination-info > .sizeSelector {
+    border: 1px solid #e5e6e7;
+    border-radius: 3px;
+    color: inherit;
+    display: inline;
+    padding: 6px;
+}

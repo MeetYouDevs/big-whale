@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>脚本编辑 - Big Whale</title>
+    <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
+    <link href="../libs/bootstrap-switch/bootstrap-switch.min.css" rel="stylesheet"/>
+    <link href="../libs/dropzone/dropzone.min.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet"/>
+    <link href="../css/script_edit.css" rel="stylesheet">
+</head>
+<body ng-app="content-app" ng-controller="content-controller">
+<div class="container-fluid animated fadeInDown">
+    <div class="bw-nav">
+        <div class="row">
+            <ol class="breadcrumb">
+                <li><a href="javascript:" ng-click="onOpenList()">脚本管理</a></li>
+                <li class="active">{{editItem.id ? "编辑" : "新增"}}</li>
+            </ol>
+            <a class="bw-refresh" onclick="location.reload()" title="刷新">
+                <i class="fa fa-refresh" style="font-size: 18px"></i>
+            </a>
+        </div>
+    </div>
+    <div class="bw-body">
+        <div class="row">
+            <div class="col-md-12">
+                <form class="form-horizontal" ng-submit="onSaveItem()">
+                    <!-- 基本配置 -->
+                    <div class="container shadow">
+                        <div class="form-group" th:if="${session.user.root}">
+                            <label for="select_uid" class="col-sm-2 control-label">用户&nbsp;<B>*</B></label>
+                            <div class="col-sm-4">
+                                <select id="select_uid" class="form-control selectpicker show-tick" data-live-search="true"
+                                        ng-model="editItem.uid" ng-options="item.id as item.username for item in userList" required>
+                                    <option value="">请选择</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="input_name" class="col-sm-2 control-label">
+                                名称<B class="help" data-toggle="tooltip" data-placement="top" title="任务名称（注：当脚本与yarn任务相关的时候，此名称与yarn中的应用名称无关）">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="input_name" class="form-control" ng-model="editItem.name" autocomplete="off" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="textarea_description" class="col-sm-2 control-label">描述</label>
+                            <div class="col-sm-10">
+                                <textarea id="textarea_description" class="form-control" ng-model="editItem.description" rows="3" maxlength="255"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="select_type" class="col-sm-2 control-label">类型</label>
+                            <div class="col-sm-4">
+                                <select id="select_type" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.type" ng-options="item.value as item.name for item in scriptTypeList" required>
+                                </select>
+                            </div>
+                            <div id="div_spark_version">
+                                <label for="select_spark_version" class="col-sm-2 control-label">版本</label>
+                                <div class="col-sm-4">
+                                    <select id="select_spark_version" class="form-control selectpicker show-tick"
+                                            ng-model="editItem.spark.$command" ng-options="item.command as item.version for item in sparkVersionList" required>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="div_flink_version">
+                                <label for="select_flink_version" class="col-sm-2 control-label">版本</label>
+                                <div class="col-sm-4">
+                                    <select id="select_flink_version" class="form-control selectpicker show-tick"
+                                            ng-model="editItem.flink.$command" ng-options="item.command as item.version for item in flinkVersionList" required>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="div_agent" class="form-group">
+                            <label for="select_agentId" class="col-sm-2 control-label">机器&nbsp;<B>*</B></label>
+                            <div class="col-sm-4">
+                                <select id="select_agentId" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.agentId" ng-options="item.id as item.host for item in userAgentList">
+                                    <option value="">请选择</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="div_cluster">
+                            <div class="form-group">
+                                <label for="select_clusterId" class="col-sm-2 control-label">运行集群&nbsp;<B>*</B></label>
+                                <div class="col-sm-4">
+                                    <select id="select_clusterId" class="form-control selectpicker show-tick"
+                                            ng-model="editItem.clusterId" ng-options="item.id as item.name for item in clusterList">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <label for="select_queue" class="col-sm-2 control-label">运行队列&nbsp;<B>*</B></label>
+                                <div class="col-sm-4">
+                                    <select id="select_queue" class="form-control selectpicker show-tick"
+                                            ng-model="editItem.tmpQueue" ng-options="item for item in queueList">
+                                        <option value="">无队列</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">
+                                    程序包<B class="help" data-toggle="tooltip" data-placement="top" title="程序包地址（注：编辑或上传完成功后如果URL与脚本代码中的URL不符，请手动更新一下脚本代码中的URL），请勿包含空格">?</B>&nbsp;<B>*</B>
+                                </label>
+                                <div class="col-sm-5">
+                                    <input class="form-control-plaintext" placeholder="请输入已知程序包URL或点击上传">
+                                    <button type="button" id="advancedDropzone" class="btn btn-primary" style="margin-bottom: 5px;">&emsp;上传&emsp;</button>
+                                </div>
+                                <div id="dropzone_filetable" class="col-sm-5" style="padding-top: 7px;"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="input_timeOut" class="col-sm-2 control-label">
+                                脚本执行超时(分)<B class="help" data-toggle="tooltip" data-placement="top" title="只与当前脚本的执行时间相关，与Spark或Flink任务的运行时间无关，不能超过5分钟">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="input_timeOut" class="form-control" type="number" autocomplete="off" ng-model="editItem.timeOut" required max="5">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="input_input" class="col-sm-2 control-label">
+                                输入<B class="help" data-toggle="tooltip" data-placement="top" title="程序输入，多个数据源用“,”分隔，如：kafka:topic1">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="input_input" class="form-control" ng-model="editItem.input" autocomplete="off" required>
+                            </div>
+                            <label for="input_output" class="col-sm-2 control-label">
+                                输出<B class="help" data-toggle="tooltip" data-placement="top" title="程序输出，多个数据源用“,”分隔，如：hbase:table1">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="input_output" class="form-control" ng-model="editItem.output" autocomplete="off" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 资源配置 -->
+                    <div id="div_resource" class="container shadow">
+                        <ul class="nav nav-tabs" style="margin-bottom: 20px;">
+                            <li role="presentation" class="active"><a href="#resource" aria-controls="visual" role="tab" data-toggle="tab">资源选项<B class="help" data-toggle="tooltip" data-placement="top" title="该部分参数会体现在入口函数的最后，如果对业务有影响，请自行处理">?</B></a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div id="resource" class="tab-pane fade in active"  role="tabpanel">
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">屏蔽策略<B class="help" data-toggle="tooltip" data-placement="top" title="选中的屏蔽节点，在分配任务时将被忽略">?</B></label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick" ng-model="editItem.nodeBlackListType" ng-change="onNodeBlackListTypeChange()" title="请选择" required>
+                                            <option value="" selected>无</option>
+                                            <option value="stream">非流式节点</option>
+                                            <option value="batch">非批处理节点</option>
+                                        </select>
+                                    </div>
+                                    <label class="col-sm-2 control-label">分配策略<B class="help" data-toggle="tooltip" data-placement="top" title="容器分配策略：(1) 根据总资源（根据节点总cores做判断，即使cores已被耗光也与其他节点拥有同样的权重，影响权重的因素只有机器的规格）、(2) 根据剩余可用资源（根据当前剩余可用的cores作为权重判断，剩余可用的cores越多则权重越高）">?</B></label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick" ng-model="editItem.allocateBalancerType" ng-change="onAllocateBalancerTypeChange()" title="请选择" required>
+                                            <option value="" selected>无</option>
+                                            <option value="total">根据总资源</option>
+                                            <option value="available">根据剩余可用资源</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 脚本 -->
+                    <div class="container shadow">
+                        <ul class="nav nav-tabs" style="margin-bottom: 20px;">
+                            <li role="presentation" class="active"><a href="#visual" aria-controls="visual" role="tab" data-toggle="tab">可视化视图</a></li>
+                            <li role="presentation"><a href="#text" aria-controls="text" role="tab" data-toggle="tab">代码视图</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div id="visual" class="tab-pane fade in active" role="tabpanel">
+                                <!-- Spark -->
+                                <div ng-if="editItem.type == 1 || editItem.type == 2">
+                                    <div class="div_default_block">
+                                        <div class="form-group" >
+                                            <label class="col-sm-2 control-label">Driver<B class="help" data-toggle="tooltip" data-placement="top" title="Driver一般不会参与计算，默认设置为512MB，1Cores即可">?</B></label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_spark_driver_memory" class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_spark_driver_memory" class="form-control input-control" ng-model="editItem.spark.driver_memory" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_spark_driver_cores" class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_spark_driver_cores" class="form-control input-control" ng-model="editItem.spark.driver_cores" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">Excutor</label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_spark_executor_memory" class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_spark_executor_memory" class="form-control input-control" ng-model="editItem.spark.executor_memory" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_spark_num_executors" class="control-label">数量</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_spark_num_executors" class="form-control input-control" ng-model="editItem.spark.num_executors" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_spark_executor_cores" class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_spark_executor_cores" class="form-control input-control" ng-model="editItem.spark.executor_cores" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">资源占用<B class="help" data-toggle="tooltip" data-placement="top" title="运行时最大总资源分配情况">?</B></label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_spark_total_memory" class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_spark_total_memory" class="form-control input-control" ng-value="editItem.spark.$total_memory()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_spark_total_cores" class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_spark_total_cores" class="form-control input-control" ng-value="editItem.spark.$total_cores()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="input_spark_name" class="col-sm-2 control-label">
+                                            Name<B class="help" data-toggle="tooltip" data-placement="top" title="参数--name，此字段应该是个唯一值，切勿与其他程序同名">?</B>&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input id="input_spark_name" class="form-control" ng-model="editItem.spark.name" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="input_spark_class" class="col-sm-2 control-label">Class<B class="help" data-toggle="tooltip" data-placement="top" title="参数--class，程序入口类，pyspark无需此项">?</B></label>
+                                        <div class="col-sm-4">
+                                            <input id="input_spark_class" class="form-control" ng-model="editItem.spark.class" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="input_spark_args" class="col-sm-2 control-label">入口参数<B class="help" data-toggle="tooltip" data-placement="top" title="入口函数的参数">?</B></label>
+                                        <div class="col-sm-10">
+                                            <input id="input_spark_args" class="form-control" ng-model="editItem.spark.args" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="textarea_spark_other_args" class="col-sm-2 control-label">Spark参数<B class="help" data-toggle="tooltip" data-placement="top" title="spark参数，例如：--conf spark.eventLog.enabled=true">?</B></label>
+                                        <div class="col-sm-10">
+                                            <textarea id="textarea_spark_other_args" class="form-control" rows="3" ng-model="editItem.spark.spark_other_args"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Flink -->
+                                <div ng-if="editItem.type == 3 || editItem.type == 4">
+                                    <div class="div_default_block">
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">JobManager<B class="help" data-toggle="tooltip" data-placement="top" title="相当于spark的Driver">?</B></label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_flink_yjm" class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_flink_yjm" class="form-control input-control" ng-model="editItem.flink.yjm" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">TaskManager<B class="help" data-toggle="tooltip" data-placement="top" title="相当于spark的executor">?</B></label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_flink_ytm" class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_flink_ytm" class="form-control input-control" ng-model="editItem.flink.ytm" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_flink_yn" class="control-label">数量</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_flink_yn" class="form-control input-control" ng-model="editItem.flink.yn" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_flink_ys" class="control-label">slots</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_flink_ys" class="form-control input-control" ng-model="editItem.flink.ys" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">资源占用<B class="help" data-toggle="tooltip" data-placement="top" title="运行时最大总资源分配情况">?</B></label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_flink_total_memory" class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_flink_total_memory" class="form-control input-control" ng-value="editItem.flink.$total_memory()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-2" style="padding-right: 0; padding-left: 0">
+                                                        <label for="input_flink_total_cores" class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-10" style="padding-right: 0; padding-left: 0">
+                                                        <input id="input_flink_total_cores" class="form-control input-control" ng-value="editItem.flink.$total_cores()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="input_flink_ynm" class="col-sm-2 control-label">
+                                            Name<B class="help" data-toggle="tooltip" data-placement="top" title="参数-ynm，此字段应该是个唯一值，切莫与其他程序同名">?</B>&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input id="input_flink_ynm" class="form-control" ng-model="editItem.flink.ynm" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="input_flink_c" class="col-sm-2 control-label">Class<B class="help" data-toggle="tooltip" data-placement="top" title="参数-c，程序入口类">?</B></label>
+                                        <div class="col-sm-4">
+                                            <input id="input_flink_c" class="form-control" ng-model="editItem.flink.c" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="input_flink_args" class="col-sm-2 control-label">入口参数<B class="help" data-toggle="tooltip" data-placement="top" title="入口函数的参数">?</B></label>
+                                        <div class="col-sm-10">
+                                            <input id="input_flink_args" class="form-control" ng-model="editItem.flink.args" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="textarea_flink_other_args" class="col-sm-2 control-label">Flink参数<B class="help" data-toggle="tooltip" data-placement="top" title="fink参数，例如：-d -yst">?</B></label>
+                                        <div class="col-sm-10">
+                                            <textarea id="textarea_flink_other_args" class="form-control" rows="3" ng-model="editItem.flink.flink_other_args"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="text" role="tabpanel" class="tab-pane fade in">
+                                <div class="form-group row">
+                                    <label for="textarea_script" class="col-sm-2 control-label">脚本代码&nbsp;<B>*</B></label>
+                                    <div class="col-sm-10">
+                                        <textarea id="textarea_script" class="form-control" rows="10" ng-model="editItem.script"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 监控 || 调度 -->
+                    <div class="container shadow">
+                        <div ng-if="(editItem.type == 0 || editItem.type == 2 || editItem.type == 4) &&
+                         editItem.tasks != null && editItem.tasks.length > 0" class="alert alert-warning" role="alert">注意！！！一经保存成功，启用状态的调度任务便开始执行！</div>
+                        <div ng-if="(editItem.type == 1 || editItem.type == 3) &&
+                         editItem.monitors != null && editItem.monitors.length > 0" class="alert alert-warning" role="alert">注意！！！一经保存成功，启用状态的监控任务便开始执行！</div>
+                        <div class="div_task" ng-repeat="task in editItem.tasks track by $index">
+                            <div class="container shadow" style="width: 90%">
+                                <div class="form-group text-right">
+                                    <div class="col-sm-12">
+                                        <span style="color: red; cursor: pointer;" ng-click="onRemoveTask(editItem.tasks, $index)">
+                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">子脚本&nbsp;</label>
+                                    <div class="col-sm-4">
+                                        <div ng-repeat="tip in task.subScriptIds track by $index">
+                                            <div style="width: 92%; display: inline-block">
+                                                <select class="form-control selectpicker show-tick" data-live-search="true"
+                                                        ng-model="task.subScriptIds[$index]" ng-options="item.id as item.name for item in scriptList | scriptFilter: editItem.uid: editItem.id">
+                                                    <option value="">请选择</option>
+                                                </select>
+                                            </div>
+                                            <span class="glyphicon glyphicon-minus" ng-click="onRemoveTip(task.subScriptIds, $index)"></span>
+                                        </div>
+                                        <div ng-click="!task.subScriptIds ? task.subScriptIds = []: '';onAddTip(task.subScriptIds);">
+                                            <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <p class="help-block">当主脚本执行完成后（仅指脚本本身，不包括脚本中提交的任务），顺序往下执行子脚本</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">调度周期&nbsp;<B>*</B></label>
+                                    <div class="col-sm-4">
+                                        <input id="{{$index}}_cycle_input_cron" class="form-control" ng-model="task.cron" placeholder="cron表达式" required>
+                                        <div id="{{$index}}_cycle_div_visual">
+                                            <h4 style="margin: 0 0; padding: 5px 0;">
+                                                <label class="label label-info">每</label>
+                                            </h4>
+                                            <input id="{{$index}}_cycle_input_intervals" class="form-control" type="number" min="1" ng-model="task.intervals" placeholder="间隔" required>
+                                            <select id="{{$index}}_cycle_select_cycle" class="form-control selectpicker show-tick" title="维度"
+                                                    ng-model="task.cycle" ng-options="item.value as item.name for item in taskCycleList">
+                                            </select>
+                                            <div id="{{$index}}_cycle_div_week">
+                                                <select class="form-control selectpicker show-tick" title="星期"
+                                                        ng-model="task.week" ng-options="item.value as item.name for item in weekList" multiple required>
+                                                </select>
+                                            </div>
+                                            <div id="{{$index}}_cycle_div_hour">
+                                                <select class="form-control selectpicker show-tick" title="时"
+                                                        ng-model="task.hour" ng-options="item.value as item.name for item in hourList">
+                                                </select>
+                                            </div>
+                                            <div id="{{$index}}_cycle_div_minute">
+                                                <select class="form-control selectpicker show-tick" title="分"
+                                                        ng-model="task.minute" ng-options="item.value as item.name for item in minuteList">
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-5" style="padding: 0.5% 15px;line-height: 14px;">
+                                        <span class="label label-info">可视化模式</span>&nbsp;<input type="checkbox" name="{{$index}}_visual-checkbox" checked>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">开始时间&nbsp;<B>*</B></label>
+                                    <div class="col-sm-4">
+                                        <input id="{{$index}}_inp_start" class="laydate-icon" ng-model="task.startTime" required/>
+                                    </div>
+                                    <br/>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">结束时间&nbsp;<B>*</B></label>
+                                    <div class="col-sm-4">
+                                        <input id="{{$index}}_inp_end"  class="laydate-icon" ng-model="task.endTime" required/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">可重复提交</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick"
+                                                ng-model="task.repeatSubmit" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <p class="help-block">当已经存在相关yarn任务时，是否允许再次提交该任务</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">发送邮件</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick"
+                                                ng-model="task.sendMail" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">钉钉通知</label>
+                                    <div class="col-sm-4">
+                                        <div ng-repeat="tip in task.dingdingHooks track by $index">
+                                            <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="task.dingdingHooks[$index]" placeholder="钉钉token" ><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(task.dingdingHooks, $index)"></span>
+                                        </div>
+                                        <div ng-click="!task.dingdingHooks ? task.dingdingHooks = []: '';onAddTip(task.dingdingHooks);">
+                                            <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <p class="help-block">需要指定@用户，可用“&”拼接，如：token&@phone1@phone2</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">状态</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick"
+                                                ng-model="task.status" ng-options="item.value as item.name for item in enableTypeList" required>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="div_monitor" ng-repeat="monitor in editItem.monitors track by $index">
+                            <div class="container shadow" style="width: 90%">
+                                <div class="form-group text-right">
+                                    <div class="col-sm-12">
+                                        <span style="color: red; cursor: pointer;" ng-click="onRemoveMonitor(editItem.monitors, $index)">
+                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="form-group" ng-if="editItem.type == 1 || editItem.type == 3">
+                                    <label class="col-sm-3 control-label">异常重启</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick"
+                                                ng-model="monitor.exAutoRestart" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group" ng-if="editItem.type == 1 || editItem.type == 3">
+                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 1">批次积压告警阈值&nbsp;<B>*</B></label>
+                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 3">任务阻塞告警阈值(%)&nbsp;<B>*</B></label>
+                                    <div class="col-sm-4">
+                                        <input class="form-control" type="number" ng-model="monitor.waitingBatches" min="0" required ng-if="editItem.type == 1">
+                                        <input class="form-control" type="number" ng-model="monitor.waitingBatches" min="0" max="100" required ng-if="editItem.type == 3">
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <p class="help-block" ng-if="editItem.type == 1">批次积压大于等于该值的时候将进行告警，为0禁用</p>
+                                        <p class="help-block" ng-if="editItem.type == 3">单位时间内，任务阻塞比(阻塞任务数 / 消费任务数)大于等于该值的时候将进行告警，为0禁用，最大100</p>
+                                    </div>
+                                </div>
+                                <div class="form-group" ng-if="editItem.type == 1 || editItem.type == 3">
+                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 1">批次积压重启</label>
+                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 3">任务阻塞重启</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick"
+                                                ng-model="monitor.autoRestart" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <p class="help-block" ng-if="editItem.type == 1">批次积压达到阈值后，自动进行任务重启</p>
+                                        <p class="help-block" ng-if="editItem.type == 3">任务阻塞达到阈值后，自动进行任务重启</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">监控频率(cron表达式)&nbsp;<B>*</B></label>
+                                    <div class="col-sm-4">
+                                        <input class="form-control" ng-model="monitor.cron" required>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <p class="help-block">0 */1 * * * ? 为每1分钟检查一次</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">发送邮件</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick"
+                                                ng-model="monitor.sendMail" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">钉钉通知&nbsp;</label>
+                                    <div  class="col-sm-4">
+                                        <div ng-repeat="tip in monitor.dingdingHooks track by $index">
+                                            <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="monitor.dingdingHooks[$index]" placeholder="钉钉token" ><span style="width: 5%;" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(monitor.dingdingHooks, $index)"></span>
+                                        </div>
+                                        <div ng-click="!monitor.dingdingHooks ? monitor.dingdingHooks = []: '';onAddTip(monitor.dingdingHooks);">
+                                            <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <p class="help-block">需要指定@用户，可用“&”拼接，如：token&@phone1@phone2</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-3 control-label">状态</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick"
+                                                ng-model="monitor.status" ng-options="item.value as item.name for item in enableTypeList" required>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center"
+                             ng-if="editItem.type == 0 || editItem.type == 2 || editItem.type == 4"
+                             ng-click="!editItem.tasks ? editItem.tasks = []: '';onAddTask(editItem.tasks);" >
+                            <button type="button" class="btn btn-primary">添加调度</button>
+                        </div>
+                        <div class="text-center"
+                             ng-if="editItem.type == 1 || editItem.type == 3"
+                             ng-click="!editItem.monitors ? editItem.monitors = []: '';onAddMonitor(editItem.monitors);" >
+                            <button type="button" class="btn btn-primary">添加监控</button>
+                        </div>
+                    </div>
+
+                    <div class="container text-center">
+                        <button type="submit" class="btn btn-primary" id="btn_submit">&emsp;&emsp;保存&emsp;&emsp;</button>
+                        <button type="reset" class="btn btn-secondary">&emsp;&emsp;重置&emsp;&emsp;</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-switch/bootstrap-switch.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
+<script src="../js/common.js" type="text/javascript"></script>
+<script src="../libs/laydate/laydate.js" type="application/javascript"></script>
+<script src="../libs/dropzone/dropzone.min.js" type="application/javascript"></script>
+<script th:inline="javascript">
+    var app = angular.module("content-app", []);
+    registerAuth(app);
+    var $selectUid = $('#select_uid');
+    var user = [[${session.user}]];
+    var $selectType = $('#select_type');
+    var $divCluster = $('#div_cluster');
+    var $selectClusterId = $('#select_clusterId');
+    var $divAgent = $('#div_agent');
+    var $divSparkVersion = $('#div_spark_version');
+    var $divFlinkVersion = $('#div_flink_version');
+    var $selectQueue = $('#select_queue');
+    var $divResource = $('#div_resource');
+    var $a_visual = $('a[href="#visual"]');
+    var $a_text = $('a[href="#text"]');
+    var $text = $('#text');
+    var $formControlPlaintext = $('.form-control-plaintext');
+
+    var sparkVisualKey = {
+        'proxy-user': 'proxy_user',
+        'queue': 'queue',
+        'driver-memory': 'driver_memory',
+        'driver-cores': 'driver_cores',
+        'executor-memory': 'executor_memory',
+        'num-executors': 'num_executors',
+        'executor-cores': 'executor_cores',
+        'name': 'name',
+        'class': 'class',
+        'master': 'master',
+        'deploy-mode': 'deploy_mode'
+    };
+    var flinkVisualKey = {
+        'yjm': 'yjm',
+        'ytm': 'ytm',
+        'yn': 'yn',
+        'ys': 'ys',
+        'ynm': 'ynm',
+        'c': 'c',
+        'p': 'p',
+        'm': 'm',
+        'yqu': 'yqu'
+    };
+
+    app.controller("content-controller", function ($scope, $http, $timeout) {
+        if (user.root) {
+            getAuthUser($scope, $http);
+        }
+        getClusterSync($scope);
+        getComputeFrameworkVersionSync($scope);
+        appendScriptType($scope);
+        getUserAgent($scope, $http);
+        getClusterUser($scope, $http);
+        getScript($scope, $http, false, true);
+        appendBooleanType($scope);
+        appendEnableType($scope);
+        appendTaskCycle($scope);
+        appendHour($scope);
+        appendMinute($scope);
+        appendWeek($scope);
+
+        var Spark = {
+            'createDefault': function () {
+                return {
+                    'master': 'yarn',
+                    'deploy_mode': 'cluster',
+                    'driver_memory': '512M',
+                    'driver_cores': '1',
+                    'executor_memory': '1024M',
+                    'num_executors': '1',
+                    'executor_cores': '1',
+                    '$command': $scope.sparkVersionList[0]['command'],
+                    'args': '--allocate.balancer.type=total',
+                    'spark_other_args': '--conf spark.yarn.submit.waitAppCompletion=false',
+                    '$total_memory': this['$cal_total_memory'],
+                    '$total_cores': this['$cal_total_cores']
+                };
+            },
+            'createEmpty': function () {
+                return {
+                    '$total_memory': this['$cal_total_memory'],
+                    '$total_cores': this['$cal_total_cores']
+                }
+            },
+            '$cal_total_memory': function () {
+                var driver_memory_str = this['driver_memory'] ? this['driver_memory'] : '512M';
+                var driver_memory = parseMemory(driver_memory_str);
+                var executor_memory_str = this['executor_memory'] ? this['executor_memory'] : '1024M';
+                var executor_memory = parseMemory(executor_memory_str);
+                var num_executors = this['num_executors'] ? this['num_executors'] : 1;
+                var memoryOverhead;
+                if (this['spark_other_args'] && this['spark_other_args'].indexOf('spark.yarn.executor.memoryOverhead=') !== -1) {
+                    var pos = this['spark_other_args'].indexOf('spark.yarn.executor.memoryOverhead=');
+                    var memoryOverhead_str = this['spark_other_args'].substring(pos + 'spark.yarn.executor.memoryOverhead='.length).split(' ')[0];
+                    if (memoryOverhead_str) {
+                        memoryOverhead = parseMemory(memoryOverhead_str);
+                    }
+                }
+                if (memoryOverhead) {
+                    return (num_executors * (executor_memory + memoryOverhead) + (driver_memory + memoryOverhead)) + 'M';
+                } else {
+                    return (num_executors * (executor_memory + Math.max(executor_memory * 0.1, 384)) + (driver_memory + Math.max(driver_memory * 0.1, 384))) + 'M';
+                }
+            },
+            '$cal_total_cores': function () {
+                var driver_cores = this['driver_cores'] ? parseInt(this['driver_cores']) : 1;
+                var num_executors = this['num_executors'] ? parseInt(this['num_executors']) : 1;
+                var executor_cores = this['executor_cores'] ? parseInt(this['executor_cores']) : 1;
+                return num_executors * executor_cores + driver_cores;
+            }
+        };
+
+        var Flink = {
+            'createDefault': function () {
+                return {
+                    'm': 'yarn-cluster',
+                    'yjm': '512M',
+                    'ytm': '1024M',
+                    'yn': '1',
+                    'ys': '1',
+                    '$command': $scope.flinkVersionList[0]['command'],
+                    'flink_other_args': '-d',
+                    '$total_memory': this['$cal_total_memory'],
+                    '$total_cores': this['$cal_total_cores']
+                };
+            },
+            'createEmpty': function () {
+                return {
+                    '$total_memory': this['$cal_total_memory'],
+                    '$total_cores': this['$cal_total_cores']
+                }
+            },
+            '$cal_total_memory': function () {
+                var yjm_str = this['yjm'] ? this['yjm'] : '512M';
+                var yjm = parseMemory(yjm_str);
+                var ytm_str = this['ytm'] ? this['ytm'] : '1024M';
+                var ytm = parseMemory(ytm_str);
+                var yn = this['yn'] ? this['yn'] : 1;
+                return (yn * ytm + yjm) + 'M';
+            },
+            '$cal_total_cores': function () {
+                var yn = this['yn'] ? parseInt(this['yn']) : 1;
+                var ys = this['ys'] ? parseInt(this['ys']) : 1;
+                return yn * ys + 1;
+            }
+        };
+
+        var scriptId = [[${scriptId}]];
+        var editItem;
+        var deleteTasks = [];
+        var deleteMonitors = [];
+
+        $scope.onOpenList = function () {
+            if (parent.xadmin) {
+                parent.xadmin.add_tab('脚本管理', 'script/list.html');
+            } else {
+                window.open('./list.html', '脚本管理');
+            }
+        };
+
+        //初始化
+        $scope.init = function () {
+            if (scriptId) {
+                var query = {
+                    'id': scriptId,
+                    'pageNo': 1,
+                    'pageSize': 1,
+                    'limit': 1
+                };
+                $.ajax({
+                    url: './getpage.api',
+                    async: false,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(query),
+                    success: function (data) {
+                        if (data.content) {
+                            editItem = data.content[0];
+                            //处理队列
+                            if (editItem.type !== 0) {
+                                query = {
+                                    'uid': editItem.uid,
+                                    'clusterId': editItem.clusterId,
+                                    'pageNo': 1,
+                                    'pageSize': 1,
+                                    'limit': 1
+                                };
+                                $.ajax({
+                                    url: '../cluster/cluster_user/getpage.api',
+                                    async: false,
+                                    type: 'POST',
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(query),
+                                    success: function (data) {
+                                        if (data.content) {
+                                            var clusterUser = data.content[0];
+                                            if (clusterUser) {
+                                                $scope.queueList = clusterUser.queue.split(',');
+                                                if (editItem.script.indexOf('--queue ') !== -1) {
+                                                    editItem.tmpQueue = editItem.script.match(/--queue [\w-.,]+/g)[0].split(' ')[1];
+                                                }
+                                                if (editItem.script.indexOf('-yqu ') !== -1) {
+                                                    editItem.tmpQueue = editItem.script.match(/-yqu [\w-.,]+/g)[0].split(' ')[1];
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                            //处理监控或调度
+                            query = {
+                                'scriptId': editItem.id,
+                                'pageNo': 1,
+                                'pageSize': 500,
+                                'limit': 1
+                            };
+                            var url;
+                            if (editItem.type === 0 || editItem.type === 2 || editItem.type === 4) { //获取调度
+                                url = '../scheduling/getpage.api'
+                            } else { //获取监控
+                                url = '../monitor/getpage.api'
+                            }
+                            $.ajax({
+                                url: url,
+                                async: false,
+                                type: 'POST',
+                                contentType: 'application/json',
+                                data: JSON.stringify(query),
+                                success: function (data) {
+                                    if (data.content && data.content.length > 0) {
+                                        if (editItem.type === 0 || editItem.type === 2 || editItem.type === 4) {
+                                            editItem.tasks = data.content;
+                                            editItem.tasks.forEach(function (item, index) {
+                                                if (item.week === null) {
+                                                    item.week = ['6'];
+                                                }
+                                                if (item.intervals === null) {
+                                                    item.intervals = 2;
+                                                }
+                                                $timeout(function () {
+                                                    $scope.initCycleEvent(index, (item.cycle - 1).toString());
+                                                    if (item.cron) {
+                                                        $('[name="' + index + '_visual-checkbox"]').bootstrapSwitch('state', false);
+                                                    } else {
+                                                        $('[name="' + index + '_visual-checkbox"]').bootstrapSwitch('state', true);
+                                                        item.cron = '0 */2 * * * ?';
+                                                        $('#'+ index + '_cycle_input_cron').val(item.cron);
+                                                    }
+                                                    $('.selectpicker').selectpicker('refresh');
+                                                }, 50);
+                                            });
+                                        } else {
+                                            editItem.monitors = data.content;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            //初始化
+            if (editItem) {
+                $scope.editItem = editItem;
+                if ($scope.editItem.type !== 0) {
+                    $divAgent.hide();
+                    $divCluster.find('select').attr('required', true);
+                    $divCluster.find('input').attr('required', true);
+                    if ($scope.editItem.type === 1 || $scope.editItem.type === 2) {
+                        $divFlinkVersion.hide();
+                        //flink赋予默认值
+                        $scope.editItem.flink = Flink.createDefault();
+                        $timeout(function () {
+                            $('#input_spark_name').attr('required', true);
+                        }, 50);
+                    } else {
+                        $divSparkVersion.hide();
+                        //spark赋予默认值
+                        $scope.editItem.spark = Spark.createDefault();
+                        $timeout(function () {
+                            $('#input_flink_ynm').attr('required', true);
+                        }, 50);
+                    }
+                    $timeout(function () {
+                        $scope.parseText($scope.editItem.type.toString());
+                    }, 50);
+                } else {
+                    $divAgent.find('select').attr('required', true);
+                    $divCluster.hide();
+                    $divSparkVersion.hide();
+                    $divFlinkVersion.hide();
+                    $scope.editItem.spark = Spark.createDefault();
+                    $scope.editItem.flink = Flink.createDefault();
+                    $a_visual.parent().addClass('disabled');
+                    $a_text.tab('show');
+                    $timeout(function () {
+                        $('#textarea_script').attr('required', true);
+                    }, 50);
+                }
+            } else {
+                $scope.editItem = {
+                    type: 1,
+                    timeOut: 2,
+                    spark: Spark.createDefault(),
+                    flink: Flink.createDefault(),
+                    nodeBlackListType: 'stream',
+                    allocateBalancerType: 'total'
+                };
+                $divFlinkVersion.hide();
+                $divAgent.hide();
+                $divAgent.find('select').removeAttr('required');
+                $divCluster.find('select').attr('required', true);
+                $divCluster.find('input').attr('required', true);
+                $timeout(function () {
+                    $('#input_spark_name').attr('required', true);
+                }, 50);
+            }
+        };
+        $scope.init();
+
+        //保存
+        $scope.onSaveItem = function() {
+            if ($a_visual.parent().hasClass('active')) {
+                $scope.parseVisual($selectType.val());
+            } else {
+                if (!$scope.editItem.script) {
+                    swal('操作失败', '脚本不能为空', 'error');
+                    return;
+                }
+            }
+            if ($scope.editItem.type !== 0) {
+                if ($scope.editItem.type === 1 || $scope.editItem.type === 2) {
+                    if ($scope.editItem.script.indexOf('spark.yarn.submit.waitAppCompletion=true') !== -1) {
+                        swal('操作失败', '禁用Spark参数: spark.yarn.submit.waitAppCompletion=true，因为该参数会导致客户机长时间处于高负载状态', 'error');
+                        return;
+                    }
+                } else {
+                    if ($scope.editItem.script.indexOf(' -d ') === -1) {
+                        swal('操作失败', '请添加Flink参数: -d，以后台模式执行，否则会导致客户机长时间处于高负载状态', 'error');
+                        return;
+                    }
+                }
+            }
+            $('#btn_submit').attr('disabled','true');
+            $http.post("./save.api", $scope.editItem)
+                .success(function(data) {
+                    if (data.code === 0) {
+                        var script = data.content;
+                        var errors = [];
+                        if (script.type === 0 || script.type === 2) {
+                            if ($scope.editItem.tasks) {
+                                $scope.editItem.tasks.forEach(function (task, index) {
+                                    task.scriptId = script.id;
+                                    task.uid = script.uid;
+                                    if ($('[name="' + index + '_visual-checkbox"]').bootstrapSwitch('state')) {
+                                        task.cron = null;
+                                    }
+                                    $.ajax({
+                                        url: '../scheduling/save.api',
+                                        async: false,
+                                        type: 'POST',
+                                        contentType: 'application/json',
+                                        data: JSON.stringify(task),
+                                        success: function (data) {
+                                            if (data.code !== 0) {
+                                                errors.push(index);
+                                            }
+                                        },
+                                        error: function () {
+                                            errors.push(index);
+                                        }
+                                    });
+                                });
+                            }
+                            if ($scope.editItem.id && deleteTasks.length > 0) {
+                                deleteTasks.forEach(function (value) {
+                                    $.ajax({
+                                        url: '../scheduling/delete.api?id=' + value,
+                                        async: false,
+                                        type: 'POST',
+                                        contentType: 'application/json',
+                                        success: function (data) {
+                                            if (data.code !== 0) {
+                                                errors.push(value);
+                                            }
+                                        },
+                                        error: function () {
+                                            errors.push(value);
+                                        }
+                                    });
+                                });
+                            }
+                        } else {
+                            if ($scope.editItem.monitors) {
+                                $scope.editItem.monitors.forEach(function (monitor, index) {
+                                    monitor.scriptId = script.id;
+                                    monitor.uid = script.uid;
+                                    if (script.type === 1) {
+                                        monitor.type = 0;
+                                    } else {
+                                        monitor.type = 1;
+                                    }
+                                    $.ajax({
+                                        url: '../monitor/save.api',
+                                        async: false,
+                                        type: 'POST',
+                                        contentType: 'application/json',
+                                        data: JSON.stringify(monitor),
+                                        success: function (data) {
+                                            if (data.code !== 0) {
+                                                errors.push(index);
+                                            }
+                                        },
+                                        error: function () {
+                                            errors.push(index);
+                                        }
+                                    });
+                                });
+                            }
+                            if ($scope.editItem.id && deleteMonitors.length > 0) {
+                                deleteMonitors.forEach(function (value) {
+                                    $.ajax({
+                                        url: '../monitor/delete.api?id=' + value,
+                                        async: false,
+                                        type: 'POST',
+                                        contentType: 'application/json',
+                                        success: function (data) {
+                                            if (data.code !== 0) {
+                                                errors.push(value);
+                                            }
+                                        },
+                                        error: function () {
+                                            errors.push(value);
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                        if (errors.length > 0) {
+                            var html = '';
+                            if (script.type === 0 || script.type === 2) {
+                                html += '调度任务操作失败，请到<a href="/scheduling/list.html">离线调度</a>中重新操作';
+                            } else {
+                                html += '监控任务操作失败，请到<a href="/monitor/list.html">实时监控</a>中重新操作';
+                            }
+                            swal({
+                                title: '操作警告',
+                                html: html,
+                                type: 'warning',
+                                showConfirmButton: true
+                            });
+                        } else {
+                            swal({
+                                title: '操作成功',
+                                text: data.msg,
+                                type: 'success',
+                                showConfirmButton: true
+                            }).then(function () {
+                                if (parent.xadmin) {
+                                    $scope.closeTab();
+                                } else {
+                                    location.href = "./list.html";
+                                }
+                            });
+                        }
+                    } else {
+                        swal('操作失败', data.msg, 'error');
+                    }
+                    $('#btn_submit').removeAttr('disabled');
+                });
+        };
+
+        //类型变更事件
+        $selectType.change(function() {
+            $scope.editItem.script = '';
+            $text.find('textarea').val('');
+            var $divTask = $('.div_task');
+            var $divMonitor = $('.div_monitor');
+            if (this.value !== '0') {
+                if (this.value === '1' || this.value === '2') {
+                    $divSparkVersion.show();
+                    $divFlinkVersion.hide();
+                } else {
+                    $divSparkVersion.hide();
+                    $divFlinkVersion.show();
+                }
+                $divCluster.show();
+                $divCluster.find('select').attr('required', true);
+                $divCluster.find('input').attr('required', true);
+                $divAgent.hide();
+                $divAgent.find('select').removeAttr('required');
+                if (this.value === '2') {
+                    $divMonitor.hide();
+                    $divTask.show();
+                } else {
+                    $divMonitor.show();
+                    $divTask.hide();
+                }
+                //资源选项
+                $divResource.show();
+                if (this.value === '1' || this.value === '3') {
+                    $scope.editItem.nodeBlackListType = 'stream';
+                    $scope.editItem.allocateBalancerType = 'total';
+                } else if (this.value === '2' || this.value === '4') {
+                    $scope.editItem.nodeBlackListType = 'batch';
+                    $scope.editItem.allocateBalancerType = 'available';
+                }
+                $a_visual.parent().removeClass('disabled');
+                $timeout(function () {
+                    $scope.onNodeBlackListTypeChange();
+                    $scope.onAllocateBalancerTypeChange();
+                    if ($a_visual.parent().hasClass('active')) {
+                        if ($scope.editItem.type === 1 || $scope.editItem.type === 2) {
+                            $('#input_spark_name').attr('required', true);
+                            $('#input_flink_ynm').removeAttr('required');
+                        } else {
+                            $('#input_flink_ynm').attr('required', true);
+                            $('#input_spark_name').removeAttr('required');
+                        }
+                        $('#textarea_script').removeAttr('required');
+                    } else {
+                        $('#input_spark_name').removeAttr('required');
+                        $('#input_flink_ynm').removeAttr('required');
+                        $('#textarea_script').attr('required', true);
+                    }
+                }, 50);
+            } else {
+                $divSparkVersion.hide();
+                $divFlinkVersion.hide();
+                $divCluster.hide();
+                $divCluster.find('select').removeAttr('required');
+                $divCluster.find('input').removeAttr('required');
+                $divAgent.show();
+                $divAgent.find('select').attr('required', true);
+                $divMonitor.hide();
+                $divTask.show();
+                $divResource.hide();
+                $a_visual.parent().addClass('disabled');
+                $a_text.tab('show');
+                $timeout(function () {
+                    $('#textarea_script').attr('required', true);
+                }, 50);
+            }
+            $scope.parseVisual(this.value);
+            $timeout(function () {
+                $('[data-toggle="tooltip"]').tooltip();
+                $('.selectpicker').selectpicker('refresh');
+            }, 50);
+        });
+
+        //程序包变更事件
+        $formControlPlaintext.blur(function () {
+            if (this.value) {
+                if (!this.value.endsWith('.jar') && !this.value.endsWith('.py')) {
+                    swal('操作失败', '文件格式错误', 'error');
+                    return;
+                }
+                $scope.parseVisual($selectType.val());
+            }
+        });
+        
+        //处理spark版本
+        $divSparkVersion.find('select').change(function() {
+            var script = $scope.editItem.script;
+            if (script && script.startsWith('spark')) {
+                if (script.indexOf(' ') !== -1) {
+                    script = $scope.sparkVersionList[this.value]['command'] + script.substring(script.indexOf(' '));
+                } else {
+                    script = $scope.sparkVersionList[this.value]['command'] + ' ';
+                }
+                $text.val(script);
+                $scope.editItem.script = script;
+            }
+        });
+
+        //处理flink版本
+        $divFlinkVersion.find('select').change(function() {
+            var script = $scope.editItem.script;
+            if (script && script.startsWith('flink')) {
+                if (script.indexOf(' run ') !== -1) {
+                    script = $scope.flinkVersionList[this.value]['command'] + script.substring(script.indexOf(' run '));
+                } else {
+                    script = $scope.flinkVersionList[this.value]['command'] + ' run ';
+                }
+                $text.val(script);
+                $scope.editItem.script = script;
+            }
+        });
+
+        //处理队列和资源
+        $selectClusterId.change(function () {
+            var uid;
+            if (user.root) {
+                if ($selectUid.val()) {
+                    uid = $scope.userList[$selectUid.val()].id;
+                }
+            } else {
+                uid = user.id;
+            }
+            var clusterId = '';
+            if (this.value) {
+                clusterId = $scope.clusterList[this.value].id;
+            }
+            $scope.dealQueueAndProxyUser(uid, clusterId);
+            $timeout(function () {
+                $selectQueue.selectpicker('refresh');
+                $scope.onNodeBlackListTypeChange();
+            }, 50);
+            $scope.parseVisual($selectType.val());
+        });
+        $selectUid.change(function () {
+            var clusterId = '';
+            if ($selectClusterId.val()) {
+                clusterId = $scope.clusterList[$selectClusterId.val()].id;
+            }
+            var uid = '';
+            if (this.value) {
+                uid = $scope.userList[this.value].id;
+            }
+            $scope.dealQueueAndProxyUser(uid, clusterId);
+            $timeout(function () {
+                $selectQueue.selectpicker('refresh');
+            }, 50);
+            $scope.parseVisual($selectType.val());
+        });
+        $selectQueue.change(function () {
+            if (this.value !== '') {
+                $scope.editItem.spark.queue = $scope.queueList[this.value];
+                $scope.editItem.flink.yqu = $scope.queueList[this.value];
+            } else {
+                $scope.editItem.spark.queue = '';
+                $scope.editItem.flink.yqu = '';
+            }
+            $scope.parseVisual($selectType.val());
+        });
+        $scope.dealQueueAndProxyUser = function(uid, clusterId) {
+            var clusterUser = $scope.clusterUserMap[uid + '_' + clusterId];
+            var tmp;
+            if (clusterUser) {
+                var queueArr = clusterUser.queue.split(',');
+                $scope.editItem.tmpQueue = queueArr[0];
+                $scope.queueList = queueArr;
+                $scope.editItem.spark.queue = queueArr[0];
+                $scope.editItem.flink.yqu = queueArr[0];
+                if (clusterUser.user) {
+                    $scope.editItem.spark.proxy_user = clusterUser.user;
+                    tmp = $scope.editItem.flink.flink_other_args;
+                    if (tmp) {
+                        if (tmp.indexOf('-yD ypu=') !== -1) {
+                            tmp = tmp.replace(/-yD ypu=[\w-.,]+/g, '-yD ypu=' + clusterUser.user);
+                        } else {
+                            tmp += ' -yD ypu=' + clusterUser.user;
+                        }
+                    } else {
+                        tmp = '-yD ypu=' + clusterUser.user;
+                    }
+                    $scope.editItem.flink.flink_other_args = tmp;
+                }
+            } else {
+                $scope.editItem.tmpQueue = '';
+                $scope.queueList = [];
+                $scope.editItem.spark.queue = '';
+                $scope.editItem.flink.yqu = '';
+                $scope.editItem.spark.proxy_user = '';
+                tmp = $scope.editItem.flink.flink_other_args;
+                if (tmp && tmp.indexOf('-yD ypu=') !== -1) {
+                    tmp = tmp.replace(/\s*-yD ypu=[\w-.,]+/g, '').resetBlank();
+                    if (tmp.length >= 1 && tmp.substring(0, 1) === ' ') {
+                        tmp = tmp.substring(1);
+                    }
+                    $scope.editItem.flink.flink_other_args = tmp;
+                }
+            }
+        };
+
+        //选择屏蔽节点
+        $scope.onNodeBlackListTypeChange = function() {
+            var type = $scope.editItem['nodeBlackListType'];
+            $scope.editItem.spark.args = dealBlackListType(type, $scope.editItem.spark.args);
+            $scope.editItem.flink.args = dealBlackListType(type, $scope.editItem.flink.args);
+            $scope.editItem.script = dealBlackListType(type, $scope.editItem.script);
+        };
+        function dealBlackListType(type, target) {
+            if (!target) {
+                target = '';
+            }
+            var cluster = $scope.clusterMap[$scope.editItem.clusterId];
+            var nodeList;
+            if (type && cluster) {
+                if (type === 'stream'){
+                    if (cluster['streamBlackNodeList']) {
+                        nodeList = cluster['streamBlackNodeList'];
+                    } else {
+                        swal({
+                            position: 'center',
+                            type: 'warning',
+                            title: '当前集群暂无屏蔽策略对应黑名单',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            toast: true
+                        });
+                    }
+                } else {
+                    if (cluster['batchBlackNodeList']) {
+                        nodeList = cluster['batchBlackNodeList'];
+                    } else {
+                        swal({
+                            position: 'center',
+                            type: 'warning',
+                            title: '当前集群暂无屏蔽策略对应黑名单',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            toast: true
+                        });
+                    }
+                }
+            }
+            if (nodeList) {
+                if (target.indexOf('--node.black.list=') !== -1) {
+                    target = target.replace(/--node.black.list=[\w-.,]+/g, '--node.black.list=' + nodeList).resetBlank();
+                } else {
+                    if (target) {
+                        target += ' --node.black.list=' + nodeList;
+                    }  else {
+                        target += '--node.black.list=' + nodeList;
+                    }
+                }
+            } else {
+                if (target.indexOf('--node.black.list=') !== -1) {
+                    target = target.replace(/\s*--node.black.list=[\w-.,]+/g, '').resetBlank();
+                    if (target.length >= 1 && target.substring(0, 1) === ' ') {
+                        target = target.substring(1);
+                    }
+                }
+            }
+            return target;
+        }
+
+        //选择容器分配策略
+        $scope.onAllocateBalancerTypeChange = function() {
+            var type = $scope.editItem['allocateBalancerType'];
+            if ($scope.editItem.type === 1 || $scope.editItem.type === 2) {
+                $scope.editItem.spark.args = dealAllocateBalancerType(type, $scope.editItem.spark.args);
+            } else {
+                $scope.editItem.flink.args = dealAllocateBalancerType(type, $scope.editItem.flink.args);
+            }
+            $scope.editItem.script = dealAllocateBalancerType(type, $scope.editItem.script);
+        };
+        function dealAllocateBalancerType(type, target) {
+            if (!target) {
+                target = '';
+            }
+            if (type) {
+                if (target.indexOf('--allocate.balancer.type=') !== -1) {
+                    target = target.replace(/--allocate.balancer.type=[\w-.,]+/g, '--allocate.balancer.type=' + type).resetBlank();
+                } else {
+                    if (target) {
+                        target += ' --allocate.balancer.type=' + type;
+                    }  else {
+                        target += '--allocate.balancer.type=' + type;
+                    }
+                }
+            } else {
+                if (target.indexOf('--allocate.balancer.type=') !== -1) {
+                    target = target.replace(/\s*--allocate.balancer.type=[\w-.,]+/g, '').resetBlank();
+                    if (target.length >= 1 && target.substring(0, 1) === ' ') {
+                        target = target.substring(1);
+                    }
+                }
+            }
+            return target;
+        }
+
+        //添加调度或监控
+        $scope.onAddTask = function (tips) {
+            var now = new Date();
+            var tenYearsLater = new Date(now.getTime() + (60 * 60 * 24 * 365 * 10 * 1000));
+            var index = tips.length;
+            if (!tips) {
+                tips = [''];
+            }
+            var tip = {
+                sendMail: true,
+                status: 1,
+                type: 2,
+                cycle: 1,
+                week: ['6'],
+                hour: 0,
+                minute: 0,
+                intervals: 2,
+                subScriptIds: [],
+                repeatSubmit: false,
+                startTime: now.format("yyyy-MM-dd HH:mm:ss"),
+                endTime: tenYearsLater.format("yyyy-MM-dd HH:mm:ss"),
+                cron: '0 */2 * * * ?'
+            };
+            tips.push(tip);
+            $timeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+                $scope.initCycleEvent(index);
+            }, 50);
+        };
+        $scope.onRemoveTask = function (tips, index) {
+            if (!tips) {
+                return;
+            }
+            if (tips[index].id) {
+                deleteTasks.push(tips[index].id);
+            }
+            tips.splice(index, 1);
+        };
+        $scope.onAddMonitor = function (tips) {
+            if (!tips) {
+                tips = [''];
+            }
+            var tip = {
+                sendMail: true,
+                status: 1,
+                autoRestart: false,
+                exAutoRestart: true,
+                waitingBatches: 15,
+                cron: "0 */1 * * * ?"
+            };
+            tips.push(tip);
+            $timeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 50);
+        };
+        $scope.onRemoveMonitor = function (tips, index) {
+            if (!tips) {
+                return;
+            }
+            if (tips[index].id) {
+                deleteMonitors.push(tips[index].id);
+            }
+            tips.splice(index, 1);
+        };
+        $scope.onAddTip = function (tips) {
+            if (!tips) {
+                tips = [''];
+            }
+            tips.push('');
+            $timeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 50);
+        };
+        $scope.onRemoveTip = function (tips, index) {
+            if (!tips) {
+                return;
+            }
+            tips.splice(index, 1);
+        };
+        $scope.initCycleEvent = function (index, val) {
+            registerDateRange(app, index + '_inp_start', index + '_inp_end');
+            var $visualCheckbox = $('[name="' + index + '_visual-checkbox"]');
+            var $cycleInputCron = $('#'+ index + '_cycle_input_cron');
+            var $cycleDivVisual = $('#'+ index + '_cycle_div_visual');
+            var $cycleInputInterval = $('#' + index + '_cycle_input_intervals');
+            var $cycleSelectCycle = $('#' + index + '_cycle_select_cycle');
+            var $cycleDivWeek = $('#' + index + '_cycle_div_week');
+            var $cycleDivHour = $('#' + index + '_cycle_div_hour');
+            var $cycleDivMinute = $('#' + index + '_cycle_div_minute');
+            $visualCheckbox.bootstrapSwitch({
+                onColor: "success",
+                offColor: "default",
+                size: "mini",
+                onSwitchChange: function(event, state){
+                    if (state === true){
+                        $cycleInputCron.hide();
+                        $cycleDivVisual.show();
+                    } else {
+                        $cycleInputCron.show();
+                        $cycleDivVisual.hide();
+                    }
+                    $('.selectpicker').selectpicker('refresh');
+                }
+            });
+            $cycleSelectCycle.change(function () {
+                selectCycleChange(this.value);
+            });
+            function selectCycleChange(val) {
+                if (val === '0') {
+                    $cycleInputInterval.show();
+                    $cycleDivWeek.hide();
+                    $cycleDivHour.hide();
+                    $cycleDivMinute.hide();
+                } else if (val === '1') {
+                    $cycleInputInterval.hide();
+                    $cycleDivWeek.hide();
+                    $cycleDivHour.hide();
+                    $cycleDivMinute.show();
+                } else if (val === '2') {
+                    $cycleInputInterval.hide();
+                    $cycleDivWeek.hide();
+                    $cycleDivHour.show();
+                    $cycleDivMinute.show();
+                } else {
+                    $cycleInputInterval.hide();
+                    $cycleDivWeek.show();
+                    $cycleDivHour.show();
+                    $cycleDivMinute.show();
+                }
+            }
+            //初始化状态
+            $cycleInputCron.hide();
+            $cycleDivWeek.hide();
+            $cycleDivHour.hide();
+            $cycleDivMinute.hide();
+            if (val) {
+                selectCycleChange(val);
+            }
+        };
+
+        //可视化切换
+        $a_visual.on('show.bs.tab', function(e) {
+            //shell类型脚本禁用可视化
+            if ($a_visual.parent().hasClass('disabled')) {
+                e.preventDefault();
+                return;
+            }
+            $scope.parseText($selectType.val());
+            if ($scope.editItem.type === 1 || $scope.editItem.type === 2) {
+                $('#input_spark_name').attr('required', true);
+                $('#input_flink_ynm').removeAttr('required');
+            } else {
+                $('#input_flink_ynm').attr('required', true);
+                $('#input_spark_name').removeAttr('required');
+            }
+            $('#textarea_script').removeAttr('required');
+        });
+        $a_text.on('show.bs.tab', function() {
+            $scope.parseVisual($selectType.val());
+            $('#input_spark_name').removeAttr('required');
+            $('#input_flink_ynm').removeAttr('required');
+            $('#textarea_script').attr('required', true);
+            $('#textarea_script').blur(function () {
+                $scope.parseText($scope.editItem.type.toString());
+                $timeout(function () {
+                    $('.selectpicker').selectpicker('refresh');
+                }, 50);
+            });
+        });
+        $scope.parseText = function (type) {
+            if (type === '1' || type === '2') {
+                $scope.parseSparkText();
+                $scope.$apply();
+            } else if (type === '3' || type === '4') {
+                $scope.parseFlinkText();
+                $scope.$apply();
+            }
+        };
+        $scope.parseVisual = function (type) {
+            if (type === '1' || type === '2') {
+                $scope.parseSparkVisual();
+            } else if (type === '3' || type === '4') {
+                $scope.parseFlinkVisual();
+            }
+        };
+        $scope.parseSparkVisual = function () {
+            var spark = $scope.editItem.spark;
+            var script = $scope.editItem.script ? $scope.editItem.script : '';
+            script = script.resetBlank();
+            if (script !== '') {
+                if (!script.startsWith('spark')) {
+                    script = spark.$command + ' ' + script;
+                }
+            } else {
+                script = spark.$command + ' ';
+            }
+            script = script.substring(0, script.indexOf(' '));
+            for (var key in spark){
+                var keyTmp = key;
+                if (keyTmp !== 'args' && keyTmp !== 'spark_other_args' && keyTmp.indexOf('$') === -1) {
+                    var value = spark[keyTmp];
+                    keyTmp = keyTmp.replace(/_/g, '-');
+                    if (keyTmp.startsWith('spark')) {
+                        keyTmp = keyTmp.replace(/-/g, ".");
+                    }
+                    if (value) {
+                        value = value.toString().trim();
+                        if (keyTmp.startsWith('spark')) {
+                            script += ' --conf ' + keyTmp + '=' + value;
+                        } else {
+                            script += ' --' + keyTmp + ' ' + value;
+                        }
+                    }
+                }
+            }
+            if (spark['spark_other_args']) {
+                script += ' ' + spark['spark_other_args'].trim();
+            }
+            if ($formControlPlaintext.val()) {
+                script += ' ' + $formControlPlaintext.val().trim();
+            }
+            if (spark['args']) {
+                script += ' ' + spark['args'].trim();
+            }
+            $scope.editItem.script = script;
+            $text.find('textarea').val(script);
+        };
+        $scope.parseSparkText = function () {
+            var tokens = $text.find('textarea').val().resetBlank().split(' ');
+            var spark = Spark.createEmpty();
+            var jarIndex;
+            var key;
+            //获取jar包索引位
+            tokens.forEach(function(value, index) {
+                if (value.indexOf('.jar') !== -1 || value.indexOf('.py') !== -1) {
+                    if (tokens[index - 1] !== '--jars' && tokens[index - 1] !== '-j' && tokens[index - 1] !== '--jar') {
+                        if (jarIndex === undefined) {
+                            jarIndex = index;
+                        }
+                    }
+                }
+            });
+            if (tokens.indexOf('--node.black.list=') === -1) {
+                $scope.editItem['nodeBlackListType'] = '';
+            }
+            if (tokens.indexOf('--allocate.balancer.type=') === -1) {
+                $scope.editItem['allocateBalancerType'] = '';
+            }
+            for (var i = 0; i < tokens.length; i ++) {
+                var token = tokens[i].trim();
+                if (!token) {
+                    continue;
+                }
+                if (token.indexOf('-submit') !== -1) {
+                    spark['$command'] = token;
+                    continue;
+                }
+                if (jarIndex !== undefined && i === jarIndex) {
+                    if (!$formControlPlaintext.val()) {
+                        $formControlPlaintext.val(token);
+                    } else {
+                        var tmpScript = $text.find('textarea').val();
+                        tmpScript = tmpScript.replace(token, $formControlPlaintext.val());
+                        $text.find('textarea').val(tmpScript);
+                        $scope.editItem.script = tmpScript;
+                    }
+                    continue;
+                }
+                if (token.startsWith('--conf')) {
+                    if (i >= tokens.length - 1) {
+                        return;
+                    }
+                    token = tokens[++i];
+                    if (!token) {
+                        return;
+                    }
+                    var tokenArr = token.split('=');
+                    key = sparkVisualKey[tokenArr[0]];
+                    if (key) {
+                        spark[key] = tokenArr[1];
+                    } else {
+                        if (jarIndex !== undefined && i > jarIndex) {
+                            if (spark.args) {
+                                spark.args += ' --conf ' + token;
+                            } else {
+                                spark.args = '--conf ' + token;
+                            }
+                        } else {
+                            if (spark.spark_other_args) {
+                                spark.spark_other_args += ' --conf ' + token;
+                            } else {
+                                spark.spark_other_args = '--conf ' + token;
+                            }
+                        }
+                    }
+                } else {
+                    if ($scope.caseResource(token, spark)) {
+                        continue;
+                    }
+                    key = sparkVisualKey[token.substring('--'.length)];
+                    if (key) {
+                        spark[key] = tokens[++i];
+                    } else {
+                        if (jarIndex !== undefined && i > jarIndex) {
+                            if (spark.args) {
+                                spark.args += ' ' + token;
+                            } else {
+                                spark.args = token;
+                            }
+                        } else {
+                            if (spark.spark_other_args) {
+                                spark.spark_other_args += ' ' + token;
+                            } else {
+                                spark.spark_other_args = token;
+                            }
+                        }
+                    }
+                }
+            }
+            $scope.editItem.spark = spark;
+        };
+        $scope.parseFlinkVisual = function () {
+            var flink = $scope.editItem.flink;
+            var script = $scope.editItem.script ? $scope.editItem.script : '';
+            script = script.resetBlank();
+            if (script !== '') {
+                if (!script.startsWith('flink')) {
+                    script = flink.$command + ' run ' + script;
+                }
+            } else {
+                script = flink.$command + ' run ';
+            }
+            script = script.substring(0, script.indexOf('run') + 'run'.length);
+            for (var key in flink){
+                var keyTmp = key;
+                if (keyTmp !== 'args' && keyTmp !== 'flink_other_args' && keyTmp.indexOf('$') === -1) {
+                    var value = flink[keyTmp];
+                    if (keyTmp.startsWith('flink')) {
+                        keyTmp = keyTmp.replace(/_/g, ".");
+                    }
+                    keyTmp = '-' + keyTmp;
+                    if (value) {
+                        value = value.toString().trim();
+                        script += ' ' + keyTmp + ' ' + value;
+                    }
+                }
+            }
+            if (flink['flink_other_args']) {
+                script += ' ' + flink['flink_other_args'].trim();
+            }
+            if ($formControlPlaintext.val()) {
+                script += ' ' + $formControlPlaintext.val().trim();
+            }
+            if (flink['args']) {
+                script += ' ' + flink['args'].trim();
+            }
+            $scope.editItem.script = script;
+            $text.find('textarea').val(script);
+        };
+        $scope.parseFlinkText = function () {
+            var tokens = $text.find('textarea').val().resetBlank().split(' ');
+            var flink = Flink.createEmpty();
+            var jarIndex;
+            var key;
+            //获取jar包索引位
+            tokens.forEach(function (value, index) {
+                if (value.indexOf('.jar') !== -1 || value.indexOf('.py') !== -1) {
+                    if (tokens[index - 1] !== '--jars' && tokens[index - 1] !== '-j' && tokens[index - 1] !== '--jar') {
+                        if (jarIndex === undefined) {
+                            jarIndex = index;
+                        }
+                    }
+                }
+            });
+            if (tokens.indexOf('--node.black.list=') === -1) {
+                $scope.editItem['nodeBlackListType'] = '';
+            }
+            if (tokens.indexOf('--allocate.balancer.type=') === -1) {
+                $scope.editItem['allocateBalancerType'] = '';
+            }
+            for (var i = 0; i < tokens.length; i ++) {
+                var token = tokens[i].trim();
+                if (!token) {
+                    continue;
+                }
+                if (token.indexOf('flink') !== -1 && token.indexOf("hdfs://") === -1) {
+                    flink['$command'] = token;
+                    continue;
+                }
+                if (token === 'run') {
+                    continue;
+                }
+                if (jarIndex !== undefined && i === jarIndex) {
+                    if (!$formControlPlaintext.val()) {
+                        $formControlPlaintext.val(token);
+                    } else {
+                        var tmpScript = $text.find('textarea').val();
+                        tmpScript = tmpScript.replace(token, $formControlPlaintext.val());
+                        $text.find('textarea').val(tmpScript);
+                        $scope.editItem.script = tmpScript;
+                    }
+                    continue;
+                }
+                if ($scope.caseResource(token, flink)) {
+                    continue;
+                }
+                key = flinkVisualKey[token.substring('-'.length)];
+                if (key) {
+                    flink[key] = tokens[++i];
+                } else {
+                    if (jarIndex !== undefined && i > jarIndex) {
+                        if (flink.args) {
+                            flink.args += ' ' + token;
+                        } else {
+                            flink.args = token;
+                        }
+                    } else {
+                        if (flink.flink_other_args) {
+                            flink.flink_other_args += ' ' + token;
+                        } else {
+                            flink.flink_other_args = token;
+                        }
+                    }
+                }
+            }
+            $scope.editItem.flink = flink;
+        };
+        $scope.caseResource = function (token, target) {
+            //处理屏蔽节点
+            if (token.indexOf('--node.black.list=') !== -1) {
+                if ($scope.editItem.clusterId) {
+                    var cluster = $scope.clusterMap[$scope.editItem.clusterId];
+                    if (token.split('=')[1] === cluster['streamBlackNodeList']) {
+                        $scope.editItem['nodeBlackListType'] = 'stream';
+                    } else if (token.split('=')[1] === cluster['batchBlackNodeList']) {
+                        $scope.editItem['nodeBlackListType'] = 'batch';
+                    }
+                    if (target.args) {
+                        target.args += ' ' + token;
+                    } else {
+                        target.args = token;
+                    }
+                    $timeout(function () {
+                        $('.selectpicker').selectpicker('refresh');
+                    }, 50);
+                }
+                return true;
+            }
+            //处理容器分配策略
+            if (token.indexOf('--allocate.balancer.type=') !== -1) {
+                $scope.editItem['allocateBalancerType'] = token.split('=')[1];
+                if (target.args) {
+                    target.args += ' ' + token;
+                } else {
+                    target.args = token;
+                }
+                $timeout(function () {
+                    $('.selectpicker').selectpicker('refresh');
+                }, 50);
+                return true;
+            }
+            return false;
+        };
+
+        //上传控件
+        $("#advancedDropzone").dropzone({
+            url: '../hdfs/upload',
+            autoProcessQueue: false,
+            // Events
+            addedfile: function(file) {
+                if (!file.name.endsWith('.jar') && !file.name.endsWith('.py')) {
+                    swal('操作失败', '文件格式错误', 'error');
+                    this.removeFile(file);
+                    return;
+                }
+                $("#advancedDropzone").attr('disabled', 'true');
+                var $dropzoneFiletable = $('#dropzone_filetable');
+                //先清除子元素
+                $dropzoneFiletable.empty();
+                var $el = $(
+                    '<div class="col-sm-6">' +
+                        '<div class="progress progress-striped">' +
+                            '<div class="progress-bar progress-bar-warning"></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-sm-6">' +
+                        '<span>上传中...</span>' +
+                    '</div>');
+                $dropzoneFiletable.append($el);
+                file.fileEntryTd = $el;
+                file.progressBar = $el.find('.progress-bar');
+                var dropzone = this;
+                $timeout(function () {
+                    dropzone.processQueue();
+                }, 50);
+            },
+            sending:function(file, xhr, formData){
+                if ($('#select_clusterId').val()) {
+                    formData.append("clusterId", $scope.clusterList[$('#select_clusterId').val()].id);
+                }
+            },
+            uploadprogress: function(file, progress) {
+                file.progressBar.width(progress + '%');
+            },
+            success: function(file, data) {
+                $("#advancedDropzone").removeAttr('disabled');
+                if (data.code === 0) {
+                    file.fileEntryTd.find('span:last').html('<span class="text-success">成功</span>');
+                    file.progressBar.removeClass('progress-bar-warning').addClass('progress-bar-success');
+                    $formControlPlaintext.val(data.content);
+                    $scope.parseVisual($selectType.val());
+                } else {
+                    file.fileEntryTd.find('span:last').html('<span class="text-danger">失败</span>');
+                    file.progressBar.removeClass('progress-bar-warning').addClass('progress-bar-danger');
+                    $formControlPlaintext.val('');
+                    swal('操作失败', data.msg, 'error');
+                }
+            },
+            error: function(file, data) {
+                $("#advancedDropzone").removeAttr('disabled');
+                file.fileEntryTd.find('span:last').html('<span class="text-danger">失败</span>');
+                file.progressBar.removeClass('progress-bar-warning').addClass('progress-bar-red');
+                $formControlPlaintext.val('');
+                swal('操作失败', data.msg, 'error');
+            }
+        });
+
+        $scope.closeTab = function () {
+            var el = parent.document.querySelector("li.layui-this").getElementsByClassName("layui-icon layui-unselect layui-tab-close")[0];
+            $timeout(function () {
+                parent.xadmin.reloadScript();
+                el.click();
+            }, 50);
+            parent.xadmin.add_tab('脚本管理', 'script/list.html');
+        };
+
+        //多个空格转成一个空格
+        String.prototype.resetBlank = function(){
+            var regEx = /\s+/g;
+            return this.replace(regEx, ' ');
+        };
+
+        //提示控件
+        $timeout(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        }, 50);
+
+        $timeout(function () {
+            $('.selectpicker').selectpicker('refresh');
+        }, 3000);
+
+    });
+
+    app.filter('scriptFilter', function () {
+        return function (scripts, uid, scriptId) {
+            scripts = scripts.filter(function (script) {
+                if (uid) {
+                    if (script.uid !== uid) {
+                        return false;
+                    }
+                }
+                if (scriptId) {
+                    if (script['id'] === scriptId) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
+            return scripts;
+        }
+    });
+
+    function parseMemory(present) {
+        present = present.toUpperCase();
+        var val;
+        if (present.indexOf('M') !== -1) {
+            val = parseInt(present.substring(0, present.indexOf('M')));
+        } else if (present.indexOf('G') !== -1) {
+            val = parseInt(present.substring(0, present.indexOf('G'))) * 1024;
+        } else {
+            val = parseInt(present);
+        }
+        return val;
+    }
+
+</script>
+</body>
+</html>

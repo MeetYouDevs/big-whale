@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/big-whale?characterEncoding=utf-8&autoReconnect=true&failOverReadOnly=false&useSSL=false
+    username: root
+    password: root
+    tomcat:
+      test-on-borrow: true
+      test-while-idle: true
+      time-between-eviction-runs-millis: 3600000
+      validation-query: select 1
+  thymeleaf:
+    cache: true
+  mail:
+    host: smtp.mxhichina.com
+    port: 80
+    username: username@bigwhale.com
+    password: password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: false
+            required: false
+  quartz:
+    job-store-type: jdbc
+
+logging:
+  level:
+    root: WARN

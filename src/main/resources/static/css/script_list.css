@@ -1,0 +1,41 @@
+.popover-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.script-name {
+    display: inline-block;
+    max-width: 150px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.script-desc {
+    display: inline-block;
+    max-width: 150px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.script-script {
+    display: inline-block;
+    width: 350px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+@media (max-width: 1280px) {
+
+    .script-name {
+        max-width: 100px;
+    }
+
+    .script-desc {
+        max-width: 100px;
+    }
+
+    .script-script {
+        width: 250px;
+    }
+
+}

@@ -1,0 +1,83 @@
+package com.meiyouframework.bigwhale.service;
+
+import com.alibaba.fastjson.JSON;
+import com.meiyouframework.bigwhale.common.Constant;
+import com.meiyouframework.bigwhale.util.OkHttpUtils;
+import com.meiyouframework.bigwhale.config.DingdingConfig;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+@Service
+public class NoticeServiceImpl implements NoticeService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NoticeServiceImpl.class);
+    private static final Pattern MAIL_PATTERN = Pattern.compile("^\\w+((-\\w+)|(\\.\\w+))*\\@[A-Za-z0-9]+((\\.|-)[A-Za-z0-9]+)*\\.[A-Za-z0-9]+$");
+
+    @Value("${spring.mail.username}")
+    private String from;
+
+    @Autowired
+    private JavaMailSender javaMailSender;
+    @Autowired
+    private DingdingConfig dingdingConfig;
+
+    @Override
+    public void sendMail(String to, String content) {
+        if (!MAIL_PATTERN.matcher(to).find()) {
+            return;
+        }
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+        simpleMailMessage.setFrom(from);
+        simpleMailMessage.setTo(to);
+        simpleMailMessage.setSubject("MY大数据告警");
+        simpleMailMessage.setText(content);
+        javaMailSender.send(simpleMailMessage);
+    }
+
+    @Override
+    public void sendDingding(String[] ats, String content) {
+        if (!dingdingConfig.isEnabled()) {
+            return;
+        }
+        if (StringUtils.isBlank(dingdingConfig.getWatcherToken())) {
+            LOGGER.warn("public group watch token for dingding is not set");
+            return;
+        }
+        sendDingding(dingdingConfig.getWatcherToken(), ats, content);
+    }
+
+    @Override
+    public void sendDingding(String token, String[] ats, String content) {
+        if (!dingdingConfig.isEnabled()) {
+            return;
+        }
+        Map<String, Object> reqBody = new HashMap<>();
+        reqBody.put("msgtype", "text");
+        reqBody.put("text", Collections.singletonMap("content", content));
+        if (ats != null && ats.length > 0) {
+            Map<String, Object> atMap = new HashMap<>();
+            atMap.put("isAtAll", "false");
+            atMap.put("atMobiles", ats);
+            reqBody.put("at", atMap);
+        }
+        OkHttpUtils.doPost(Constant.DINGDING_ROBOT_URL + token, OkHttpUtils.MEDIA_JSON, JSON.toJSONString(reqBody), null);
+    }
+
+    @Override
+    public boolean isWatcherToken(String token) {
+        return dingdingConfig.isEnabled() &&
+                dingdingConfig.getWatcherToken() != null &&
+                dingdingConfig.getWatcherToken().equals(token.split("&")[0]);
+    }
+}

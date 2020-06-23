@@ -1,0 +1,54 @@
+.idea
+*.iml
+target
+.classpath
+.project
+.settings
+
+# runtime web
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# compiled output
+/src/web/dist
+/src/web/tmp
+/src/web/out-tsc
+# Only exists if Bazel was run
+/src/web/bazel-out
+
+# dependencies
+/src/web/node_modules
+
+# profiling files
+/src/web/chrome-profiler-events*.json
+/src/web/speed-measure-plugin*.json
+
+# IDEs and editors
+/src/web/.idea
+/src/web/.project
+/src/web/.classpath
+/src/web/.c9/
+/src/web/*.launch
+/src/web/.settings/
+/src/web/*.sublime-workspace
+
+# IDE - VSCode
+/src/web/.vscode/*
+/src/web/!.vscode/settings.json
+/src/web/!.vscode/tasks.json
+/src/web/!.vscode/launch.json
+/src/web/!.vscode/extensions.json
+/src/web/.history/*
+
+# misc
+/src/web/.sass-cache
+/src/web/connect.lock
+/src/web/coverage
+/src/web/libpeerconnection.log
+/src/web/npm-debug.log
+/src/web/yarn-error.log
+/src/web/testem.log
+/src/web/typings
+
+# System Files
+/src/web/.DS_Store
+/src/web/Thumbs.db

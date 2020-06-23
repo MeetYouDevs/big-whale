@@ -1,0 +1,93 @@
+body {
+    background: #f1f1f1;
+}
+
+.copyright {
+    margin-top: 80px;
+    border-top: 1px solid #eee;
+    text-align: center;
+    padding: 20px;
+    width: 100%;
+}
+
+.bw-nav .row {
+    background: #ffffff;
+}
+
+.bw-nav .row .breadcrumb {
+    margin-bottom: 0;
+    border-radius: 0;
+    display: inline-block;
+    background: #ffffff;
+}
+
+.bw-nav .row .bw-refresh {
+    float: right;
+    margin-right: 15px;
+    line-height: 36px;
+    cursor: pointer;
+}
+
+.bw-body {
+    padding: 15px;
+}
+
+.bw-body .row .col-md-12 {
+    background: #ffffff;
+}
+
+.bw-body .row .col-md-12 .col-md-12 {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.search-form {
+    border-top: 1px;
+    border-bottom: 1px dashed #eee;
+    padding: 10px 0;
+}
+
+.search-form .form-group {
+    margin-bottom: 10px;
+}
+
+.form-group > label > B {
+    color: red;
+}
+
+.operate {
+    cursor: pointer;
+    padding: 0 10px 0 5px;
+}
+
+.operate > .remove {
+    color: red;
+}
+
+.order {
+    cursor: pointer;
+}
+
+.order div {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.order div i {
+    display: block;
+    font-size: 12px;
+    -webkit-transform:scale(0.7);
+    line-height: 6px;
+    top: 0;
+    color: #999999;
+}
+
+.order div i.active {
+    color: #337ab7;
+}
+
+@media (max-width: 1280px) {
+    .operate {
+        width: 50px;
+    }
+}

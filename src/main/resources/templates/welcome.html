@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>欢迎页 - Big Whale</title>
+    <link href="./css/common.css" rel="stylesheet"/>
+    <!-- HTML5 shim 和 Respond.js 是为了让 IE8 支持 HTML5 元素和媒体查询（media queries）功能 -->
+    <!-- 警告：通过 file:// 协议（就是直接将 html 页面拖拽到浏览器中）访问页面时 Respond.js 不起作用 -->
+    <!--[if lt IE 9]>
+      <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <style type="text/css">
+        .bw-sys-text {
+            border-bottom: 1px solid #f6f6f6;
+            height: 42px;
+            line-height: 42px;
+        }
+        .bw-sys-info {
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid animated fadeInDown">
+    <div class="bw-body">
+        <div class="row">
+            <div class="col-md-12 bw-sys-text">
+                <span>系统信息</span>
+            </div>
+            <div class="col-md-12 bw-sys-info">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <tbody>
+                            <tr>
+                                <td>操作系统</td>
+                                <td th:text="${osName}"></td>
+                            </tr>
+                            <tr>
+                                <td>操作系统架构</td>
+                                <td th:text="${osArch}"></td>
+                            </tr>
+                            <tr>
+                                <td>操作系统版本</td>
+                                <td th:text="${osVersion}"></td>
+                            </tr>
+                            <tr>
+                                <td>JAVA版本</td>
+                                <td th:text="${javaVersion}"></td>
+                            </tr>
+                            <tr>
+                                <td>Tomcat版本</td>
+                                <td th:text="${tomcatVersion}"></td>
+                            </tr>
+                            <tr>
+                                <td>上传附件限制</td>
+                                <td th:text="${maxFileSize}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <footer class="copyright">
+            <ul class="list-inline">
+                <li>© Meetyou.</li>
+                <li>Big data group technical support.</li>
+                <li><a href="https://github.com/MeetYouDevs/big-whale"><i class="fa fa-github fa-lg" aria-hidden="true"></i></a></li>
+            </ul>
+        </footer>
+    </div>
+</div>
+</body>
+</html>

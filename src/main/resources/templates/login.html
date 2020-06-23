@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>登录 - Big Whale</title>
+    <link href="./css/common.css" rel="stylesheet"/>
+    <style type="text/css">
+        .form-group {
+            margin-right: 0 !important;
+            margin-left: 0 !important;
+            margin-bottom: 20px !important;
+        }
+    </style>
+</head>
+<body style="background-color: #f9f9f9">
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h1>Big Whale
+                    <small style="font-size: 40%">任务调度平台</small>
+                </h1>
+            </div>
+        </div>
+        <div class="col-md-12 animated fadeInDown">
+            <div class="col-md-4 col-md-offset-4 text-center" style="padding: 40px">
+                <label class="icon-big-whale" style="font-size: 50px"></label>
+            </div>
+            <div class="col-md-4 col-md-offset-4">
+                <div style="border: 1px solid #d8dee2; border-radius: 5px; background-color: #fff; padding: 50px">
+                    <form class="form-horizontal" id="loginForm" style="background-color: #fff">
+                        <div class="form-group">
+                            <label for="username">用户名</label>
+                            <input type="text" class="form-control" id="username" placeholder="用户名" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">密码</label>
+                            <input type="password" class="form-control" id="password" placeholder="密码" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-success" style="width: 100%">登录</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<footer class="copyright">
+    <ul class="list-inline">
+        <li>© Meetyou.</li>
+        <li>Big data group technical support.</li>
+        <li><a href="https://github.com/MeetYouDevs/big-whale"><i class="fa fa-github fa-lg" aria-hidden="true"></i></a></li>
+    </ul>
+</footer>
+<script type="text/javascript">
+    (function ($) {
+        $.getUrlParam = function (name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        }
+    })(jQuery);
+    $(function () {
+        $('#loginForm').submit(function () {
+            $.ajax({
+                url: './login.html',
+                type: 'POST',
+                //contentType: 'application/json',
+                data: $('#loginForm').serialize(),
+                success: function (data) {
+                    if (data.code === 0) {
+                        location.href = "./";
+                    } else {
+                        swal("登录失败", data.msg, "error");
+                    }
+                },
+                error: function (data) {
+                    swal("登录失败", data.msg, "error");
+                }
+            });
+            return false;
+        });
+    })
+</script>
+</body>
+</html>
