@@ -1,12 +1,13 @@
 # Big Whale - 任务调度平台
 Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台，提供Spark、Flink等离线任务的调度以及实时任务的监控，并具有批次积压报警、任务异常重启、重复应用监测、大内存应用监测等功能。
-服务基于Spring Boot master开发，打包后即可运行。
+服务基于Spring Boot 2.0开发，打包后即可运行。
 
 # 部署
 ## 1.准备
 * Java 1.8+
 * Mysql 5.1.0+
 * 下载项目或git clone项目
+* <u>为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/master/doc/hosts)</u>
 ## 2.安装
 * 创建数据库：big-whale
 * 运行数据库脚本：[big_whale_tables_mysql.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/big_whale_tables_mysql.sql)、[quartz_tables_mysql.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/quartz_tables_mysql.sql)
@@ -92,3 +93,5 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
    }
  }
  ```
+# License
+The project is licensed under the [Apache 2 license](https://github.com/ctripcorp/apollo/blob/master/LICENSE).
