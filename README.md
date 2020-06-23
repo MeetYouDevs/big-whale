@@ -94,4 +94,4 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
  }
  ```
 # License
-The project is licensed under the [Apache 2 license](https://github.com/ctripcorp/apollo/blob/master/LICENSE).
+The project is licensed under the [Apache 2 license](https://github.com/MeetYouDevs/big-whale/blob/master/LICENSE).
