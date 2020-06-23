@@ -7,7 +7,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 * Java 1.8+
 * Mysql 5.1.0+
 * 下载项目或git clone项目
-* <u>为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/master/doc/hosts)</u>
+* 为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/master/doc/hosts)
 ## 2.安装
 * 创建数据库：big-whale
 * 运行数据库脚本：[big_whale_tables_mysql.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/big_whale_tables_mysql.sql)、[quartz_tables_mysql.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/quartz_tables_mysql.sql)
@@ -52,7 +52,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 ## 1.新建脚本
 * 脚本管理->新增  
 ![image](https://github.com/MeetYouDevs/big-whale/raw/master/doc/images/step6-script_add.png)
-* “类型”有shell、spark实时、spark离线、flink实时，示例为：spark实时
+* “类型”有shell、spark实时、spark离线、flink实时、flink离线，示例为：spark实时
 * 因为当前用户为超级管理员，可为所有用户创建脚本，故需要选择“用户”
 * “程序包”应上传与脚本类型相应的Spark流式任务打成的jar包
 * “资源选项”可不填
