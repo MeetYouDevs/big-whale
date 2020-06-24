@@ -22,10 +22,10 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
     * yarn.app-white-list: 白名单列表（列表中的应用申请的内存超过上限，不会进行报警）
 * 修改：$FLINK_HOME/bin/flink（flink提交任务时，只能读取本地jar包，故需要在执行flink提交命令时从hdfs上下载jar包并替换脚本的jar包路径参数，参考：[flink](https://github.com/MeetYouDevs/big-whale/blob/master/bin/flink)）
 * 服务打包：mvn clean package
-# 3.启动
+## 3.启动
 * 检查端口17070是否被占用，被占用的话，关闭占用的进程或修改项目端口号配置重新打包
 * 拷贝target下的big-whale.jar，执行命令：java -jar big-whale.jar
-# 4.初始配置
+## 4.初始配置
 * 打开：http://localhost:17070  
   ![image](https://github.com/MeetYouDevs/big-whale/raw/master/doc/images/step1-login.png)
 * 输入账号admin，密码admin
