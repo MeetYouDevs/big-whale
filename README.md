@@ -32,26 +32,26 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 * 点击：权限管理->用户管理，修改当前账号的邮箱为合法且存在的邮箱地址，否则会导致邮件发送错误、执行状态更新失败等问题
 * 添加集群
   * 集群管理->集群管理->新增  
-  ![image](https://github.com/progr1mmer/big-whale/raw/master/doc/images/step2-cluster_add.png)
+  ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step2-cluster_add.png)
   * “yarn管理地址”为ResourceManager的WEB UI地址
   * 需要为Spark或Flink任务设置“程序包存储目录”，如：/data/big-whale/storage
   * “支持Flink任务代理用户”“流式任务黑名单”和“批处理任务黑名单”为内部定制的任务分配规则，可不填
 * 添加设备
   * 集群管理->设备管理->新增  
-  ![image](https://github.com/progr1mmer/big-whale/raw/master/doc/images/step3-cluster_agent_add.png)
+  ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step3-cluster_agent_add.png)
   * 选择集群后，会作为该集群下提交Spark或Flink任务的客户机之一（注意！！！当有多台机器属于同个集群的时，会随机选择客户机提交任务）
 * 添加集群用户
   * 集群管理->集群用户->新增  
-  ![image](https://github.com/progr1mmer/big-whale/raw/master/doc/images/step4-cluster_cluster_user_add.png)
+  ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step4-cluster_cluster_user_add.png)
   * “用户”为平台用户，“代理用户”为运行Spark的代理用户，该配置的语义为：平台用户在所选集群下可使用的Yarn资源队列和代理用户（proxyuser）
 * 添加计算框架版本
   * 集群管理->版本管理->新增  
-  ![image](https://github.com/progr1mmer/big-whale/raw/master/doc/images/step5-cluster_compute_framework_add.png)
+  ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step5-cluster_compute_framework_add.png)
   * 同一集群下不同版本的Spark或Flink提交任务的命令可能有所不同，如Spark：1.6.0版本的提交命令为spark-submit，2.1.0版本的提交命令为spark2-submit
 # 使用
 ## 1.新建脚本
 * 脚本管理->新增  
-![image](https://github.com/progr1mmer/big-whale/raw/master/doc/images/step6-script_add.png)
+![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step6-script_add.png)
 * “类型”有shell、spark实时、spark离线、flink实时、flink离线，示例为：spark实时
 * 因为当前用户为超级管理员，可为所有用户创建脚本，故需要选择“用户”
 * “程序包”应上传与脚本类型相应的Spark流式任务打成的jar包
