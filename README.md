@@ -1,6 +1,6 @@
 # Big Whale - 任务调度平台
 Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台，提供Spark、Flink等离线任务的调度以及实时任务的监控，并具有批次积压报警、任务异常重启、重复应用监测、大内存应用监测等功能。
-服务基于Spring Boot 2.0开发，打包后即可运行。
+服务基于Spring Boot 2.0开发，打包后即可运行。[[Gitee]](https://gitee.com/progr1mmer/big-whale)
 
 # 部署
 ## 1.准备
