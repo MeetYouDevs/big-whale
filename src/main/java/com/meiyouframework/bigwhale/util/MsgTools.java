@@ -13,7 +13,7 @@ public class MsgTools {
     }
 
     public static String getPlainErrorMsg(String clusterName, String trackingUrl, String userName, String taskName, String errorType) {
-        StringBuilder msg = new StringBuilder("<告警信息> \n");
+        StringBuilder msg = new StringBuilder("<巨鲸告警>\n");
         if (clusterName != null) {
             msg.append("集群: ").append(clusterName).append("\n");
         }
@@ -34,7 +34,7 @@ public class MsgTools {
     }
 
     public static String getPlainErrorMsg(String agent, String userName, String taskName, String errorType) {
-        StringBuilder msg = new StringBuilder("<告警信息> \n");
+        StringBuilder msg = new StringBuilder("<巨鲸告警>\n");
         if (agent != null) {
             msg.append("机器: ").append(agent).append("\n");
         }

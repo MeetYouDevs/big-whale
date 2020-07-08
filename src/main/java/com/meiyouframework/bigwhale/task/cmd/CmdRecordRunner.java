@@ -8,16 +8,15 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.config.SshConfig;
-import com.meiyouframework.bigwhale.service.ClusterService;
+import com.meiyouframework.bigwhale.entity.Scheduling;
+import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.task.AbstractCmdRecordTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import com.meiyouframework.bigwhale.entity.Agent;
 import com.meiyouframework.bigwhale.entity.CmdRecord;
 import com.meiyouframework.bigwhale.entity.Script;
-import com.meiyouframework.bigwhale.service.AgentService;
-import com.meiyouframework.bigwhale.service.CmdRecordService;
-import com.meiyouframework.bigwhale.service.ScriptService;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
 
@@ -83,6 +82,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
             yarnUrl = clusterService.findById(cmdRecord.getClusterId()).getYarnUrl();
         }
+        SchedulingService schedulingService = SpringContextUtils.getBean(SchedulingService.class);
         Connection conn = new Connection(agent.getIp());
         Session session = null;
         try {
@@ -153,7 +153,8 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                 } else {
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
                     //处理失败(定时任务)
-                    notice(cmdRecord, null, null, Constant.ERROR_TYPE_FAILED);
+                    Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
+                    notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_FAILED);
                 }
                 cmdRecord.setFinishTime(new Date());
             } else {
@@ -164,7 +165,8 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
         } catch (Exception e) {
             if (!interrupted) {
                 cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
-                notice(cmdRecord, null, null, Constant.ERROR_TYPE_FAILED);
+                Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
+                notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_FAILED);
             } else {
                 CmdRecord recordForTimeout = cmdRecordService.findById(cmdRecordId);
                 cmdRecord.setStatus(recordForTimeout.getStatus());

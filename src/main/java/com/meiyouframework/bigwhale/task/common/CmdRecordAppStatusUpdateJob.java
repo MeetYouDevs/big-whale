@@ -2,14 +2,12 @@ package com.meiyouframework.bigwhale.task.common;
 
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.HttpYarnApp;
-import com.meiyouframework.bigwhale.entity.Cluster;
-import com.meiyouframework.bigwhale.entity.CmdRecord;
-import com.meiyouframework.bigwhale.entity.Script;
-import com.meiyouframework.bigwhale.entity.YarnApp;
+import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.task.AbstractCmdRecordTask;
 import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import com.meiyouframework.bigwhale.util.YarnApiUtils;
+import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.springframework.util.CollectionUtils;
 
@@ -46,6 +44,7 @@ public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implement
         ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
         ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
         YarnAppService yarnAppService = SpringContextUtils.getBean(YarnAppService.class);
+        SchedulingService schedulingService = SpringContextUtils.getBean(SchedulingService.class);
         for (CmdRecord cmdRecord : records) {
             Cluster cluster = clusterService.findById(cmdRecord.getClusterId());
             Script script = scriptService.findById(cmdRecord.getScriptId());
@@ -66,10 +65,11 @@ public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implement
                     AgentService agentService = SpringContextUtils.getBean(AgentService.class);
                     submitSubCmdRecord(cmdRecord, cmdRecordService, agentService, scriptService);
                 } else {
+                    Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
                     if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
-                        notice(cmdRecord, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_BATCH_UNUSUAL, finalStatus));
+                        notice(cmdRecord, null, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_BATCH_UNUSUAL, finalStatus));
                     } else {
-                        notice(cmdRecord, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_BATCH_UNUSUAL, finalStatus));
+                        notice(cmdRecord, null, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_BATCH_UNUSUAL, finalStatus));
                     }
                 }
             } else {

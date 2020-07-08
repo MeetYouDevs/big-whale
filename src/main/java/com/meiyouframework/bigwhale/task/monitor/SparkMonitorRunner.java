@@ -49,12 +49,12 @@ public class SparkMonitorRunner extends AbstractMonitorRunner {
                     // 重启
                     boolean restart = restart();
                     if (restart) {
-                        notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_SPARK_STREAMING_WAITING_BATCH_RESTART);
+                        notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_SPARK_STREAMING_WAITING_BATCH_RESTART);
                     } else {
-                        notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_SPARK_STREAMING_WAITING_BATCH_RESTART_FAILED);
+                        notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_SPARK_STREAMING_WAITING_BATCH_RESTART_FAILED);
                     }
                 } else {
-                    notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_SPARK_STREAMING_WAITING_BATCH);
+                    notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_SPARK_STREAMING_WAITING_BATCH);
                 }
             }
         } else {
@@ -64,22 +64,22 @@ public class SparkMonitorRunner extends AbstractMonitorRunner {
                 boolean restart = restart();
                 if (restart) {
                     if (httpYarnApp != null) {
-                        notice(null, monitor, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART, httpYarnApp.getFinalStatus()));
+                        notice(null, monitor, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART, httpYarnApp.getFinalStatus()));
                     } else {
-                        notice(null, monitor, null, String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART, "UNKNOWN"));
+                        notice(null, monitor, null, null, String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART, "UNKNOWN"));
                     }
                 } else {
                     if (httpYarnApp != null) {
-                        notice(null, monitor, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART_FAILED, httpYarnApp.getFinalStatus()));
+                        notice(null, monitor, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART_FAILED, httpYarnApp.getFinalStatus()));
                     } else {
-                        notice(null, monitor, null, String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART_FAILED, "UNKNOWN"));
+                        notice(null, monitor, null, null, String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL_RESTART_FAILED, "UNKNOWN"));
                     }
                 }
             } else {
                 if (httpYarnApp != null) {
-                    notice(null, monitor, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL, httpYarnApp.getFinalStatus()));
+                    notice(null, monitor, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL, httpYarnApp.getFinalStatus()));
                 } else {
-                    notice(null, monitor, null, String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL, "UNKNOWN"));
+                    notice(null, monitor, null, null, String.format(Constant.ERROR_TYPE_SPARK_STREAMING_UNUSUAL, "UNKNOWN"));
                 }
 
             }

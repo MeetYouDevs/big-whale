@@ -1,11 +1,14 @@
 package com.meiyouframework.bigwhale.task.common;
 
 import com.meiyouframework.bigwhale.common.Constant;
+import com.meiyouframework.bigwhale.entity.Scheduling;
+import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.task.AbstractCmdRecordTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import com.meiyouframework.bigwhale.entity.CmdRecord;
 import com.meiyouframework.bigwhale.service.CmdRecordService;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ public class CmdRecordTimeoutJob extends AbstractCmdRecordTask implements Job {
     public void execute(JobExecutionContext jobExecutionContext) {
         //未开始执行和正在执行的
         CmdRecordService cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
+        SchedulingService schedulingService = SpringContextUtils.getBean(SchedulingService.class);
         Collection<CmdRecord> cmdRecords = cmdRecordService.findByQuery("status=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING);
         if (CollectionUtils.isEmpty(cmdRecords)) {
             return;
@@ -52,7 +56,8 @@ public class CmdRecordTimeoutJob extends AbstractCmdRecordTask implements Job {
                 }
             }
             if (timeout) {
-                notice(cmdRecord, null, null, Constant.ERROR_TYPE_TIMEOUT);
+                Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
+                notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_TIMEOUT);
                 cmdRecordService.save(cmdRecord);
                 //处理调度
                 try {
