@@ -51,7 +51,7 @@
                         <div class="form-group">
                             <label for="query_select_agentId">机器</label>
                             <select id="query_select_agentId" class="selectpicker show-tick"
-                                    ng-model="options.query.agentId" ng-options="item.id as item.host for item in userAgentList">
+                                    ng-model="options.query.agentId" ng-options="item.id as item.host for item in agentList">
                                 <option value="">不限</option>
                             </select>
                         </div>
@@ -113,15 +113,15 @@
                                     </td>
                                     <td>
                                         {{scriptMap[item.scriptId].name}}<br/>
-                                        <label ng-if="item.schedulingId != null" class="label label-info">离线调度</label><br ng-if="item.schedulingId != null" />
+                                        <label ng-if="item.schedulingId != null" class="label label-info">离线调度-{{item.schedulingInstanceId}}</label><br ng-if="item.schedulingId != null" />
                                         <label ng-if="item.monitorId != null" class="label label-info">实时监控</label><br ng-if="item.monitorId != null" />
                                     </td>
                                     <td>
                                         <span ng-if="clusterMap[item.clusterId]">{{clusterMap[item.clusterId].name}}</span>
-                                        <span ng-if="!clusterMap[item.clusterId]">{{userAgentMap[item.agentId].host}}</span>
+                                        <span ng-if="!clusterMap[item.clusterId]">{{agentMap[item.agentId].host}}</span>
                                     </td>
                                     <td>
-                                        {{item.timeOut}}分
+                                        {{item.timeout}}分
                                     </td>
                                     <td style="cursor: pointer; word-break: break-all">
                                         <textarea class="textarea" style="color:limegreen;" readonly>{{item.outputs}}</textarea><br/>
@@ -163,13 +163,13 @@
     registerDateRangePicker(app);
     registerAuth(app);
     var user = [[${session.user}]];
-    app.controller('content-controller', function ($scope, $http,  $location, $sce, $timeout) {
+    app.controller('content-controller', function ($scope, $http) {
         getScript($scope, $http, false);
         getCluster($scope, $http);
         if (user.root) {
             getAuthUser($scope, $http);
         }
-        getUserAgent($scope, $http);
+        getAgent($scope, $http);
         appendCmdStatus($scope);
 
         var id = [[${id}]];
@@ -231,9 +231,6 @@
                 });
         };
 
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
     });
 
 </script>

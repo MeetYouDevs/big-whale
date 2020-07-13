@@ -1,6 +1,6 @@
 # Big Whale - 任务调度平台
-Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台，提供Spark、Flink等离线任务的调度以及实时任务的监控，并具有批次积压报警、任务异常重启、重复应用监测、大内存应用监测等功能。
-服务基于Spring Boot 2.0开发，部署方便，功能强大，打包后即可运行。[[Gitee]](https://gitee.com/progr1mmer/big-whale)
+Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台，提供Spark、Flink等离线任务的调度以及实时任务的监控，并具有批次积压告警、任务异常重启、重复应用监测、大内存应用监测等功能。
+服务基于Spring Boot 2.0开发，部署方便，功能强大，打包后即可运行。[[Github]](https://github.com/MeetYouDevs/big-whale)[[Gitee]](https://gitee.com/progr1mmer/big-whale)
 
 # 部署
 ## 1.准备
@@ -10,7 +10,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 * 为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/master/doc/hosts)
 ## 2.安装
 * 创建数据库：big-whale
-* 运行数据库脚本：[big_whale_tables_mysql.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/big_whale_tables_mysql.sql)
+* 运行数据库脚本：[big-whale.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/big-whale.sql)
 * 根据Spring Boot环境，配置相关数据库账号密码，以及SMTP信息
 * 配置：[big-whale.properties](https://github.com/MeetYouDevs/big-whale/blob/master/src/main/resources/big-whale.properties)
   * 配置项说明
@@ -19,7 +19,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
     * dingding.enabled: 是否开启钉钉告警
     * dingding.watcher-token: 钉钉公共群机器人Token
     * yarn.app-memory-threshold: Yarn应用内存上限，-1禁用监测
-    * yarn.app-white-list: 白名单列表（列表中的应用申请的内存超过上限，不会进行报警）
+    * yarn.app-white-list: 白名单列表（列表中的应用申请的内存超过上限，不会进行告警）
 * 修改：$FLINK_HOME/bin/flink（flink提交任务时，只能读取本地jar包，故需要在执行flink提交命令时从hdfs上下载jar包并替换脚本的jar包路径参数，参考：[flink](https://github.com/MeetYouDevs/big-whale/blob/master/bin/flink)）
 * 服务打包：mvn clean package
 ## 3.启动
@@ -71,7 +71,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 ## 3.实时监控
 * 对于类型为“spark实时”和“flink实时”的脚本，可以通过添加此功能来实时监控任务的运行情况  
 ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step11-script_monitor.png)
-* 任务运行异常时可进行相应的处理，如批次积压报警、任务失败退出重启等  
+* 任务运行异常时可进行相应的处理，如批次积压告警、任务失败退出重启等  
 ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/steperr-monitor_spark_overstock.png)  
 ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/steperr-monitor_spark_failed.png)
 ## 4.离线调度

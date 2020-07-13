@@ -44,7 +44,7 @@
                         <div class="form-group">
                             <label for="query_select_agentId">机器</label>
                             <select id="query_select_agentId" class="selectpicker show-tick"
-                                    ng-model="options.query.agentId" ng-options="item.id as item.host for item in userAgentList">
+                                    ng-model="options.query.agentId" ng-options="item.id as item.host for item in agentList">
                                 <option value="">不限</option>
                             </select>
                         </div>
@@ -149,7 +149,7 @@
                                     {{scriptTypeMap[item.type].name}}
                                 </td>
                                 <td>
-                                    <span ng-if="userAgentMap[item.agentId]">{{userAgentMap[item.agentId].host}}</span>
+                                    <span ng-if="agentMap[item.agentId]">{{agentMap[item.agentId].host}}</span>
                                     <span ng-if="clusterMap[item.clusterId]">{{clusterMap[item.clusterId].name}}</span>
                                 </td>
                                 <td>
@@ -188,13 +188,13 @@
     registerPage(app);
     registerAuth(app);
     var user = [[${session.user}]];
-    app.controller('content-controller', function ($scope, $http, $timeout) {
+    app.controller('content-controller', function ($scope, $http) {
         getCluster($scope, $http);
         if (user.root) {
             getAuthUser($scope, $http);
         }
         appendScriptType($scope);
-        getUserAgent($scope, $http);
+        getAgent($scope, $http);
         registerSort($scope);
 
         $scope.onNewItem = function () {
@@ -256,9 +256,6 @@
             $scope.options.mypage.reload();
         };
 
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
     });
 </script>
 </body>

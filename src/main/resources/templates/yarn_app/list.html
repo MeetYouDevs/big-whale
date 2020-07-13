@@ -85,7 +85,7 @@
                                         集群
                                     </th>
                                     <th>
-                                        脚本名称
+                                        脚本
                                     </th>
                                     <th>
                                         URL
@@ -173,7 +173,7 @@
     var app = angular.module('content-app', []);
     registerPage(app);
     registerAuth(app);
-    app.controller('content-controller', function ($scope, $http, $timeout) {
+    app.controller('content-controller', function ($scope, $http) {
         var appId = [[${appId}]];
         getScript($scope, $http, false);
         getCluster($scope, $http);
@@ -219,9 +219,6 @@
             listUrl: './getpage.api'
         };
 
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
     });
 </script>
 </body>

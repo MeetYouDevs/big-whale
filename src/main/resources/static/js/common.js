@@ -182,10 +182,13 @@ function getAuthUser($scope, $http) {
                 $scope.userList.push(item);
                 $scope.userMap[item.id] = item;
             }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
         });
 }
 
-function getCluster($scope, $http) {
+function getCluster($scope, $http, callback) {
     $scope.clusterList = [];
     $scope.clusterMap = {};
     $http.get($contextPath + 'cluster/getall.api')
@@ -196,6 +199,12 @@ function getCluster($scope, $http) {
                 $scope.clusterList.push(item);
                 $scope.clusterMap[item.id] = item;
             }
+            if (callback) {
+                callback();
+            }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
         });
 }
 
@@ -218,16 +227,19 @@ function getClusterSync($scope) {
     });
 }
 
-function getUserAgent($scope, $http) {
-    $scope.userAgentList = [];
-    $scope.userAgentMap = {};
+function getAgent($scope, $http) {
+    $scope.agentList = [];
+    $scope.agentMap = {};
     $http.get($contextPath + 'cluster/agent/getall.api')
         .success(function (data) {
             for (var i in data) {
                 var item = data[i];
-                $scope.userAgentList.push(item);
-                $scope.userAgentMap[item.id] = item;
+                $scope.agentList.push(item);
+                $scope.agentMap[item.id] = item;
             }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
         });
 }
 
@@ -254,6 +266,9 @@ function getScript($scope, $http, isMonitor, isTask) {
                     $scope.scriptMap[item.id] = item;
                 }
             }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
         });
 }
 
@@ -267,6 +282,9 @@ function getClusterUser($scope, $http) {
                 $scope.clusterUserList.push(item);
                 $scope.clusterUserMap[item.uid + '_' + item.clusterId] = item;
             }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
         });
 }
 

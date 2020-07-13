@@ -26,7 +26,7 @@ public class DtoScript extends AbstractPageDto {
     private String name;
     private String description;
     private Integer type;
-    private Integer timeOut;
+    private Integer timeout;
     private String script;
     private String input;
     private String output;
@@ -51,7 +51,7 @@ public class DtoScript extends AbstractPageDto {
         if (StringUtils.isBlank(name)) {
             return "名称不能为空";
         }
-        if (timeOut == null) {
+        if (timeout == null) {
             return "运行超时时间不能为空";
         }
         if (type == null) {

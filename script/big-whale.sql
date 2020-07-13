@@ -20,8 +20,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 -- Table structure for agent
 -- ----------------------------
-DROP TABLE IF EXISTS `agent`;
-CREATE TABLE `agent`  (
+CREATE TABLE IF NOT EXISTS `agent`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `ip` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `host` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -40,8 +39,7 @@ CREATE TABLE `agent`  (
 -- ----------------------------
 -- Table structure for auth_resource
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_resource`;
-CREATE TABLE `auth_resource`  (
+CREATE TABLE IF NOT EXISTS `auth_resource`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -54,8 +52,7 @@ CREATE TABLE `auth_resource`  (
 -- ----------------------------
 -- Table structure for auth_role
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_role`;
-CREATE TABLE `auth_role`  (
+CREATE TABLE IF NOT EXISTS `auth_role`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -67,8 +64,7 @@ CREATE TABLE `auth_role`  (
 -- ----------------------------
 -- Table structure for auth_role_resource
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_role_resource`;
-CREATE TABLE `auth_role_resource`  (
+CREATE TABLE IF NOT EXISTS `auth_role_resource`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `role` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `resource` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -78,8 +74,7 @@ CREATE TABLE `auth_role_resource`  (
 -- ----------------------------
 -- Table structure for auth_user
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_user`;
-CREATE TABLE `auth_user`  (
+CREATE TABLE IF NOT EXISTS `auth_user`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `username` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `password` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -97,13 +92,12 @@ CREATE TABLE `auth_user`  (
 -- ----------------------------
 -- Records of auth_user
 -- ----------------------------
-INSERT INTO `auth_user` VALUES ('8a80813a70e647650170eb4cab253357', 'admin', '368020dc2a7d717b694fe9bc00a832c6cf6bc452265f2091f4a4d473eea9bbae7a429ec24f9072fc', '超级管理员', b'1', b'1', 0, NULL, NULL, '2020-03-18 09:40:35');
+INSERT ignore INTO `auth_user` VALUES ('8a80813a70e647650170eb4cab253357', 'admin', '368020dc2a7d717b694fe9bc00a832c6cf6bc452265f2091f4a4d473eea9bbae7a429ec24f9072fc', '超级管理员', b'1', b'1', 0, NULL, NULL, '2020-03-18 09:40:35');
 
 -- ----------------------------
 -- Table structure for auth_user_role
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_user_role`;
-CREATE TABLE `auth_user_role`  (
+CREATE TABLE IF NOT EXISTS `auth_user_role`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `username` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `role` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -113,8 +107,7 @@ CREATE TABLE `auth_user_role`  (
 -- ----------------------------
 -- Table structure for cluster
 -- ----------------------------
-DROP TABLE IF EXISTS `cluster`;
-CREATE TABLE `cluster`  (
+CREATE TABLE IF NOT EXISTS `cluster`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `yarn_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -133,8 +126,7 @@ CREATE TABLE `cluster`  (
 -- ----------------------------
 -- Table structure for cluster_user
 -- ----------------------------
-DROP TABLE IF EXISTS `cluster_user`;
-CREATE TABLE `cluster_user`  (
+CREATE TABLE IF NOT EXISTS `cluster_user`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `cluster_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `queue` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -147,8 +139,7 @@ CREATE TABLE `cluster_user`  (
 -- ----------------------------
 -- Table structure for cmd_record
 -- ----------------------------
-DROP TABLE IF EXISTS `cmd_record`;
-CREATE TABLE `cmd_record`  (
+CREATE TABLE IF NOT EXISTS `cmd_record`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `parent_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `agent_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -180,8 +171,7 @@ CREATE TABLE `cmd_record`  (
 -- ----------------------------
 -- Table structure for compute_framework
 -- ----------------------------
-DROP TABLE IF EXISTS `compute_framework`;
-CREATE TABLE `compute_framework`  (
+CREATE TABLE IF NOT EXISTS `compute_framework`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `version` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -194,8 +184,7 @@ CREATE TABLE `compute_framework`  (
 -- ----------------------------
 -- Table structure for monitor
 -- ----------------------------
-DROP TABLE IF EXISTS `monitor`;
-CREATE TABLE `monitor`  (
+CREATE TABLE IF NOT EXISTS `monitor`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `uid` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `type` int(11) NOT NULL,
@@ -219,8 +208,7 @@ CREATE TABLE `monitor`  (
 -- ----------------------------
 -- Table structure for qrtz_blob_triggers
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_blob_triggers`;
-CREATE TABLE `qrtz_blob_triggers`  (
+CREATE TABLE IF NOT EXISTS `qrtz_blob_triggers`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_GROUP` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -232,8 +220,7 @@ CREATE TABLE `qrtz_blob_triggers`  (
 -- ----------------------------
 -- Table structure for qrtz_calendars
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_calendars`;
-CREATE TABLE `qrtz_calendars`  (
+CREATE TABLE IF NOT EXISTS `qrtz_calendars`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `CALENDAR_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `CALENDAR` blob NOT NULL,
@@ -243,8 +230,7 @@ CREATE TABLE `qrtz_calendars`  (
 -- ----------------------------
 -- Table structure for qrtz_cron_triggers
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_cron_triggers`;
-CREATE TABLE `qrtz_cron_triggers`  (
+CREATE TABLE IF NOT EXISTS `qrtz_cron_triggers`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_GROUP` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -257,8 +243,7 @@ CREATE TABLE `qrtz_cron_triggers`  (
 -- ----------------------------
 -- Table structure for qrtz_fired_triggers
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_fired_triggers`;
-CREATE TABLE `qrtz_fired_triggers`  (
+CREATE TABLE IF NOT EXISTS `qrtz_fired_triggers`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `ENTRY_ID` varchar(95) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -278,8 +263,7 @@ CREATE TABLE `qrtz_fired_triggers`  (
 -- ----------------------------
 -- Table structure for qrtz_job_details
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_job_details`;
-CREATE TABLE `qrtz_job_details`  (
+CREATE TABLE IF NOT EXISTS `qrtz_job_details`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `JOB_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `JOB_GROUP` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -296,8 +280,7 @@ CREATE TABLE `qrtz_job_details`  (
 -- ----------------------------
 -- Table structure for qrtz_locks
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_locks`;
-CREATE TABLE `qrtz_locks`  (
+CREATE TABLE IF NOT EXISTS `qrtz_locks`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `LOCK_NAME` varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`SCHED_NAME`, `LOCK_NAME`) USING BTREE
@@ -306,8 +289,7 @@ CREATE TABLE `qrtz_locks`  (
 -- ----------------------------
 -- Table structure for qrtz_paused_trigger_grps
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_paused_trigger_grps`;
-CREATE TABLE `qrtz_paused_trigger_grps`  (
+CREATE TABLE IF NOT EXISTS `qrtz_paused_trigger_grps`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_GROUP` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`SCHED_NAME`, `TRIGGER_GROUP`) USING BTREE
@@ -316,8 +298,7 @@ CREATE TABLE `qrtz_paused_trigger_grps`  (
 -- ----------------------------
 -- Table structure for qrtz_scheduler_state
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_scheduler_state`;
-CREATE TABLE `qrtz_scheduler_state`  (
+CREATE TABLE IF NOT EXISTS `qrtz_scheduler_state`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `INSTANCE_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `LAST_CHECKIN_TIME` bigint(13) NOT NULL,
@@ -328,8 +309,7 @@ CREATE TABLE `qrtz_scheduler_state`  (
 -- ----------------------------
 -- Table structure for qrtz_simple_triggers
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_simple_triggers`;
-CREATE TABLE `qrtz_simple_triggers`  (
+CREATE TABLE IF NOT EXISTS `qrtz_simple_triggers`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_GROUP` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -343,8 +323,7 @@ CREATE TABLE `qrtz_simple_triggers`  (
 -- ----------------------------
 -- Table structure for qrtz_simprop_triggers
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_simprop_triggers`;
-CREATE TABLE `qrtz_simprop_triggers`  (
+CREATE TABLE IF NOT EXISTS `qrtz_simprop_triggers`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_GROUP` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -366,8 +345,7 @@ CREATE TABLE `qrtz_simprop_triggers`  (
 -- ----------------------------
 -- Table structure for qrtz_triggers
 -- ----------------------------
-DROP TABLE IF EXISTS `qrtz_triggers`;
-CREATE TABLE `qrtz_triggers`  (
+CREATE TABLE IF NOT EXISTS `qrtz_triggers`  (
   `SCHED_NAME` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_NAME` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `TRIGGER_GROUP` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -392,8 +370,7 @@ CREATE TABLE `qrtz_triggers`  (
 -- ----------------------------
 -- Table structure for scheduling
 -- ----------------------------
-DROP TABLE IF EXISTS `scheduling`;
-CREATE TABLE `scheduling`  (
+CREATE TABLE IF NOT EXISTS `scheduling`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `uid` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `script_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -419,8 +396,7 @@ CREATE TABLE `scheduling`  (
 -- ----------------------------
 -- Table structure for script
 -- ----------------------------
-DROP TABLE IF EXISTS `script`;
-CREATE TABLE `script`  (
+CREATE TABLE IF NOT EXISTS `script`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `type` int(11) NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -443,37 +419,9 @@ CREATE TABLE `script`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for task_timer
--- ----------------------------
-DROP TABLE IF EXISTS `task_timer`;
-CREATE TABLE `task_timer`  (
-  `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `uid` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `script_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `sub_script_ids` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `cron` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `cycle` int(11) NULL DEFAULT NULL,
-  `intervals` int(11) NULL DEFAULT NULL,
-  `minute` int(11) NULL DEFAULT NULL,
-  `hour` int(11) NULL DEFAULT NULL,
-  `week` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `start_time` datetime(0) NOT NULL,
-  `end_time` datetime(0) NOT NULL,
-  `repeat_submit` bit(1) NOT NULL,
-  `send_mail` bit(1) NOT NULL,
-  `dingding_hooks` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `status` int(11) NOT NULL,
-  `last_execute_time` datetime(0) NULL DEFAULT NULL,
-  `create_time` datetime(0) NOT NULL,
-  `update_time` datetime(0) NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
 -- Table structure for yarn_app
 -- ----------------------------
-DROP TABLE IF EXISTS `yarn_app`;
-CREATE TABLE `yarn_app`  (
+CREATE TABLE IF NOT EXISTS `yarn_app`  (
   `id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `app_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -492,3 +440,8 @@ CREATE TABLE `yarn_app`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+ALTER TABLE `script` CHANGE COLUMN `time_out` `timeout` int(11) NOT NULL AFTER `script`;
+
+ALTER TABLE `cmd_record` CHANGE COLUMN `time_out` `timeout` int(11) NOT NULL AFTER `status`;
+ALTER TABLE `cmd_record` ADD COLUMN `scheduling_instance_id` varchar(255) NULL AFTER `scheduling_id`;

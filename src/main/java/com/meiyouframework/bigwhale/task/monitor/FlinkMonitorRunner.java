@@ -37,12 +37,12 @@ public class FlinkMonitorRunner extends AbstractMonitorRunner {
                     // 重启
                     boolean restart = restart();
                     if (restart) {
-                        notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_NO_RUNNING_JOB_RESTART);
+                        notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_NO_RUNNING_JOB_RESTART);
                     } else {
-                        notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_NO_RUNNING_JOB_RESTART_FAILED);
+                        notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_NO_RUNNING_JOB_RESTART_FAILED);
                     }
                 } else {
-                    notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_NO_RUNNING_JOB);
+                    notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_NO_RUNNING_JOB);
                 }
                 return;
             }
@@ -74,12 +74,12 @@ public class FlinkMonitorRunner extends AbstractMonitorRunner {
                     // 重启
                     boolean restart = restart();
                     if (restart) {
-                        notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_BACKPRESSURE_RESTART + "(trouble vertex: " + backpressure.nextVertex + ")");
+                        notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_BACKPRESSURE_RESTART + "(trouble vertex: " + backpressure.nextVertex + ")");
                     } else {
-                        notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_BACKPRESSURE_RESTART_FAILED + "(trouble vertex: " + backpressure.nextVertex + ")");
+                        notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_BACKPRESSURE_RESTART_FAILED + "(trouble vertex: " + backpressure.nextVertex + ")");
                     }
                 } else {
-                    notice(null, monitor, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_BACKPRESSURE + "(trouble vertex: " + backpressure.nextVertex + ")");
+                    notice(null, monitor, null, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_BACKPRESSURE + "(trouble vertex: " + backpressure.nextVertex + ")");
                 }
             }
         } else {
@@ -89,22 +89,22 @@ public class FlinkMonitorRunner extends AbstractMonitorRunner {
                 boolean restart = restart();
                 if (restart) {
                     if (httpYarnApp != null) {
-                        notice(null, monitor, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, httpYarnApp.getFinalStatus()));
+                        notice(null, monitor, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, httpYarnApp.getFinalStatus()));
                     } else {
-                        notice(null, monitor, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, "UNKNOWN"));
+                        notice(null, monitor, null, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, "UNKNOWN"));
                     }
                 } else {
                     if (httpYarnApp != null) {
-                        notice(null, monitor, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART_FAILED, httpYarnApp.getFinalStatus()));
+                        notice(null, monitor, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART_FAILED, httpYarnApp.getFinalStatus()));
                     } else {
-                        notice(null, monitor, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART_FAILED, "UNKNOWN"));
+                        notice(null, monitor, null, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART_FAILED, "UNKNOWN"));
                     }
                 }
             } else {
                 if (httpYarnApp != null) {
-                    notice(null, monitor, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL, httpYarnApp.getFinalStatus()));
+                    notice(null, monitor, null, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL, httpYarnApp.getFinalStatus()));
                 } else {
-                    notice(null, monitor, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL, "UNKNOWN"));
+                    notice(null, monitor, null, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL, "UNKNOWN"));
                 }
             }
         }

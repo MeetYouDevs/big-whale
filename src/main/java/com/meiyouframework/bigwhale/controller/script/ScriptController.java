@@ -174,7 +174,7 @@ public class ScriptController extends BaseController {
                 .scriptId(scriptInfo.getId())
                 .createTime(new Date())
                 .content(scriptInfo.getScript())
-                .timeOut(scriptInfo.getTimeOut())
+                .timeout(scriptInfo.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
                 .agentId(agentId)
                 .clusterId(scriptInfo.getClusterId())

@@ -208,7 +208,7 @@
                                         </div>
                                     </th>
                                     <th>
-                                        脚本名称
+                                        脚本
                                     </th>
                                     <th>
                                         监控频率(cron表达式)
@@ -281,7 +281,7 @@
     var app = angular.module('content-app', []);
     registerPage(app);
     registerAuth(app);
-    app.controller('content-controller', function ($scope, $http, $timeout) {
+    app.controller('content-controller', function ($scope, $http) {
         getScript($scope, $http, true, false);
         if (user.root) {
             getAuthUser($scope, $http);
@@ -371,10 +371,6 @@
         $scope.reload = function () {
             $scope.options.mypage.reload();
         };
-
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
 
     });
 

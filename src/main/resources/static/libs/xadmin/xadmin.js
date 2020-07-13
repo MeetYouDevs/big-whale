@@ -406,6 +406,10 @@ layui.use(['layer', 'element', 'jquery'], function () {
     $('.page-content,#tab_show,.container,.left-nav').click(function (event) {
         $('#tab_right').hide();
         $('#tab_show').hide();
+        setTimeout(function () {
+            var uri = $('.layui-tab-item.layui-show > iframe')[0].attributes.src.value;
+            location.href = location.href.split('#')[0] + '#/' + uri;
+        }, 100);
     });
 
     // 页面加载完要做的

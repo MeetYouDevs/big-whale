@@ -125,7 +125,7 @@
                             </select>
                         </div>
                         <div class="col-sm-5">
-                            <p class="help-block">当已经存在相关yarn任务时，是否允许再次提交该任务</p>
+                            <p class="help-block">上一次调度任务未完成的情况下，是否允许提交当前调度任务</p>
                         </div>
                     </div>
                     <div class="form-group">
@@ -220,7 +220,7 @@
                                         用户
                                     </th>
                                     <th>
-                                        脚本名称
+                                        脚本
                                     </th>
                                     <th>
                                         脚本类型
@@ -457,10 +457,6 @@
         $scope.reload = function () {
             $scope.options.mypage.reload();
         };
-
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
 
         //初始化切换开关
         $visualCheckbox.bootstrapSwitch({

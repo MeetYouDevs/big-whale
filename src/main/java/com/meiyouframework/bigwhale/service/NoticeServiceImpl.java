@@ -35,23 +35,29 @@ public class NoticeServiceImpl implements NoticeService {
     @Override
     public void sendMail(String to, String content) {
         if (!MAIL_PATTERN.matcher(to).find()) {
+            LOGGER.error("illegal email address, use console\n" + content);
             return;
         }
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         simpleMailMessage.setFrom(from);
         simpleMailMessage.setTo(to);
-        simpleMailMessage.setSubject("MY大数据告警");
+        simpleMailMessage.setSubject("巨鲸平台告警");
         simpleMailMessage.setText(content);
-        javaMailSender.send(simpleMailMessage);
+        try {
+            javaMailSender.send(simpleMailMessage);
+        } catch (Exception e) {
+            LOGGER.error("send email error", e);
+        }
     }
 
     @Override
     public void sendDingding(String[] ats, String content) {
         if (!dingdingConfig.isEnabled()) {
+            LOGGER.error("dingding alarm is not enabled, use console\n" + content);
             return;
         }
         if (StringUtils.isBlank(dingdingConfig.getWatcherToken())) {
-            LOGGER.warn("public group watch token for dingding is not set");
+            LOGGER.error("dingding public watch token is not set, use console\n" + content);
             return;
         }
         sendDingding(dingdingConfig.getWatcherToken(), ats, content);
@@ -60,6 +66,7 @@ public class NoticeServiceImpl implements NoticeService {
     @Override
     public void sendDingding(String token, String[] ats, String content) {
         if (!dingdingConfig.isEnabled()) {
+            LOGGER.error("dingding alarm is not enabled, use console\n" + content);
             return;
         }
         Map<String, Object> reqBody = new HashMap<>();

@@ -43,22 +43,22 @@ public class SchedulingController extends BaseController {
             tokens.add("scriptId=" + req.getScriptId());
         }
         Page<Scheduling> pages = schedulingService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";")));
-        return pages.map((taskTimer) -> {
+        return pages.map((scheduling) -> {
             DtoScheduling dtoScheduling = new DtoScheduling();
-            BeanUtils.copyProperties(taskTimer, dtoScheduling);
-            if (StringUtils.isNotBlank(taskTimer.getSubScriptIds())) {
+            BeanUtils.copyProperties(scheduling, dtoScheduling);
+            if (StringUtils.isNotBlank(scheduling.getSubScriptIds())) {
                 List<String> subScriptIds = new ArrayList<>();
-                Collections.addAll(subScriptIds, taskTimer.getSubScriptIds().split(","));
+                Collections.addAll(subScriptIds, scheduling.getSubScriptIds().split(","));
                 dtoScheduling.setSubScriptIds(subScriptIds);
             }
-            if (StringUtils.isNotBlank(taskTimer.getWeek())) {
+            if (StringUtils.isNotBlank(scheduling.getWeek())) {
                 List<String> weeks = new ArrayList<>();
-                Collections.addAll(weeks, taskTimer.getWeek().split(","));
+                Collections.addAll(weeks, scheduling.getWeek().split(","));
                 dtoScheduling.setWeek(weeks);
             }
-            if (StringUtils.isNotBlank(taskTimer.getDingdingHooks())) {
+            if (StringUtils.isNotBlank(scheduling.getDingdingHooks())) {
                 List<String> dingdingHooks = new ArrayList<>();
-                Collections.addAll(dingdingHooks, taskTimer.getDingdingHooks().split(","));
+                Collections.addAll(dingdingHooks, scheduling.getDingdingHooks().split(","));
                 dtoScheduling.setDingdingHooks(dingdingHooks);
             }
             return dtoScheduling;
@@ -68,29 +68,29 @@ public class SchedulingController extends BaseController {
     @RequestMapping(value = "/getall.api", method = RequestMethod.GET)
     public Iterable<DtoScheduling> getAll() {
         LoginUser user = getCurrentUser();
-        Iterable<Scheduling> taskTimers;
+        Iterable<Scheduling> schedulings;
         if (!user.isRoot()) {
-            taskTimers = schedulingService.findByQuery("uid=" + user.getId());
+            schedulings = schedulingService.findByQuery("uid=" + user.getId());
         } else {
-            taskTimers = schedulingService.findAll();
+            schedulings = schedulingService.findAll();
         }
         List<DtoScheduling> dtoSchedulings = new ArrayList<>();
-        taskTimers.forEach(taskTimer -> {
+        schedulings.forEach(scheduling -> {
             DtoScheduling dtoScheduling = new DtoScheduling();
-            BeanUtils.copyProperties(taskTimer, dtoScheduling);
-            if (StringUtils.isNotBlank(taskTimer.getSubScriptIds())) {
+            BeanUtils.copyProperties(scheduling, dtoScheduling);
+            if (StringUtils.isNotBlank(scheduling.getSubScriptIds())) {
                 List<String> subScriptIds = new ArrayList<>();
-                Collections.addAll(subScriptIds, taskTimer.getSubScriptIds().split(","));
+                Collections.addAll(subScriptIds, scheduling.getSubScriptIds().split(","));
                 dtoScheduling.setSubScriptIds(subScriptIds);
             }
-            if (StringUtils.isNotBlank(taskTimer.getWeek())) {
+            if (StringUtils.isNotBlank(scheduling.getWeek())) {
                 List<String> weeks = new ArrayList<>();
-                Collections.addAll(weeks, taskTimer.getWeek().split(","));
+                Collections.addAll(weeks, scheduling.getWeek().split(","));
                 dtoScheduling.setWeek(weeks);
             }
-            if (StringUtils.isNotBlank(taskTimer.getDingdingHooks())) {
+            if (StringUtils.isNotBlank(scheduling.getDingdingHooks())) {
                 List<String> dingdingHooks = new ArrayList<>();
-                Collections.addAll(dingdingHooks, taskTimer.getDingdingHooks().split(","));
+                Collections.addAll(dingdingHooks, scheduling.getDingdingHooks().split(","));
                 dtoScheduling.setDingdingHooks(dingdingHooks);
             }
             dtoSchedulings.add(dtoScheduling);
@@ -112,6 +112,7 @@ public class SchedulingController extends BaseController {
         if (req.getId() == null) {
             req.setCreateTime(now);
         }
+        req.setLastExecuteTime(null);
         req.setUpdateTime(now);
         Scheduling scheduling = new Scheduling();
         BeanUtils.copyProperties(req, scheduling);

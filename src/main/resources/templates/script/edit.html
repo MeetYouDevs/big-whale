@@ -79,7 +79,7 @@
                             <label for="select_agentId" class="col-sm-2 control-label">机器&nbsp;<B>*</B></label>
                             <div class="col-sm-4">
                                 <select id="select_agentId" class="form-control selectpicker show-tick"
-                                        ng-model="editItem.agentId" ng-options="item.id as item.host for item in userAgentList">
+                                        ng-model="editItem.agentId" ng-options="item.id as item.host for item in agentList">
                                     <option value="">请选择</option>
                                 </select>
                             </div>
@@ -113,11 +113,11 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="input_timeOut" class="col-sm-2 control-label">
+                            <label for="input_timeout" class="col-sm-2 control-label">
                                 脚本执行超时(分)<B class="help" data-toggle="tooltip" data-placement="top" title="只与当前脚本的执行时间相关，与Spark或Flink任务的运行时间无关，不能超过5分钟">?</B>&nbsp;<B>*</B>
                             </label>
                             <div class="col-sm-4">
-                                <input id="input_timeOut" class="form-control" type="number" autocomplete="off" ng-model="editItem.timeOut" required max="5">
+                                <input id="input_timeout" class="form-control" type="number" autocomplete="off" ng-model="editItem.timeout" required max="5">
                             </div>
                         </div>
                         <div class="form-group">
@@ -470,7 +470,7 @@
                                         </select>
                                     </div>
                                     <div class="col-sm-5">
-                                        <p class="help-block">当已经存在相关yarn任务时，是否允许再次提交该任务</p>
+                                        <p class="help-block">上一次调度任务未完成的情况下，是否允许提交当前调度任务</p>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -667,7 +667,7 @@
         getClusterSync($scope);
         getComputeFrameworkVersionSync($scope);
         appendScriptType($scope);
-        getUserAgent($scope, $http);
+        getAgent($scope, $http);
         getClusterUser($scope, $http);
         getScript($scope, $http, false, true);
         appendBooleanType($scope);
@@ -732,8 +732,8 @@
             'createDefault': function () {
                 return {
                     'm': 'yarn-cluster',
-                    'yjm': '512M',
-                    'ytm': '1024M',
+                    'yjm': '512',
+                    'ytm': '1024',
                     'yn': '1',
                     'ys': '1',
                     '$command': $scope.flinkVersionList[0]['command'],
@@ -918,7 +918,7 @@
             } else {
                 $scope.editItem = {
                     type: 1,
-                    timeOut: 2,
+                    timeout: 2,
                     spark: Spark.createDefault(),
                     flink: Flink.createDefault(),
                     nodeBlackListType: 'stream',

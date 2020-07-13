@@ -28,7 +28,7 @@ public class Script {
     private String name;
     private String description;
     private Integer type;
-    private Integer timeOut;
+    private Integer timeout;
     private String script;
     private String input;
     private String output;

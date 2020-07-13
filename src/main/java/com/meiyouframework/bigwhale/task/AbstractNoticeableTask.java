@@ -19,31 +19,28 @@ import java.util.List;
  */
 public abstract class AbstractNoticeableTask {
 
-    protected void notice(CmdRecord cmdRecord, Monitor monitor, String appId, String errorType) {
+    protected void notice(CmdRecord cmdRecord, Monitor monitor, Scheduling scheduling, String appId, String errorType) {
         UserService userService = SpringContextUtils.getBean(UserService.class);
         ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
         Script script = null;
         User user = null;
         String email = null;
         String dingDingHooks = null;
-        if (cmdRecord != null) {
-            script = scriptService.findById(cmdRecord.getScriptId());
-            user = userService.findById(cmdRecord.getUid());
-            if (StringUtils.isNotBlank(cmdRecord.getSchedulingId())) {
-                SchedulingService schedulingService = SpringContextUtils.getBean(SchedulingService.class);
-                Scheduling scheduling = schedulingService.findById(cmdRecord.getSchedulingId());
-                email = scheduling.getSendMail() ? user.getEmail() : null;
-                dingDingHooks = scheduling.getDingdingHooks();
-            } else {
-                //手动执行
-                email = user.getEmail();
-            }
-        }
         if (monitor != null) {
             script = scriptService.findById(monitor.getScriptId());
             user = userService.findById(monitor.getUid());
             email = monitor.getSendMail() ? user.getEmail() : null;
             dingDingHooks = monitor.getDingdingHooks();
+        } else if (scheduling != null) {
+            script = scriptService.findById(cmdRecord.getScriptId());
+            user = userService.findById(scheduling.getUid());
+            email = scheduling.getSendMail() ? user.getEmail() : null;
+            dingDingHooks = scheduling.getDingdingHooks();
+        } else if (cmdRecord != null) {
+            //手动执行
+            script = scriptService.findById(cmdRecord.getScriptId());
+            user = userService.findById(cmdRecord.getUid());
+            email = user.getEmail();
         }
         if (StringUtils.isBlank(email) && StringUtils.isBlank(dingDingHooks)) {
             return;
@@ -69,7 +66,7 @@ public abstract class AbstractNoticeableTask {
             noticeService.sendMail(email, content);
         }
         //发送钉钉
-        boolean publicWatchFlag = true;
+        boolean publicWatchFlag = monitor != null || scheduling != null;
         if (StringUtils.isNotBlank(dingDingHooks)) {
             String[] ats = null;
             for (String token : dingDingHooks.split(",")) {

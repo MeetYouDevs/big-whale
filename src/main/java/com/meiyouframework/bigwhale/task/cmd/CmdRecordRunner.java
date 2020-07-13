@@ -8,22 +8,25 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.config.SshConfig;
-import com.meiyouframework.bigwhale.service.ClusterService;
+import com.meiyouframework.bigwhale.entity.Scheduling;
+import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.task.AbstractCmdRecordTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import com.meiyouframework.bigwhale.entity.Agent;
 import com.meiyouframework.bigwhale.entity.CmdRecord;
 import com.meiyouframework.bigwhale.entity.Script;
-import com.meiyouframework.bigwhale.service.AgentService;
-import com.meiyouframework.bigwhale.service.CmdRecordService;
-import com.meiyouframework.bigwhale.service.ScriptService;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -41,11 +44,12 @@ import java.util.regex.Pattern;
 public class CmdRecordRunner extends AbstractCmdRecordTask implements InterruptableJob {
 
     private static final Pattern PATTERN = Pattern.compile("application_\\d+_\\d+");
+    private static final Logger LOGGER = LoggerFactory.getLogger(CmdRecordRunner.class);
 
+    private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
     private Thread thread;
     private volatile boolean commandFinish = false;
     private volatile boolean interrupted = false;
-    private CmdRecordService cmdRecordService;
     private CmdRecord cmdRecord;
     private String yarnUrl;
 
@@ -61,19 +65,19 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
     public void execute(JobExecutionContext jobExecutionContext) {
         thread = Thread.currentThread();
         String cmdRecordId = jobExecutionContext.getJobDetail().getKey().getName();
-        cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
         cmdRecord = cmdRecordService.findById(cmdRecordId);
-        if (cmdRecord.getTimeOut() == null) {
-            cmdRecord.setTimeOut(5);
+        if (cmdRecord.getTimeout() == null) {
+            cmdRecord.setTimeout(5);
         }
-        Date timeoutTime = DateUtils.addMinutes(cmdRecord.getCreateTime(), cmdRecord.getTimeOut());
+        Date timeoutTime = DateUtils.addMinutes(cmdRecord.getCreateTime(), cmdRecord.getTimeout());
         //超时的情况统一由CmdTimeoutJob处理
         if (new Date().after(timeoutTime)) {
             return;
         }
         //更新cmdRecord正在执行
+        Date now = new Date();
         cmdRecord.setStatus(Constant.EXEC_STATUS_DOING);
-        cmdRecord.setStartTime(new Date());
+        cmdRecord.setStartTime(now);
         cmdRecordService.save(cmdRecord);
         AgentService agentService = SpringContextUtils.getBean(AgentService.class);
         Agent agent = agentService.findById(cmdRecord.getAgentId());
@@ -83,6 +87,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
             yarnUrl = clusterService.findById(cmdRecord.getClusterId()).getYarnUrl();
         }
+        Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
         Connection conn = new Connection(agent.getIp());
         Session session = null;
         try {
@@ -103,34 +108,14 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                     command = command.replace(entry.getKey(), String.valueOf(entry.getValue()));
                 }
             }
+            //为确保调度流程的准确性，应用名称添加实例ID
+            if (scheduling != null) {
+                command = command.replace(" " + script.getApp() + " ", " " + script.getApp() + "_instance" + dateFormat.format(now) + " ");
+            }
             session.execCommand(command);
-            //异步执行
             if (!interrupted) {
-                ExecutorService executorService = Executors.newFixedThreadPool(2);
-                try {
-                    CountDownLatch countDownLatch = new CountDownLatch(2);
-                    final InputStream stdOut = new StreamGobbler(session.getStdout());
-                    final InputStream stdErr = new StreamGobbler(session.getStderr());
-                    executorService.execute(() -> {
-                        try {
-                            readOutput(true, stdOut);
-                        } finally {
-                            countDownLatch.countDown();
-                        }
-                    });
-                    executorService.execute(() -> {
-                        try {
-                            readOutput(false, stdErr);
-                        } finally {
-                            countDownLatch.countDown();
-                        }
-                    });
-                    countDownLatch.await();
-                } catch (InterruptedException e) {
-
-                } finally {
-                    executorService.shutdown();
-                }
+                //并发执行读取
+                readOutput(session);
             }
             //主逻辑执行结束，就不再需要执行interrupt()
             commandFinish = true;
@@ -143,17 +128,20 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FINISH);
                     if (script.getType() == Constant.SCRIPT_TYPE_SHELL) {
                         //Shell脚本提交子任务(定时任务)
-                        submitSubCmdRecord(cmdRecord, cmdRecordService, agentService, scriptService);
+                        submitNextCmdRecord(cmdRecord, scheduling, agentService, scriptService);
                     } else {
                         //设置yarn任务状态
                         if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH || script.getType() == Constant.SCRIPT_TYPE_FLINK_BATCH) {
                             cmdRecord.setJobFinalStatus("UNDEFINED");
                         }
+                        if (cmdRecord.getJobId() == null) {
+                            LOGGER.error("未能读取到Yarn应用ID！为确保告警的准确性，请将提交Yarn任务的日志级别设置为: INFO");
+                        }
                     }
                 } else {
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
                     //处理失败(定时任务)
-                    notice(cmdRecord, null, null, Constant.ERROR_TYPE_FAILED);
+                    notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_FAILED);
                 }
                 cmdRecord.setFinishTime(new Date());
             } else {
@@ -162,16 +150,16 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             }
             cmdRecordService.save(cmdRecord);
         } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
             if (!interrupted) {
                 cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
-                notice(cmdRecord, null, null, Constant.ERROR_TYPE_FAILED);
+                notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_FAILED);
             } else {
                 CmdRecord recordForTimeout = cmdRecordService.findById(cmdRecordId);
                 cmdRecord.setStatus(recordForTimeout.getStatus());
             }
             cmdRecord.setErrors(e.getMessage());
             cmdRecordService.save(cmdRecord);
-            LOGGER.error(e.getMessage(), e);
         } finally {
             if (session != null) {
                 session.close();
@@ -180,7 +168,35 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
         }
     }
 
-    private void readOutput(boolean stdout, InputStream in) {
+    private void readOutput(Session session) {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        try {
+            CountDownLatch countDownLatch = new CountDownLatch(2);
+            final InputStream stdOut = new StreamGobbler(session.getStdout());
+            final InputStream stdErr = new StreamGobbler(session.getStderr());
+            executorService.execute(() -> {
+                try {
+                    readContent(true, stdOut);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+            executorService.execute(() -> {
+                try {
+                    readContent(false, stdErr);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
+    private void readContent(boolean stdout, InputStream in) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[1024];
             int length;
