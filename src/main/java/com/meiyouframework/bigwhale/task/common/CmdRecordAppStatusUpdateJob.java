@@ -49,17 +49,26 @@ public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implement
             return;
         }
         ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
+        YarnAppService yarnAppService = SpringContextUtils.getBean(YarnAppService.class);
         for (CmdRecord cmdRecord : records) {
             Cluster cluster = clusterService.findById(cmdRecord.getClusterId());
             Script script = scriptService.findById(cmdRecord.getScriptId());
             HttpYarnApp httpYarnApp;
             if (cmdRecord.getJobId() != null) {
+                YarnApp yarnApp = yarnAppService.findOneByQuery("scriptId=" + cmdRecord.getScriptId() + ";appId=" + cmdRecord.getJobId());
+                if (yarnApp != null) {
+                    continue;
+                }
                 httpYarnApp = YarnApiUtils.getApp(cluster.getYarnUrl(), cmdRecord.getJobId());
                 if (httpYarnApp != null && "UNDEFINED".equals(httpYarnApp.getFinalStatus())) {
                     continue;
                 }
                 updateStatus(cmdRecord, script, httpYarnApp);
             } else {
+                YarnApp yarnApp = yarnAppService.findOneByQuery("scriptId=" + cmdRecord.getScriptId() + ";name=" + script.getApp() + "_instance" + dateFormat.format(cmdRecord.getStartTime()));
+                if (yarnApp != null) {
+                    continue;
+                }
                 httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), script.getUser(), script.getQueue(), script.getApp() + "_instance" + dateFormat.format(cmdRecord.getStartTime()), 3);
                 if (httpYarnApp != null) {
                     continue;
