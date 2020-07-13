@@ -17,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.meiyouframework.bigwhale.common.Constant.APP_APPEND_SYMBOL;
 
@@ -28,6 +29,8 @@ import static com.meiyouframework.bigwhale.common.Constant.APP_APPEND_SYMBOL;
  */
 @DisallowConcurrentExecution
 public class RefreshActiveStateAppsJob extends AbstractNoticeableTask implements InterruptableJob {
+
+    private static final Pattern PATTERN = Pattern.compile("_instance\\d+$");
 
     private static int checkAppDuplicateSkipCount = 0;
     private static int checkAppMemorySkipCount = 0;
@@ -80,7 +83,12 @@ public class RefreshActiveStateAppsJob extends AbstractNoticeableTask implements
             Map<String, Script> scriptInfoMap = scriptService.getAppMap(clusterId);
             List<YarnApp> appInfos = new ArrayList<>();
             for (HttpYarnApp app : apps) {
-                Script script = scriptInfoMap.get(app.getUser() + APP_APPEND_SYMBOL + app.getQueue() + APP_APPEND_SYMBOL + app.getName());
+                Script script;
+                if (PATTERN.matcher(app.getName()).find()) {
+                    script = scriptInfoMap.get(app.getUser() + APP_APPEND_SYMBOL + app.getQueue() + APP_APPEND_SYMBOL + app.getName().split("_instance")[0]);
+                } else {
+                    script = scriptInfoMap.get(app.getUser() + APP_APPEND_SYMBOL + app.getQueue() + APP_APPEND_SYMBOL + app.getName());
+                }
                 YarnApp yarnApp = new YarnApp();
                 BeanUtils.copyProperties(app, yarnApp);
                 yarnApp.setId(null);
