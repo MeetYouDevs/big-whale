@@ -2,7 +2,6 @@ package com.meiyouframework.bigwhale.task.timed;
 
 import com.alibaba.fastjson.JSON;
 import com.meiyouframework.bigwhale.common.Constant;
-import com.meiyouframework.bigwhale.util.YarnApiUtils;
 import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import com.meiyouframework.bigwhale.util.SpringContextUtils;
@@ -12,8 +11,12 @@ import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Suxy
@@ -25,16 +28,30 @@ public class TimedTask implements Job {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TimedTask.class);
 
+    private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+    private CmdRecordService cmdRecordService;
+    private ScriptService scriptService;
+
+    public TimedTask() {
+        cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
+        scriptService = SpringContextUtils.getBean(ScriptService.class);
+    }
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
-        String taskTimerId = jobExecutionContext.getJobDetail().getKey().getName();
+        String schedulingId = jobExecutionContext.getJobDetail().getKey().getName();
         SchedulingService schedulingService = SpringContextUtils.getBean(SchedulingService.class);
-        Scheduling scheduling = schedulingService.findById(taskTimerId);
-        ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
-        Script script = scriptService.findById(scheduling.getScriptId());
-        scheduling.setLastExecuteTime(new Date());
-        schedulingService.save(scheduling);
         AgentService agentService = SpringContextUtils.getBean(AgentService.class);
+        Scheduling scheduling = schedulingService.findById(schedulingId);
+        if (scheduling.getLastExecuteTime() != null && !scheduling.getRepeatSubmit()) {
+            if (!isLastTimeCompleted(scheduling)) {
+                return;
+            }
+        }
+        Date now = new Date();
+        scheduling.setLastExecuteTime(now);
+        schedulingService.save(scheduling);
+        Script script = scriptService.findById(scheduling.getScriptId());
         String agentId = script.getAgentId();
         if (StringUtils.isBlank(agentId)) {
             Agent agent = agentService.getByClusterId(script.getClusterId());
@@ -42,40 +59,18 @@ public class TimedTask implements Job {
                 agentId = agent.getId();
             }
         }
-        // 不可重复提交
-        if (scheduling.getRepeatSubmit() != null && !scheduling.getRepeatSubmit()) {
-            //排除脚本任务
-            if (script.getType() != Constant.SCRIPT_TYPE_SHELL) {
-                YarnAppService yarnAppService = SpringContextUtils.getBean(YarnAppService.class);
-                ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
-                //先从yarn_app中查找
-                YarnApp yarnApp = yarnAppService.findOneByQuery("scriptId=" + script.getId());
-                if (yarnApp != null) {
-                    if (yarnApp.getName().equals(script.getApp())) {
-                        return;
-                    }
-                }
-                //如果不存在，再实时请求查询一次
-                Cluster cluster = clusterService.findById(script.getClusterId());
-                if (cluster != null) {
-                    if (YarnApiUtils.getActiveApp(cluster.getYarnUrl(), script.getUser(), script.getQueue(), script.getApp(), 1) != null) {
-                        return;
-                    }
-                }
-            }
-        }
-        CmdRecordService cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
         CmdRecord cmdRecord = CmdRecord.builder()
                 .uid(scheduling.getUid())
                 .scriptId(script.getId())
                 .subScriptIds(scheduling.getSubScriptIds())
                 .createTime(new Date())
                 .content(script.getScript())
-                .timeOut(script.getTimeOut())
+                .timeout(script.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
                 .agentId(agentId)
                 .clusterId(script.getClusterId())
                 .schedulingId(scheduling.getId())
+                .schedulingInstanceId(dateFormat.format(now))
                 .build();
         if (!jobExecutionContext.getMergedJobDataMap().isEmpty()) {
             cmdRecord.setArgs(JSON.toJSONString(jobExecutionContext.getMergedJobDataMap()));
@@ -87,6 +82,44 @@ public class TimedTask implements Job {
         } catch (SchedulerException e) {
             LOGGER.error("schedule submit error", e);
         }
+    }
+
+    private boolean isLastTimeCompleted(Scheduling scheduling) {
+        List<CmdRecord> cmdRecords = cmdRecordService.findByQuery(
+                ";schedulingId=" + scheduling.getId() +
+                        ";schedulingInstanceId=" +  dateFormat.format(scheduling.getLastExecuteTime()) +
+                        ";status!=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING,
+                Sort.by(Sort.Direction.DESC, "createTime"));
+        if (cmdRecords.isEmpty()) {
+            return false;
+        }
+        CmdRecord lastCmdRecord = cmdRecords.get(0);
+        Script script = scriptService.findById(lastCmdRecord.getScriptId());
+        if (StringUtils.isBlank(scheduling.getSubScriptIds())) {
+            if (isYarnBatch(script)) {
+                return !"UNDEFINED".equals(lastCmdRecord.getJobFinalStatus());
+            } else {
+                return true;
+            }
+        } else {
+            if (cmdRecords.size() == (1 + scheduling.getSubScriptIds().split(",").length)) {
+                if (isYarnBatch(script)) {
+                    return !"UNDEFINED".equals(lastCmdRecord.getJobFinalStatus());
+                } else {
+                    return true;
+                }
+            } else {
+                if (isYarnBatch(script)) {
+                    return !"UNDEFINED".equals(lastCmdRecord.getJobFinalStatus()) && !"SUCCEEDED".equals(lastCmdRecord.getJobFinalStatus());
+                } else {
+                    return Constant.EXEC_STATUS_FINISH != lastCmdRecord.getStatus();
+                }
+            }
+        }
+    }
+
+    private boolean isYarnBatch(Script script) {
+        return script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH || script.getType() == Constant.SCRIPT_TYPE_FLINK_BATCH;
     }
 
     public static void build(Scheduling scheduling) throws SchedulerException {

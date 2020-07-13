@@ -186,10 +186,9 @@
     registerAuth(app);
     registerPage(app);
 
-    app.controller('content-controller', function ($scope, $http, $timeout) {
+    app.controller('content-controller', function ($scope, $http) {
         appendEnableType($scope);
         getCluster($scope, $http);
-        getAuthUser($scope, $http);
 
         $scope.onNewItem = function () {
             $scope.editItem = {status: 1};
@@ -233,9 +232,6 @@
             $scope.options.mypage.reload();
         };
 
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
     });
 </script>
 </body>

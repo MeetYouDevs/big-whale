@@ -35,6 +35,7 @@ public class NoticeServiceImpl implements NoticeService {
     @Override
     public void sendMail(String to, String content) {
         if (!MAIL_PATTERN.matcher(to).find()) {
+            LOGGER.error("illegal email address, use console\n" + content);
             return;
         }
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
@@ -42,7 +43,11 @@ public class NoticeServiceImpl implements NoticeService {
         simpleMailMessage.setTo(to);
         simpleMailMessage.setSubject("巨鲸平台告警");
         simpleMailMessage.setText(content);
-        javaMailSender.send(simpleMailMessage);
+        try {
+            javaMailSender.send(simpleMailMessage);
+        } catch (Exception e) {
+            LOGGER.error("send email error", e);
+        }
     }
 
     @Override

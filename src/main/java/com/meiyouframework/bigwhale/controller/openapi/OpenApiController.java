@@ -84,7 +84,7 @@ public class OpenApiController extends BaseController {
                 .scriptId(script.getId())
                 .createTime(new Date())
                 .content(script.getScript())
-                .timeOut(script.getTimeOut())
+                .timeout(script.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
                 .agentId(agentId)
                 .clusterId(script.getClusterId())

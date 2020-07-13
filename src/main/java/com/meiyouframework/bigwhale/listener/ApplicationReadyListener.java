@@ -78,14 +78,14 @@ public class ApplicationReadyListener implements ApplicationListener<Application
 
     private void startTimerTask() {
         List<Scheduling> schedulings = schedulingService.findByQuery("status=" + Constant.STATUS_ON);
-        schedulings.forEach(taskTimer -> {
+        schedulings.forEach(scheduling -> {
             try {
-                if (new Date().after(taskTimer.getEndTime())) {
-                    SchedulerUtils.deleteJob(taskTimer.getId(), Constant.JobGroup.TIMED);
-                    taskTimer.setStatus(Constant.STATUS_OFF);
-                    schedulingService.save(taskTimer);
+                if (new Date().after(scheduling.getEndTime())) {
+                    SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.TIMED);
+                    scheduling.setStatus(Constant.STATUS_OFF);
+                    schedulingService.save(scheduling);
                 } else {
-                    TimedTask.build(taskTimer);
+                    TimedTask.build(scheduling);
                 }
             } catch (SchedulerException e) {
                 logger.error("schedule submit error", e);

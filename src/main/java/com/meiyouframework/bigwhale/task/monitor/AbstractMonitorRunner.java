@@ -126,7 +126,7 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
                 .scriptId(script.getId())
                 .createTime(new Date())
                 .content(script.getScript())
-                .timeOut(script.getTimeOut())
+                .timeout(script.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
                 .agentId(agent.getId())
                 .clusterId(script.getClusterId())

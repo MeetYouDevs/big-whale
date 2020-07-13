@@ -183,7 +183,7 @@
     var app = angular.module('content-app', []);
     registerAuth(app);
     registerPage(app);
-    app.controller('content-controller', function ($scope, $http, $timeout) {
+    app.controller('content-controller', function ($scope, $http) {
         var clusterId = [[${clusterId}]];
         appendEnableType($scope);
         getCluster($scope, $http);
@@ -257,9 +257,6 @@
             $scope.options.mypage.reload();
         };
 
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
     });
 </script>
 </body>

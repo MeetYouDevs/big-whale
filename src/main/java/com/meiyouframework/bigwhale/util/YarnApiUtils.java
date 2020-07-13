@@ -20,7 +20,6 @@ public class YarnApiUtils {
         HEADERS = new HashMap<>();
         HEADERS.put("Content-Type", "application/json");
         HEADERS.put("Accept", "application/json; charset=UTF-8");
-        HEADERS.put("Authorization", "Basic bWVpeW91OnNoYWl0YWl5YW5n");
     }
 
     private YarnApiUtils() {
@@ -108,6 +107,22 @@ public class YarnApiUtils {
                 break;
             }
             retries --;
+        }
+        return null;
+    }
+
+    /**
+     * 通过ID获取应用信息
+     * @param yarnUrl
+     * @param appId
+     * @return
+     */
+    public static HttpYarnApp getApp(String yarnUrl, String appId) {
+        String url = getAppsUrl(yarnUrl) + "/" + appId;
+        OkHttpUtils.Result result = OkHttpUtils.doGet(url, null, HEADERS);
+        if (result.isSuccessful && StringUtils.isNotEmpty(result.content)) {
+            JSONObject jsonObject = JSON.parseObject(result.content);
+            return JSON.parseObject(jsonObject.getString("app"), HttpYarnApp.class);
         }
         return null;
     }
@@ -290,15 +305,13 @@ public class YarnApiUtils {
 
     private static List<HttpYarnApp> parseAppsApiResponse(OkHttpUtils.Result result) {
         if (result.isSuccessful && StringUtils.isNotEmpty(result.content)) {
-            if (StringUtils.isNotEmpty(result.content)) {
-                JSONObject jsonObject = JSON.parseObject(result.content);
-                if (jsonObject != null) {
-                    JSONObject apps = jsonObject.getJSONObject("apps");
-                    if (apps != null) {
-                        String app = apps.getString("app");
-                        if (StringUtils.isNotEmpty(app)) {
-                            return JSON.parseArray(app, HttpYarnApp.class);
-                        }
+            JSONObject jsonObject = JSON.parseObject(result.content);
+            if (jsonObject != null) {
+                JSONObject apps = jsonObject.getJSONObject("apps");
+                if (apps != null) {
+                    String app = apps.getString("app");
+                    if (StringUtils.isNotEmpty(app)) {
+                        return JSON.parseArray(app, HttpYarnApp.class);
                     }
                 }
             }

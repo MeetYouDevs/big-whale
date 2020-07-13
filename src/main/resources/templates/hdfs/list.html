@@ -150,7 +150,21 @@
             path: '/'
         }];
 
-        getCluster($scope, $http);
+        getCluster($scope, $http, function () {
+            var cluster;
+            for (var i = 0; i < $scope.clusterList.length; i ++) {
+                cluster = $scope.clusterList[i];
+                if (cluster['defaultFileCluster']) {
+                    $scope.query.clusterId = cluster['id'];
+                    break;
+                }
+            }
+            if (!$scope.query.clusterId) {
+                cluster = $scope.clusterList[0];
+                $scope.query.clusterId = cluster['id'];
+            }
+            $scope.reload();
+        });
 
         $scope.onRemoveItem = function (item) {
             $('#' + item.id + '_removeBtn').attr('disabled', 'true');
@@ -222,24 +236,6 @@
                     $scope.items = data;
                 });
         };
-        
-        $timeout(function () {
-            var cluster;
-            for (var i = 0; i < $scope.clusterList.length; i ++) {
-                cluster = $scope.clusterList[i];
-                if (cluster['defaultFileCluster']) {
-                    $scope.query.clusterId = cluster['id'];
-                    break;
-                }
-            }
-            if (!$scope.query.clusterId) {
-                cluster = $scope.clusterList[0];
-                $scope.query.clusterId = cluster['id'];
-            }
-            $scope.reload();
-            $scope.$apply();
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
 
         //上传控件
         $("#advancedDropzone").dropzone({
