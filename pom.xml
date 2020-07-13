@@ -7,7 +7,7 @@
 
     <groupId>com.meiyouframework</groupId>
     <artifactId>big-whale</artifactId>
-    <version>community-1.0</version>
+    <version>community-1.1</version>
     <name>big-whale</name>
 
     <parent>

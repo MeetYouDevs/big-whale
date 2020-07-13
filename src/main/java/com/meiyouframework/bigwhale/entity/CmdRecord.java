@@ -24,10 +24,6 @@ public class CmdRecord {
     private String parentId;
     private String scriptId;
     /**
-     * 多条数据用,分割
-     */
-    private String subScriptIds;
-    /**
      * 脚本执行状态
      */
     private Integer status;
@@ -42,6 +38,10 @@ public class CmdRecord {
      *  离线调度示例ID
      */
     private String schedulingInstanceId;
+    /**
+     * 离线调度节点ID
+     */
+    private String schedulingNodeId;
     private String monitorId;
     private String content;
     private Integer timeout;

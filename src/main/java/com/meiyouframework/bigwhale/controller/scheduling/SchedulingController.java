@@ -5,9 +5,11 @@ import com.meiyouframework.bigwhale.common.pojo.Msg;
 import com.meiyouframework.bigwhale.data.domain.PageRequest;
 import com.meiyouframework.bigwhale.dto.DtoScheduling;
 import com.meiyouframework.bigwhale.entity.Scheduling;
+import com.meiyouframework.bigwhale.entity.Script;
 import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.controller.BaseController;
 import com.meiyouframework.bigwhale.security.LoginUser;
+import com.meiyouframework.bigwhale.service.ScriptService;
 import com.meiyouframework.bigwhale.task.timed.TimedTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import org.apache.commons.lang.StringUtils;
@@ -17,17 +19,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/scheduling")
 public class SchedulingController extends BaseController {
 
+    private Map<Integer, String> scriptIconClass = new HashMap<>();
+
     @Autowired
     private SchedulingService schedulingService;
+    @Autowired
+    private ScriptService scriptService;
+
+    public SchedulingController() {
+        scriptIconClass.put(0, "icon-shell");
+        scriptIconClass.put(2, "icon-spark");
+        scriptIconClass.put(4, "icon-flink");
+    }
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
     public Page<DtoScheduling> getPage(@RequestBody DtoScheduling req) {
@@ -36,21 +45,20 @@ public class SchedulingController extends BaseController {
             req.setUid(user.getId());
         }
         List<String> tokens = new ArrayList<>();
+        if (StringUtils.isNotBlank(req.getId())) {
+            tokens.add("id=" + req.getId());
+        }
         if (StringUtils.isNotBlank(req.getUid())) {
             tokens.add("uid=" + req.getUid());
         }
         if (StringUtils.isNotBlank(req.getScriptId())) {
-            tokens.add("scriptId=" + req.getScriptId());
+            tokens.add("scriptIds?" + req.getScriptId());
         }
         Page<Scheduling> pages = schedulingService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";")));
         return pages.map((scheduling) -> {
             DtoScheduling dtoScheduling = new DtoScheduling();
             BeanUtils.copyProperties(scheduling, dtoScheduling);
-            if (StringUtils.isNotBlank(scheduling.getSubScriptIds())) {
-                List<String> subScriptIds = new ArrayList<>();
-                Collections.addAll(subScriptIds, scheduling.getSubScriptIds().split(","));
-                dtoScheduling.setSubScriptIds(subScriptIds);
-            }
+            dtoScheduling.setScriptIds(Arrays.asList(scheduling.getScriptIds().split(",")));
             if (StringUtils.isNotBlank(scheduling.getWeek())) {
                 List<String> weeks = new ArrayList<>();
                 Collections.addAll(weeks, scheduling.getWeek().split(","));
@@ -61,6 +69,9 @@ public class SchedulingController extends BaseController {
                 Collections.addAll(dingdingHooks, scheduling.getDingdingHooks().split(","));
                 dtoScheduling.setDingdingHooks(dingdingHooks);
             }
+            Map<String, Object> nodeTree = new HashMap<>();
+            generateNodeTree(scheduling, nodeTree, null);
+            dtoScheduling.setNodeTree(Collections.singletonList(nodeTree));
             return dtoScheduling;
         });
     }
@@ -78,11 +89,7 @@ public class SchedulingController extends BaseController {
         schedulings.forEach(scheduling -> {
             DtoScheduling dtoScheduling = new DtoScheduling();
             BeanUtils.copyProperties(scheduling, dtoScheduling);
-            if (StringUtils.isNotBlank(scheduling.getSubScriptIds())) {
-                List<String> subScriptIds = new ArrayList<>();
-                Collections.addAll(subScriptIds, scheduling.getSubScriptIds().split(","));
-                dtoScheduling.setSubScriptIds(subScriptIds);
-            }
+            dtoScheduling.setScriptIds(Arrays.asList(scheduling.getScriptIds().split(",")));
             if (StringUtils.isNotBlank(scheduling.getWeek())) {
                 List<String> weeks = new ArrayList<>();
                 Collections.addAll(weeks, scheduling.getWeek().split(","));
@@ -116,9 +123,7 @@ public class SchedulingController extends BaseController {
         req.setUpdateTime(now);
         Scheduling scheduling = new Scheduling();
         BeanUtils.copyProperties(req, scheduling);
-        if (req.getSubScriptIds() != null && !req.getSubScriptIds().isEmpty()) {
-            scheduling.setSubScriptIds(StringUtils.join(req.getSubScriptIds(), ","));
-        }
+        scheduling.setScriptIds(StringUtils.join(req.getScriptIds(), ","));
         if (req.getWeek() != null && !req.getWeek().isEmpty()) {
             scheduling.setWeek(StringUtils.join(req.getWeek(), ","));
         }
@@ -141,5 +146,33 @@ public class SchedulingController extends BaseController {
         SchedulerUtils.deleteJob(id, Constant.JobGroup.TIMED);
         schedulingService.deleteById(id);
         return success();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void generateNodeTree(Scheduling scheduling, Map<String, Object> node, String currentNodeId) {
+        Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(currentNodeId);
+        for (Map.Entry<String, String> entry : nodeIdToScriptId.entrySet()) {
+            String nodeId = entry.getKey();
+            String scriptId = entry.getValue();
+            Script script = scriptService.findById(scriptId);
+            if (currentNodeId == null) {
+                node.put("text", script.getName());
+                node.put("data", nodeId);
+                node.put("icon", "iconfont " + scriptIconClass.get(script.getType()));
+                generateNodeTree(scheduling, node, nodeId);
+            } else {
+                Map<String, Object> childNode = new HashMap<>();
+                childNode.put("text", script.getName());
+                childNode.put("data", nodeId);
+                childNode.put("icon", "iconfont " + scriptIconClass.get(script.getType()));
+                List<Map<String, Object>> childNodes = (List<Map<String, Object>>)node.get("nodes");
+                if (childNodes == null) {
+                    childNodes = new ArrayList<>();
+                    node.put("nodes", childNodes);
+                }
+                childNodes.add(childNode);
+                generateNodeTree(scheduling, childNode, nodeId);
+            }
+        }
     }
 }

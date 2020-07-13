@@ -445,3 +445,13 @@ ALTER TABLE `script` CHANGE COLUMN `time_out` `timeout` int(11) NOT NULL AFTER `
 
 ALTER TABLE `cmd_record` CHANGE COLUMN `time_out` `timeout` int(11) NOT NULL AFTER `status`;
 ALTER TABLE `cmd_record` ADD COLUMN `scheduling_instance_id` varchar(255) NULL AFTER `scheduling_id`;
+
+-- v1.1
+ALTER TABLE `scheduling` ADD COLUMN `topology` text NOT NULL AFTER `uid`;
+ALTER TABLE `scheduling` ADD COLUMN `script_ids` varchar(255) NOT NULL AFTER `topology`;
+-- 需要从v1.0升级上来的，请先注释以下两句SQL
+ALTER TABLE `scheduling` DROP COLUMN `script_id`;
+ALTER TABLE `scheduling` DROP COLUMN `sub_script_ids`;
+
+ALTER TABLE `cmd_record` DROP COLUMN `sub_script_ids`;
+ALTER TABLE `cmd_record` ADD COLUMN `scheduling_node_id` varchar(255) NULL AFTER `scheduling_instance_id`;

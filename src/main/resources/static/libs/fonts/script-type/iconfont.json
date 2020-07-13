@@ -1,0 +1,30 @@
+{
+  "id": "",
+  "name": "",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "12502496",
+      "name": "apacheflink",
+      "font_class": "apacheflink",
+      "unicode": "e61d",
+      "unicode_decimal": 58909
+    },
+    {
+      "icon_id": "13072858",
+      "name": "shell",
+      "font_class": "shell",
+      "unicode": "e73e",
+      "unicode_decimal": 59198
+    },
+    {
+      "icon_id": "13219654",
+      "name": "spark",
+      "font_class": "spark",
+      "unicode": "e603",
+      "unicode_decimal": 58883
+    }
+  ]
+}

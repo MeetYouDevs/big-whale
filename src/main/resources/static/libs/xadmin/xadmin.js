@@ -37,6 +37,9 @@
                 if (href.substring(0, 1) === "/") {
                     href = href.substring(1);
                 }
+                if (href.indexOf('?') !== -1) {
+                    href = href.substring(0, href.indexOf('?')).replace('edit', 'list');
+                }
                 var targets = $('a[bw-target]');
                 var match = false;
                 for (var i = 0; i < targets.length; i ++) {

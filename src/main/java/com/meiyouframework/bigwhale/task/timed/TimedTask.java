@@ -15,8 +15,10 @@ import org.springframework.data.domain.Sort;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Suxy
@@ -51,37 +53,40 @@ public class TimedTask implements Job {
         Date now = new Date();
         scheduling.setLastExecuteTime(now);
         schedulingService.save(scheduling);
-        Script script = scriptService.findById(scheduling.getScriptId());
-        String agentId = script.getAgentId();
-        if (StringUtils.isBlank(agentId)) {
-            Agent agent = agentService.getByClusterId(script.getClusterId());
-            if (agent != null) {
-                agentId = agent.getId();
+        Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(null);
+        nodeIdToScriptId.forEach((nodeId, scriptId) -> {
+            Script script = scriptService.findById(scriptId);
+            String agentId = script.getAgentId();
+            if (StringUtils.isBlank(agentId)) {
+                Agent agent = agentService.getByClusterId(script.getClusterId());
+                if (agent != null) {
+                    agentId = agent.getId();
+                }
             }
-        }
-        CmdRecord cmdRecord = CmdRecord.builder()
-                .uid(scheduling.getUid())
-                .scriptId(script.getId())
-                .subScriptIds(scheduling.getSubScriptIds())
-                .createTime(new Date())
-                .content(script.getScript())
-                .timeout(script.getTimeout())
-                .status(Constant.EXEC_STATUS_UNSTART)
-                .agentId(agentId)
-                .clusterId(script.getClusterId())
-                .schedulingId(scheduling.getId())
-                .schedulingInstanceId(dateFormat.format(now))
-                .build();
-        if (!jobExecutionContext.getMergedJobDataMap().isEmpty()) {
-            cmdRecord.setArgs(JSON.toJSONString(jobExecutionContext.getMergedJobDataMap()));
-        }
-        cmdRecord = cmdRecordService.save(cmdRecord);
-        //提交任务
-        try {
-            CmdRecordRunner.build(cmdRecord);
-        } catch (SchedulerException e) {
-            LOGGER.error("schedule submit error", e);
-        }
+            CmdRecord cmdRecord = CmdRecord.builder()
+                    .uid(scheduling.getUid())
+                    .scriptId(scriptId)
+                    .createTime(new Date())
+                    .content(script.getScript())
+                    .timeout(script.getTimeout())
+                    .status(Constant.EXEC_STATUS_UNSTART)
+                    .agentId(agentId)
+                    .clusterId(script.getClusterId())
+                    .schedulingId(scheduling.getId())
+                    .schedulingInstanceId(dateFormat.format(now))
+                    .schedulingNodeId(nodeId)
+                    .build();
+            if (!jobExecutionContext.getMergedJobDataMap().isEmpty()) {
+                cmdRecord.setArgs(JSON.toJSONString(jobExecutionContext.getMergedJobDataMap()));
+            }
+            cmdRecord = cmdRecordService.save(cmdRecord);
+            //提交任务
+            try {
+                CmdRecordRunner.build(cmdRecord);
+            } catch (SchedulerException e) {
+                LOGGER.error("schedule submit error", e);
+            }
+        });
     }
 
     private boolean isLastTimeCompleted(Scheduling scheduling) {
@@ -89,30 +94,57 @@ public class TimedTask implements Job {
                 ";schedulingId=" + scheduling.getId() +
                         ";schedulingInstanceId=" +  dateFormat.format(scheduling.getLastExecuteTime()) +
                         ";status!=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING,
-                Sort.by(Sort.Direction.DESC, "createTime"));
+                Sort.by(Sort.Direction.ASC, "createTime"));
         if (cmdRecords.isEmpty()) {
             return false;
         }
-        CmdRecord lastCmdRecord = cmdRecords.get(0);
-        Script script = scriptService.findById(lastCmdRecord.getScriptId());
-        if (StringUtils.isBlank(scheduling.getSubScriptIds())) {
-            if (isYarnBatch(script)) {
-                return !"UNDEFINED".equals(lastCmdRecord.getJobFinalStatus());
-            } else {
-                return true;
-            }
-        } else {
-            if (cmdRecords.size() == (1 + scheduling.getSubScriptIds().split(",").length)) {
+        if (cmdRecords.size() == scheduling.getScriptIds().split(",").length) {
+            for (CmdRecord cmdRecord : cmdRecords) {
+                Script script = scriptService.findById(cmdRecord.getScriptId());
                 if (isYarnBatch(script)) {
-                    return !"UNDEFINED".equals(lastCmdRecord.getJobFinalStatus());
-                } else {
-                    return true;
+                    if ("UNDEFINED".equals(cmdRecord.getJobFinalStatus())) {
+                        return false;
+                    }
                 }
-            } else {
+            }
+            return true;
+        } else {
+            List<CmdRecord> lastCmdRecords = new ArrayList<>();
+            filterNodeTreeLast(scheduling, cmdRecords, lastCmdRecords, null);
+            for (CmdRecord lastCmdRecord : lastCmdRecords) {
+                Script script = scriptService.findById(lastCmdRecord.getScriptId());
                 if (isYarnBatch(script)) {
-                    return !"UNDEFINED".equals(lastCmdRecord.getJobFinalStatus()) && !"SUCCEEDED".equals(lastCmdRecord.getJobFinalStatus());
+                    if ("UNDEFINED".equals(lastCmdRecord.getJobFinalStatus()) || "SUCCEEDED".equals(lastCmdRecord.getJobFinalStatus())) {
+                        return false;
+                    }
                 } else {
-                    return Constant.EXEC_STATUS_FINISH != lastCmdRecord.getStatus();
+                    if (Constant.EXEC_STATUS_FINISH == lastCmdRecord.getStatus())  {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
+    private void filterNodeTreeLast(Scheduling scheduling, List<CmdRecord> cmdRecords, List<CmdRecord> lastCmdRecords, String currentNodeId) {
+        Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(currentNodeId);
+        for (Map.Entry<String, String> entry : nodeIdToScriptId.entrySet()) {
+            CmdRecord currentCmdRecord = null;
+            boolean match = false;
+            for (CmdRecord cmdRecord : cmdRecords) {
+                if (cmdRecord.getSchedulingNodeId().equals(currentNodeId)) {
+                    currentCmdRecord = cmdRecord;
+                }
+                if (cmdRecord.getSchedulingNodeId().equals(entry.getKey())) {
+                    match = true;
+                }
+            }
+            if (match) {
+                filterNodeTreeLast(scheduling, cmdRecords, lastCmdRecords, entry.getKey());
+            } else {
+                if (currentCmdRecord != null) {
+                    lastCmdRecords.add(currentCmdRecord);
                 }
             }
         }

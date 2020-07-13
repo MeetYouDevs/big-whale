@@ -243,7 +243,7 @@ function getAgent($scope, $http) {
         });
 }
 
-function getScript($scope, $http, isMonitor, isTask) {
+function getScript($scope, $http, isMonitor, isTask, callback) {
     $scope.scriptList = [];
     $scope.scriptMap = {};
     $http.get($contextPath + 'script/getall.api')
@@ -265,6 +265,9 @@ function getScript($scope, $http, isMonitor, isTask) {
                     $scope.scriptList.push(item);
                     $scope.scriptMap[item.id] = item;
                 }
+            }
+            if (callback) {
+                callback();
             }
             setTimeout(function () {
                 $('.selectpicker').selectpicker('refresh');

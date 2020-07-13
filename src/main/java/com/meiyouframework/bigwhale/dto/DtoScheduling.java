@@ -8,10 +8,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @Builder
@@ -38,16 +35,31 @@ public class DtoScheduling extends AbstractPageDto {
     private Date endTime;
     private Date lastExecuteTime;
     private Integer status;
-    private String scriptId;
-    private List<String> subScriptIds;
     private String uid;
+    private String topology;
+    private List<String> scriptIds;
     private Boolean repeatSubmit;
     private Boolean sendMail;
     private List<String> dingdingHooks;
 
+    /**
+     * 搜索字段
+     */
+    private String scriptId;
+    /**
+     * 前端列表树形展示
+     */
+    private List<Map<String, Object>> nodeTree;
+
+    @Deprecated
+    private List<String> subScriptIds;
+
     @Override
     public String validate() {
-        if (StringUtils.isBlank(scriptId)) {
+        if (StringUtils.isBlank(topology)) {
+            return "拓扑不能为空";
+        }
+        if (CollectionUtils.isEmpty(scriptIds)) {
             return "脚本不能为空";
         }
         if (repeatSubmit == null) {
@@ -68,13 +80,6 @@ public class DtoScheduling extends AbstractPageDto {
             }
             if (this.cycle == Constant.TIMER_CYCLE_WEEK && (this.week == null || this.hour == null || this.minute == null)) {
                 return "周、小时、分钟不能为空";
-            }
-        }
-        List<String> subScriptIds = this.getSubScriptIds();
-        if (!CollectionUtils.isEmpty(subScriptIds)) {
-            Set<String> subScriptIdsSet = new HashSet<>(subScriptIds);
-            if (subScriptIds.size() != subScriptIdsSet.size()) {
-                return "子脚本依赖配置有误";
             }
         }
         return null;

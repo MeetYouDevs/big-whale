@@ -68,6 +68,15 @@ public class PathController {
         return "scheduling/list";
     }
 
+    @GetMapping("/scheduling/edit.html")
+    public String taskAdd(@RequestParam(name = "id", required = false) String id,
+                          Model viewObjects) {
+        if (StringUtils.isNotBlank(id)) {
+            viewObjects.addAttribute("schedulingId", id);
+        }
+        return "scheduling/edit";
+    }
+
     @GetMapping("/yarn_app/list.html")
     public String jobYarnPage(
             @RequestParam(name = "appId", required = false) String appId,

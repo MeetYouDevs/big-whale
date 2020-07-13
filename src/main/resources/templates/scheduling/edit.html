@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>离线调度编辑 - Big Whale</title>
+    <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
+    <link href="../libs/bootstrap-switch/bootstrap-switch.min.css" rel="stylesheet"/>
+    <link href="../css/common.css" rel="stylesheet"/>
+    <link href="../libs/fonts/script-type/script-type.css" rel="stylesheet">
+    <link href="../css/scheduling_edit.css" rel="stylesheet">
+</head>
+<body ng-app="content-app" ng-controller="content-controller">
+<div class="container-fluid animated fadeInDown">
+    <div class="bw-nav">
+        <div class="row">
+            <ol class="breadcrumb">
+                <li><a href="javascript:" ng-click="onOpenList()">离线调度</a></li>
+                <li class="active">{{editItem.id ? "编辑" : "新增"}}</li>
+            </ol>
+            <a class="bw-refresh" onclick="location.reload()" title="刷新">
+                <i class="fa fa-refresh" style="font-size: 18px"></i>
+            </a>
+        </div>
+    </div>
+    <div class="bw-body">
+        <div class="row">
+            <div class="col-md-12">
+                <form class="form-horizontal" ng-submit="onSaveItem()">
+                    <div class="container shadow" th:if="${session.user.root}">
+                        <div class="form-group">
+                            <label for="select_user" class="col-sm-2 control-label">
+                                用户&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_user" class="form-control selectpicker show-tick" data-live-search="true"
+                                        ng-model="editItem.uid" ng-options="item.id as item.username for item in userList" ng-change="onUidChange()" required>
+                                    <option value="">请选择</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container shadow topology">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" id="flex_tools">
+                                拓扑<B class="help" data-toggle="tooltip" data-placement="top" title="有向无环，有且只能有一个根节点">?</B>&nbsp;<B>*</B>
+                                <div class="tools">
+                                    <div class="form-group">
+                                        <input type="text" class="form-control" placeholder="名称" ng-model="query.searchText" ng-change="onQuerySearchTextChange()">
+                                    </div>
+                                    <div class="buttons"></div>
+                                </div>
+                            </label>
+                            <div class="col-sm-10">
+                                <div id="flex_canvas">
+                                    <div class="canvas" id="topo_canvas"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container shadow">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">
+                                调度周期&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="cycle_input_cron" class="form-control" ng-model="editItem.cron" placeholder="cron表达式" required>
+                                <div id="cycle_div_visual">
+                                    <h4 style="margin: 0 0; padding: 5px 0;">
+                                        <label class="label label-info">
+                                            每
+                                        </label>
+                                    </h4>
+                                    <input id="cycle_input_intervals" class="form-control" type="number" min="1" ng-model="editItem.intervals" placeholder="间隔" required>
+                                    <select id="cycle_select_cycle" class="form-control selectpicker show-tick" title="维度"
+                                            ng-model="editItem.cycle" ng-options="item.value as item.name for item in taskCycleList">
+                                    </select>
+                                    <div id="cycle_div_week">
+                                        <select class="form-control selectpicker show-tick" title="星期"
+                                                ng-model="editItem.week" ng-options="item.value as item.name for item in weekList"  multiple required>
+                                        </select>
+                                    </div>
+                                    <div id="cycle_div_hour">
+                                        <select class="form-control selectpicker show-tick" title="时"
+                                                ng-model="editItem.hour" ng-options="item.value as item.name for item in hourList">
+                                        </select>
+                                    </div>
+                                    <div id="cycle_div_minute">
+                                        <select class="form-control selectpicker show-tick" title="分"
+                                                ng-model="editItem.minute" ng-options="item.value as item.name for item in minuteList" >
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-5" style="padding: 0.5% 15px; line-height: 14px;">
+                                <label for="input_visual" class="label label-info">可视化模式</label>&nbsp;<input id="input_visual" type="checkbox" name="visual-checkbox" checked>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="inp_start" class="col-sm-2 control-label">
+                                开始时间&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="inp_start" class="laydate-icon" ng-model="editItem.startTime" required/>
+                            </div>
+                            <br/>
+                        </div>
+                        <div class="form-group">
+                            <label for="inp_end" class="col-sm-2 control-label">
+                                结束时间&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="inp_end" class="laydate-icon" ng-model="editItem.endTime" required/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="select_repeatSubmit" class="col-sm-2 control-label">
+                                可重复提交<B class="help" data-toggle="tooltip" data-placement="top" title="上一次调度任务未完成的情况下，是否允许提交当前调度任务">?</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_repeatSubmit" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.repeatSubmit" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="select_sendMail" class="col-sm-2 control-label">
+                                发送邮件
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_sendMail" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.sendMail" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">
+                                钉钉通知<B class="help" data-toggle="tooltip" data-placement="top" title="需要指定@用户，可用“&”拼接，如：token&@phone1@phone2">?</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <div ng-repeat="tip in editItem.dingdingHooks track by $index">
+                                    <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.dingdingHooks[$index]" placeholder="钉钉token" ><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.dingdingHooks, $index)"></span>
+                                </div>
+                                <div ng-click="!editItem.dingdingHooks ? editItem.dingdingHooks = []: '';onAddTip(editItem.dingdingHooks);">
+                                    <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="select_status" class="col-sm-2 control-label">状态</label>
+                            <div class="col-sm-4">
+                                <select id="select_status" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.status" ng-options="item.value as item.name for item in enableTypeList" required>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="container text-center">
+                        <button type="submit" class="btn btn-primary" id="btn_submit">&emsp;&emsp;保存&emsp;&emsp;</button>
+                        <button type="reset" class="btn btn-secondary">&emsp;&emsp;重置&emsp;&emsp;</button>
+                    </div>
+                </form>
+
+                <!--右键菜单定义-->
+                <div class="context-menus" id="canvas_menus" style="display: none">
+                    <div>
+                        <a onclick="onLock()" class="menu-a-disabled" id="menu_lock" disabled>
+                            锁定
+                        </a>
+                    </div>
+                    <div class="line"></div>
+                    <div>
+                        <a onclick="onDelete()" class="menu-a">
+                            删除
+                        </a>
+                    </div>
+                    <div class="line"></div>
+                    <div>
+                        <a onclick="undo()" class="menu-a">
+                            撤消
+                            <span class="ml50">Ctrl + Z</span>
+                        </a>
+                    </div>
+                    <div>
+                        <a onclick="redo()" class="menu-a">
+                            恢复
+                            <span class="ml50">Ctrl + Shift+ Z</span>
+                        </a>
+                    </div>
+                    <div class="line"></div>
+                    <div>
+                        <a onclick="cut()" class="menu-a">
+                            剪切
+                            <span class="ml50">Ctrl + X</span>
+                        </a>
+                    </div>
+                    <div>
+                        <a onclick="copy()" class="menu-a">
+                            复制
+                            <span class="ml50">Ctrl + C</span>
+                        </a>
+                    </div>
+                    <div>
+                        <a onclick="parse()" class="menu-a">
+                            粘贴
+                            <span class="ml50">Ctrl + V</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-switch/bootstrap-switch.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
+<script src="../js/common.js" type="text/javascript"></script>
+<script src="../libs/laydate/laydate.js" type="application/javascript"></script>
+<script src="../libs/lewule/topology.bundle.js" type="application/javascript"></script>
+<script type="text/javascript">
+    //画布对象
+    var canvas = null;
+    //选中多个节点对象
+    var selNodes = null;
+    //选中节点的详情
+    var selected = null;
+    //是否锁对象
+    var locked = false;
+    //右键菜单对应标记是否可用
+
+    var Topology = {
+        data: {},
+        load: false,
+        lineStyle: {curve: 0, polyline: 1, line: 2},
+        startLineStyle: {
+            default: 0,
+            triangleSolid: 1,
+            triangle: 2,
+            diamondSolid: 3,
+            diamond: 4,
+            circleSolid: 5,
+            circle: 6,
+            line: 7,
+            lineUp: 8,
+            lineDown: 9
+        },
+        lineTypeStyle: {curve: 0, polyline: 1, line: 2},
+        tools: [],
+        // 对象的最初入口
+        init: function (nodes, lines) {
+            var self = this;
+            //绑定事件
+            self.bindEvent();
+            self.onLoadTools(self.tools);
+            self.initCanvas(nodes, lines);
+            //初始化颜色选择器
+        },
+        // 绑定事件
+        bindEvent: function () {
+            var self = this;
+            // 监听键盘快捷键
+            $(document).keydown(function (e) {
+                //撤销 ctrl+z
+                if (e.ctrlKey && e.which === 90) {
+                    canvas.undo();
+                }
+                //恢复 ctrl+shift+z
+                if (e.ctrlKey && e.shiftKey === 90 && e.which === 90) {
+                    canvas.redo();
+                }
+                //剪切 ctrl+x
+                if (e.ctrlKey && e.which === 88) {
+                    canvas.cut();
+                }
+                //复制 ctrl+c
+                if (e.ctrlKey && e.which === 67) {
+                    canvas.copy();
+                }
+                //粘贴 ctrl+v
+                if (e.ctrlKey && e.which === 86) {
+                    canvas.parse();
+                }
+            });
+            // 隐藏显示
+            $("body").click(function () {
+                $("#canvas_menus").css("display", "none");
+            });
+            // 画布右键属性
+            $("#flex_canvas").bind("contextmenu", function () {
+                //设置右键菜单
+                if (selNodes != null) {
+                    //锁定
+                    if (locked) {
+                        $("#menu_lock").html("解锁");
+                    } else {
+                        $("#menu_lock").html("锁定");
+                    }
+                    $("#menu_lock").removeClass("menu-a-disabled");
+                    $("#menu_lock").addClass("menu-a");
+                } else {
+                    //锁定
+                    $("#menu_lock").addClass("menu-a-disabled");
+                    $("#menu_lock").removeClass("menu-a");
+                }
+                //显示右键菜单
+                $("#canvas_menus").css({
+                    "left": document.body.scrollLeft + event.clientX, "top":
+                        document.body.scrollTop + event.clientY
+                }).show();
+                return false;
+            });
+        },
+        // 初始化画布
+        initCanvas: function (nodes, lines) {
+            var self = this;
+            // 初始化canvas
+            var data = {
+                "nodes": nodes,
+                "lines": lines,
+                "lineName": "curve",
+                "fromArrowType": "",
+                "toArrowType": "triangleSolid",
+                "scale": 1,
+                "locked": 0
+            };
+            var canvasOptions = {on: onMessage, hideInput: true};
+            canvas = new Le5leTopology.Topology('topo_canvas', canvasOptions);
+
+            // 监听画布
+            function onMessage(event, data) {
+                switch (event) {
+                    case 'node':
+                        selNodes = [data];
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initNode();
+                        break;
+                    case 'line':
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initLine();
+                        break;
+                    case 'multi':
+                        locked = true;
+                        if (data.nodes && data.nodes.length) {
+                            selNodes = data.nodes;
+                            for (var item in data.nodes) {
+                                if (!item.locked) {
+                                    locked = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (locked && data.lines) {
+                            for (var item in data.lines) {
+                                if (!item.locked) {
+                                    locked = false;
+                                    break;
+                                }
+                            }
+                        }
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        break;
+                    case 'space':
+                        setTimeout(function () {
+                            selected = null;
+                            selNodes = null;
+                        });
+                        break;
+                    case 'addNode':
+                        selNodes = [data];
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initNode();
+                        break;
+                    case 'addLine':
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initLine();
+                        break;
+                    case 'delete':
+                        break;
+                }
+            }
+            canvasOptions.on = onMessage;
+            canvas.open(data);
+            canvas.render();
+            canvas.overflow();
+        },
+        // 初始化node
+        initNode: function () {
+            canvas.render();
+            canvas.overflow();
+        },
+        // 初始化line
+        initLine: function () {
+            canvas.render();
+            canvas.overflow();
+        },
+        onLoadTools: function (tools) {
+            var _html = "";
+            tools.forEach(function (val) {
+                val.children.forEach(function (val1) {
+                    _html += '<a title="' + val1.name + '" ondragstart="onDragStart(event,' + JSON.stringify(val1).replace(/\"/g, "'") + ')" draggable="true">' +
+                        ' <i class="iconfont ' + val1.icon + '"></i> ' + val1.name +
+                        '</a>';
+                });
+            });
+            $("#flex_tools .buttons").html(_html);
+        },
+        // 拖动node开始时设定该图形的参数
+        onDragStart: function (event, node) {
+            event.dataTransfer.setData('text/plain', JSON.stringify(node.data));
+        },
+        clearCanvas: function () {
+            canvas.data.nodes = [];
+            canvas.data.lines = [];
+            canvas.render(true);
+        },
+        // 锁定
+        onLock: function () {
+            locked = !locked;
+            if (selected.type === 'multi') {
+                if (selected.data.nodes) {
+                    for (var item in selected.data.nodes) {
+                        item.locked = locked;
+                    }
+                }
+                if (selected.data.lines) {
+                    for (var item in selected.data.lines) {
+                        item.locked = locked;
+                    }
+                }
+            } else {
+                selected.data.locked = locked;
+            }
+            canvas.render(true);
+        },
+        // 删除
+        onDelete: function () {
+            canvas.delete();
+        },
+        // 撤销
+        undo: function () {
+            canvas.undo();
+        },
+        // 恢复
+        redo: function () {
+            canvas.redo();
+        },
+        // 剪切
+        cut: function () {
+            canvas.cut();
+        },
+        // 复制
+        copy: function () {
+            canvas.copy();
+        },
+        // 粘贴
+        parse: function () {
+            canvas.parse();
+        }
+    };
+
+    // window全局，这样别的地方方便调用
+    window.onLoadTools = Topology.onLoadTools;
+    window.onDragStart = Topology.onDragStart;
+    window.clearCanvas = Topology.clearCanvas;
+    window.onLock = Topology.onLock;
+    window.onDelete = Topology.onDelete;
+    window.undo = Topology.undo;
+    window.redo = Topology.redo;
+    window.cut = Topology.cut;
+    window.copy = Topology.copy;
+    window.parse = Topology.parse;
+
+    function validateTopology() {
+        var nodes = canvas.data.nodes;
+        var lines = canvas.data.lines;
+        if (nodes.length === 0) {
+            return '拓扑不能为空';
+        }
+        if (nodes.length !== lines.length  + 1) {
+            return '拓扑必须满足：节点数 = 分支数 + 1';
+        }
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (!line.from.id || !line.to.id || line.from.id === line.to.id) {
+                return '拓扑分支的起点和终点必须指向不同节点';
+            }
+            for (var j = i + 1; j < lines.length; j ++) {
+                var lineNext = lines[j];
+                if (line.to.id === lineNext.to.id) {
+                    return '拓扑不同分支的终点必须指向不同节点';
+                }
+                if (line.from.id === lineNext.to.id && line.to.id === lineNext.from.id) {
+                    return '拓扑不能存在回环';
+                }
+            }
+        }
+    }
+
+</script>
+<script th:inline="javascript">
+    var scriptIconClass = {
+        0: 'icon-shell',
+        2: 'icon-spark',
+        4: 'icon-flink'
+    };
+    var scriptIconUnicode = {
+        0: '&#xe73e',
+        2: '&#xe603',
+        4: '&#xe61d'
+    };
+    var scriptRect = {
+        0: {
+            width: 80,
+            height: 100
+        },
+        2: {
+            width: 180,
+            height: 60
+        },
+        4: {
+            width: 100,
+            height: 100
+        }
+    };
+    var scriptBox = {
+        0: 'file',
+        2: 'rectangle',
+        4: 'rectangle'
+    };
+    var user = [[${session.user}]];
+    var app = angular.module("content-app", []);
+    registerDateRange(app, 'inp_start', 'inp_end');
+    registerAuth(app);
+
+    var $visualCheckbox = $('[name="visual-checkbox"]');
+    var $cycleInputCron = $('#cycle_input_cron');
+    var $cycleDivVisual = $('#cycle_div_visual');
+    var $cycleInputIntervals = $('#cycle_input_intervals');
+    var $cycleSelectCycle = $('#cycle_select_cycle');
+    var $cycleDivWeek = $('#cycle_div_week');
+    var $cycleDivHour = $('#cycle_div_hour');
+    var $cycleDivMinute = $('#cycle_div_minute');
+    var $btnSubmit = $('#btn_submit');
+
+    app.controller("content-controller", function ($scope, $http, $timeout) {
+        $scope.query = {searchText: ''};
+        if (user.root) {
+            getAuthUser($scope, $http);
+        }
+        appendEnableType($scope);
+        appendTaskCycle($scope);
+        appendHour($scope);
+        appendMinute($scope);
+        appendWeek($scope);
+        appendBooleanType($scope);
+
+        $scope.onOpenList = function () {
+            if (parent.xadmin) {
+                parent.xadmin.add_tab('离线调度', 'scheduling/list.html');
+            } else {
+                window.open('./list.html', '离线调度');
+            }
+        };
+
+        $scope.init = function() {
+            var schedulingId = [[${schedulingId}]];
+            if (schedulingId) {
+                var query = {
+                    'id': schedulingId,
+                    'pageNo': 1,
+                    'pageSize': 1,
+                    'limit': 1
+                };
+                $.ajax({
+                    url: './getpage.api',
+                    async: false,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(query),
+                    success: function (data) {
+                        if (data.content) {
+                            var item = data.content[0];
+                            $scope.editItem = angular.copy(item);
+                            if ($scope.editItem.week === null) {
+                                $scope.editItem.week = ['6'];
+                            }
+                            if ($scope.editItem.intervals === null) {
+                                $scope.editItem.intervals = 2;
+                            }
+                            if ($scope.editItem.cron) {
+                                $visualCheckbox.bootstrapSwitch('state', false);
+                            } else {
+                                $visualCheckbox.bootstrapSwitch('state', true);
+                                $scope.editItem.cron = '0 */2 * * * ?';
+                            }
+                            var topology = JSON.parse($scope.editItem.topology);
+                            Topology.init(
+                                topology.nodes,
+                                topology.lines
+                            );
+                        }
+                    }
+                });
+            } else {
+                var now = new Date();
+                var tenYearsLater = new Date(now.getTime() + (60 * 60 * 24 * 365 * 10 * 1000));
+                $scope.editItem = {
+                    sendMail: true,
+                    status: 1,
+                    type: 2,
+                    cycle: 1,
+                    week: ['6'],
+                    hour: 0,
+                    minute: 0,
+                    intervals: 2,
+                    subScriptIds: [],
+                    repeatSubmit: false,
+                    startTime: now.format('yyyy-MM-dd HH:mm:ss'),
+                    endTime: tenYearsLater.format('yyyy-MM-dd HH:mm:ss'),
+                    cron: '0 */2 * * * ?'
+                };
+                $visualCheckbox.bootstrapSwitch('state', true);
+                Topology.init([], []);
+            }
+            getScript($scope, $http, false, true, function () {
+                onLoadTools($scope.generateTools())
+            });
+        };
+
+        $scope.onUidChange = function() {
+            clearCanvas();
+            onLoadTools($scope.generateTools())
+        };
+
+        $scope.onQuerySearchTextChange = function() {
+            onLoadTools($scope.generateTools())
+        };
+
+        $scope.generateTools = function() {
+            var children = [];
+            $scope.scriptList.forEach(function (item) {
+                var push = true;
+                if ($scope.editItem.uid && $scope.query.searchText) {
+                    if (item.uid !== $scope.editItem.uid || item.name.indexOf($scope.query.searchText) === -1) {
+                        push = false;
+                    }
+                } else if ($scope.editItem.uid) {
+                    if (item.uid !== $scope.editItem.uid) {
+                        push = false;
+                    }
+                } else if ($scope.query.searchText) {
+                    if (item.name.indexOf($scope.query.searchText) === -1) {
+                        push = false;
+                    }
+                }
+                if (push) {
+                    children.push({
+                        name: item.name,
+                        icon: scriptIconClass[item.type],
+                        data: {
+                            text: item.name,
+                            rect: scriptRect[item.type],
+                            paddingLeft: 10,
+                            paddingRight: 10,
+                            paddingTop: 10,
+                            paddingBottom: 10,
+                            borderRadius: 0.1,
+                            name: scriptBox[item.type],
+                            icon: scriptIconUnicode[item.type],
+                            iconFamily: 'iconfont',
+                            iconColor: '#2f54eb',
+                            textMaxLine: 1,
+                            data: item.id
+                        }
+                    });
+                }
+            });
+            var scriptTool = {
+                group: '脚本',
+                children: children
+            };
+            return [
+                scriptTool
+            ];
+        };
+
+        $scope.onAddTip = function (tips) {
+            if (!tips) {
+                tips = [''];
+            }
+            tips.push('');
+            $timeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 50);
+        };
+
+        $scope.onRemoveTip = function (tips, index) {
+            if (!tips) {
+                return;
+            }
+            tips.splice(index, 1);
+        };
+
+        //保存
+        $scope.onSaveItem = function () {
+            var err = validateTopology();
+            if (err) {
+                swal('操作失败', err, 'error');
+                return;
+            }
+            var startTime = $('#inp_start').val();
+            var endTime = $('#inp_end').val();
+            $scope.editItem.startTime = startTime;
+            $scope.editItem.endTime = endTime;
+            var fields = $scope.generateFields();
+            $scope.editItem.topology = JSON.stringify(fields.topology);
+            $scope.editItem.scriptIds = fields.scriptIds;
+            var cron = $scope.editItem.cron;
+            if ($visualCheckbox.bootstrapSwitch('state')) {
+                $scope.editItem.cron = null;
+            }
+            $btnSubmit.attr('disabled', 'true');
+            $http.post('./save.api', $scope.editItem)
+                .success(function (data) {
+                    if (data.code === 0) {
+                        swal({
+                            title: '操作成功',
+                            text: data.msg,
+                            type: 'success',
+                            showConfirmButton: true
+                        }).then(function () {
+                            if (parent.xadmin) {
+                                $scope.closeTab();
+                            } else {
+                                location.href = "./list.html";
+                            }
+                        });
+                    } else {
+                        $scope.editItem.cron = cron;
+                        swal('操作失败', data.msg, 'error');
+                    }
+                    $btnSubmit.removeAttr('disabled');
+                });
+        };
+
+        $scope.generateFields = function() {
+            var nodes = canvas.data.nodes;
+            var lines = canvas.data.lines;
+            var simpleNodes = [];
+            var simpleLines = [];
+            var scriptIds = [];
+            nodes.forEach(function (node) {
+                simpleNodes.push({
+                    id: node.id,
+                    text: node.text,
+                    rect: node.rect,
+                    paddingLeft: node.paddingLeft,
+                    paddingRight: node.paddingRight,
+                    paddingTop: node.paddingTop,
+                    paddingBottom: node.paddingBottom,
+                    borderRadius: node.borderRadius,
+                    name: node.name,
+                    icon: node.icon,
+                    iconFamily: node.iconFamily,
+                    iconColor: node.iconColor,
+                    textMaxLine: node.textMaxLine,
+                    data: node.data
+                });
+                scriptIds.push(node.data);
+            });
+            lines.forEach(function (line) {
+                simpleLines.push({
+                    id: line.id,
+                    from: line.from,
+                    fromArrow: line.fromArrow,
+                    to: line.to,
+                    toArrow: line.toArrow,
+                    name: line.name,
+                    controlPoints: line.controlPoints
+                })
+            });
+            return {
+                topology: {
+                    nodes: simpleNodes,
+                    lines: simpleLines
+                },
+                scriptIds: scriptIds
+            };
+        };
+
+        $scope.closeTab = function () {
+            var el = parent.document.querySelector("li.layui-this").getElementsByClassName("layui-icon layui-unselect layui-tab-close")[0];
+            $timeout(function () {
+                parent.xadmin.reloadScheduling();
+                el.click();
+            }, 50);
+            parent.xadmin.add_tab('离线调度', 'scheduling/list.html');
+        };
+
+        //初始化切换开关
+        $visualCheckbox.bootstrapSwitch({
+            onColor: 'success',
+            offColor: 'default',
+            size: 'mini',
+            onSwitchChange: function(event, state){
+                if (state === true){
+                    $cycleInputCron.hide();
+                    $cycleDivVisual.show();
+                } else {
+                    $cycleInputCron.show();
+                    $cycleDivVisual.hide();
+                }
+            }
+        });
+
+        //处理可视化调度周期
+        $cycleSelectCycle.change(function () {
+            $scope.selectCycleChange(this.value);
+            $('.selectpicker').selectpicker('refresh');
+        });
+        $scope.selectCycleChange = function (val) {
+            if (val === '0') {
+                $cycleInputIntervals.show();
+                $cycleDivWeek.hide();
+                $cycleDivHour.hide();
+                $cycleDivMinute.hide();
+            } else if (val === '1') {
+                $cycleInputIntervals.hide();
+                $cycleDivWeek.hide();
+                $cycleDivHour.hide();
+                $cycleDivMinute.show();
+            } else if (val === '2') {
+                $cycleInputIntervals.hide();
+                $cycleDivWeek.hide();
+                $cycleDivHour.show();
+                $cycleDivMinute.show();
+            } else {
+                $cycleInputIntervals.hide();
+                $cycleDivWeek.show();
+                $cycleDivHour.show();
+                $cycleDivMinute.show();
+            }
+        };
+        //初始化状态
+        $cycleInputCron.hide();
+        $cycleDivWeek.hide();
+        $cycleDivHour.hide();
+        $cycleDivMinute.hide();
+
+        //提示控件
+        $timeout(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        }, 50);
+
+        $scope.init();
+    });
+</script>
+</body>
+</html>

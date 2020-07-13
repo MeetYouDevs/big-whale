@@ -4,7 +4,6 @@
     <th:block th:include="base/resource"/>
     <title>脚本编辑 - Big Whale</title>
     <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
-    <link href="../libs/bootstrap-switch/bootstrap-switch.min.css" rel="stylesheet"/>
     <link href="../libs/dropzone/dropzone.min.css" rel="stylesheet">
     <link href="../css/common.css" rel="stylesheet"/>
     <link href="../css/script_edit.css" rel="stylesheet">
@@ -113,11 +112,11 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="input_timeout" class="col-sm-2 control-label">
+                            <label for="input_timeOut" class="col-sm-2 control-label">
                                 脚本执行超时(分)<B class="help" data-toggle="tooltip" data-placement="top" title="只与当前脚本的执行时间相关，与Spark或Flink任务的运行时间无关，不能超过5分钟">?</B>&nbsp;<B>*</B>
                             </label>
                             <div class="col-sm-4">
-                                <input id="input_timeout" class="form-control" type="number" autocomplete="off" ng-model="editItem.timeout" required max="5">
+                                <input id="input_timeOut" class="form-control" type="number" autocomplete="off" ng-model="editItem.timeout" required max="5">
                             </div>
                         </div>
                         <div class="form-group">
@@ -381,225 +380,6 @@
                         </div>
                     </div>
 
-                    <!-- 监控 || 调度 -->
-                    <div class="container shadow">
-                        <div ng-if="(editItem.type == 0 || editItem.type == 2 || editItem.type == 4) &&
-                         editItem.tasks != null && editItem.tasks.length > 0" class="alert alert-warning" role="alert">注意！！！一经保存成功，启用状态的调度任务便开始执行！</div>
-                        <div ng-if="(editItem.type == 1 || editItem.type == 3) &&
-                         editItem.monitors != null && editItem.monitors.length > 0" class="alert alert-warning" role="alert">注意！！！一经保存成功，启用状态的监控任务便开始执行！</div>
-                        <div class="div_task" ng-repeat="task in editItem.tasks track by $index">
-                            <div class="container shadow" style="width: 90%">
-                                <div class="form-group text-right">
-                                    <div class="col-sm-12">
-                                        <span style="color: red; cursor: pointer;" ng-click="onRemoveTask(editItem.tasks, $index)">
-                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">子脚本&nbsp;</label>
-                                    <div class="col-sm-4">
-                                        <div ng-repeat="tip in task.subScriptIds track by $index">
-                                            <div style="width: 92%; display: inline-block">
-                                                <select class="form-control selectpicker show-tick" data-live-search="true"
-                                                        ng-model="task.subScriptIds[$index]" ng-options="item.id as item.name for item in scriptList | scriptFilter: editItem.uid: editItem.id">
-                                                    <option value="">请选择</option>
-                                                </select>
-                                            </div>
-                                            <span class="glyphicon glyphicon-minus" ng-click="onRemoveTip(task.subScriptIds, $index)"></span>
-                                        </div>
-                                        <div ng-click="!task.subScriptIds ? task.subScriptIds = []: '';onAddTip(task.subScriptIds);">
-                                            <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-5">
-                                        <p class="help-block">当主脚本执行完成后（仅指脚本本身，不包括脚本中提交的任务），顺序往下执行子脚本</p>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">调度周期&nbsp;<B>*</B></label>
-                                    <div class="col-sm-4">
-                                        <input id="{{$index}}_cycle_input_cron" class="form-control" ng-model="task.cron" placeholder="cron表达式" required>
-                                        <div id="{{$index}}_cycle_div_visual">
-                                            <h4 style="margin: 0 0; padding: 5px 0;">
-                                                <label class="label label-info">每</label>
-                                            </h4>
-                                            <input id="{{$index}}_cycle_input_intervals" class="form-control" type="number" min="1" ng-model="task.intervals" placeholder="间隔" required>
-                                            <select id="{{$index}}_cycle_select_cycle" class="form-control selectpicker show-tick" title="维度"
-                                                    ng-model="task.cycle" ng-options="item.value as item.name for item in taskCycleList">
-                                            </select>
-                                            <div id="{{$index}}_cycle_div_week">
-                                                <select class="form-control selectpicker show-tick" title="星期"
-                                                        ng-model="task.week" ng-options="item.value as item.name for item in weekList" multiple required>
-                                                </select>
-                                            </div>
-                                            <div id="{{$index}}_cycle_div_hour">
-                                                <select class="form-control selectpicker show-tick" title="时"
-                                                        ng-model="task.hour" ng-options="item.value as item.name for item in hourList">
-                                                </select>
-                                            </div>
-                                            <div id="{{$index}}_cycle_div_minute">
-                                                <select class="form-control selectpicker show-tick" title="分"
-                                                        ng-model="task.minute" ng-options="item.value as item.name for item in minuteList">
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-5" style="padding: 0.5% 15px;line-height: 14px;">
-                                        <span class="label label-info">可视化模式</span>&nbsp;<input type="checkbox" name="{{$index}}_visual-checkbox" checked>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">开始时间&nbsp;<B>*</B></label>
-                                    <div class="col-sm-4">
-                                        <input id="{{$index}}_inp_start" class="laydate-icon" ng-model="task.startTime" required/>
-                                    </div>
-                                    <br/>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">结束时间&nbsp;<B>*</B></label>
-                                    <div class="col-sm-4">
-                                        <input id="{{$index}}_inp_end"  class="laydate-icon" ng-model="task.endTime" required/>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">可重复提交</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control selectpicker show-tick"
-                                                ng-model="task.repeatSubmit" ng-options="item.value as item.name for item in booleanTypeList" required>
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-5">
-                                        <p class="help-block">上一次调度任务未完成的情况下，是否允许提交当前调度任务</p>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">发送邮件</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control selectpicker show-tick"
-                                                ng-model="task.sendMail" ng-options="item.value as item.name for item in booleanTypeList" required>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">钉钉通知</label>
-                                    <div class="col-sm-4">
-                                        <div ng-repeat="tip in task.dingdingHooks track by $index">
-                                            <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="task.dingdingHooks[$index]" placeholder="钉钉token" ><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(task.dingdingHooks, $index)"></span>
-                                        </div>
-                                        <div ng-click="!task.dingdingHooks ? task.dingdingHooks = []: '';onAddTip(task.dingdingHooks);">
-                                            <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-5">
-                                        <p class="help-block">需要指定@用户，可用“&”拼接，如：token&@phone1@phone2</p>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">状态</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control selectpicker show-tick"
-                                                ng-model="task.status" ng-options="item.value as item.name for item in enableTypeList" required>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="div_monitor" ng-repeat="monitor in editItem.monitors track by $index">
-                            <div class="container shadow" style="width: 90%">
-                                <div class="form-group text-right">
-                                    <div class="col-sm-12">
-                                        <span style="color: red; cursor: pointer;" ng-click="onRemoveMonitor(editItem.monitors, $index)">
-                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="form-group" ng-if="editItem.type == 1 || editItem.type == 3">
-                                    <label class="col-sm-3 control-label">异常重启</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control selectpicker show-tick"
-                                                ng-model="monitor.exAutoRestart" ng-options="item.value as item.name for item in booleanTypeList" required>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group" ng-if="editItem.type == 1 || editItem.type == 3">
-                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 1">批次积压告警阈值&nbsp;<B>*</B></label>
-                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 3">任务阻塞告警阈值(%)&nbsp;<B>*</B></label>
-                                    <div class="col-sm-4">
-                                        <input class="form-control" type="number" ng-model="monitor.waitingBatches" min="0" required ng-if="editItem.type == 1">
-                                        <input class="form-control" type="number" ng-model="monitor.waitingBatches" min="0" max="100" required ng-if="editItem.type == 3">
-                                    </div>
-                                    <div class="col-sm-5">
-                                        <p class="help-block" ng-if="editItem.type == 1">批次积压大于等于该值的时候将进行告警，为0禁用</p>
-                                        <p class="help-block" ng-if="editItem.type == 3">单位时间内，任务阻塞比(阻塞任务数 / 消费任务数)大于等于该值的时候将进行告警，为0禁用，最大100</p>
-                                    </div>
-                                </div>
-                                <div class="form-group" ng-if="editItem.type == 1 || editItem.type == 3">
-                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 1">批次积压重启</label>
-                                    <label class="col-sm-3 control-label" ng-if="editItem.type == 3">任务阻塞重启</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control selectpicker show-tick"
-                                                ng-model="monitor.autoRestart" ng-options="item.value as item.name for item in booleanTypeList" required>
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-5">
-                                        <p class="help-block" ng-if="editItem.type == 1">批次积压达到阈值后，自动进行任务重启</p>
-                                        <p class="help-block" ng-if="editItem.type == 3">任务阻塞达到阈值后，自动进行任务重启</p>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">监控频率(cron表达式)&nbsp;<B>*</B></label>
-                                    <div class="col-sm-4">
-                                        <input class="form-control" ng-model="monitor.cron" required>
-                                    </div>
-                                    <div class="col-sm-5">
-                                        <p class="help-block">0 */1 * * * ? 为每1分钟检查一次</p>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">发送邮件</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control selectpicker show-tick"
-                                                ng-model="monitor.sendMail" ng-options="item.value as item.name for item in booleanTypeList" required>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">钉钉通知&nbsp;</label>
-                                    <div  class="col-sm-4">
-                                        <div ng-repeat="tip in monitor.dingdingHooks track by $index">
-                                            <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="monitor.dingdingHooks[$index]" placeholder="钉钉token" ><span style="width: 5%;" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(monitor.dingdingHooks, $index)"></span>
-                                        </div>
-                                        <div ng-click="!monitor.dingdingHooks ? monitor.dingdingHooks = []: '';onAddTip(monitor.dingdingHooks);">
-                                            <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-5">
-                                        <p class="help-block">需要指定@用户，可用“&”拼接，如：token&@phone1@phone2</p>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-3 control-label">状态</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control selectpicker show-tick"
-                                                ng-model="monitor.status" ng-options="item.value as item.name for item in enableTypeList" required>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-center"
-                             ng-if="editItem.type == 0 || editItem.type == 2 || editItem.type == 4"
-                             ng-click="!editItem.tasks ? editItem.tasks = []: '';onAddTask(editItem.tasks);" >
-                            <button type="button" class="btn btn-primary">添加调度</button>
-                        </div>
-                        <div class="text-center"
-                             ng-if="editItem.type == 1 || editItem.type == 3"
-                             ng-click="!editItem.monitors ? editItem.monitors = []: '';onAddMonitor(editItem.monitors);" >
-                            <button type="button" class="btn btn-primary">添加监控</button>
-                        </div>
-                    </div>
-
                     <div class="container text-center">
                         <button type="submit" class="btn btn-primary" id="btn_submit">&emsp;&emsp;保存&emsp;&emsp;</button>
                         <button type="reset" class="btn btn-secondary">&emsp;&emsp;重置&emsp;&emsp;</button>
@@ -611,11 +391,9 @@
 </div>
 <script src="../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
 <script src="../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
-<script src="../libs/bootstrap-switch/bootstrap-switch.min.js" type="text/javascript"></script>
 <script src="../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
 <script src="../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
 <script src="../js/common.js" type="text/javascript"></script>
-<script src="../libs/laydate/laydate.js" type="application/javascript"></script>
 <script src="../libs/dropzone/dropzone.min.js" type="application/javascript"></script>
 <script th:inline="javascript">
     var app = angular.module("content-app", []);
@@ -664,18 +442,10 @@
         if (user.root) {
             getAuthUser($scope, $http);
         }
-        getClusterSync($scope);
-        getComputeFrameworkVersionSync($scope);
         appendScriptType($scope);
         getAgent($scope, $http);
         getClusterUser($scope, $http);
         getScript($scope, $http, false, true);
-        appendBooleanType($scope);
-        appendEnableType($scope);
-        appendTaskCycle($scope);
-        appendHour($scope);
-        appendMinute($scope);
-        appendWeek($scope);
 
         var Spark = {
             'createDefault': function () {
@@ -765,8 +535,6 @@
 
         var scriptId = [[${scriptId}]];
         var editItem;
-        var deleteTasks = [];
-        var deleteMonitors = [];
 
         $scope.onOpenList = function () {
             if (parent.xadmin) {
@@ -778,6 +546,8 @@
 
         //初始化
         $scope.init = function () {
+            getClusterSync($scope);
+            getComputeFrameworkVersionSync($scope);
             if (scriptId) {
                 var query = {
                     'id': scriptId,
@@ -825,54 +595,6 @@
                                     }
                                 });
                             }
-                            //处理监控或调度
-                            query = {
-                                'scriptId': editItem.id,
-                                'pageNo': 1,
-                                'pageSize': 500,
-                                'limit': 1
-                            };
-                            var url;
-                            if (editItem.type === 0 || editItem.type === 2 || editItem.type === 4) { //获取调度
-                                url = '../scheduling/getpage.api'
-                            } else { //获取监控
-                                url = '../monitor/getpage.api'
-                            }
-                            $.ajax({
-                                url: url,
-                                async: false,
-                                type: 'POST',
-                                contentType: 'application/json',
-                                data: JSON.stringify(query),
-                                success: function (data) {
-                                    if (data.content && data.content.length > 0) {
-                                        if (editItem.type === 0 || editItem.type === 2 || editItem.type === 4) {
-                                            editItem.tasks = data.content;
-                                            editItem.tasks.forEach(function (item, index) {
-                                                if (item.week === null) {
-                                                    item.week = ['6'];
-                                                }
-                                                if (item.intervals === null) {
-                                                    item.intervals = 2;
-                                                }
-                                                $timeout(function () {
-                                                    $scope.initCycleEvent(index, (item.cycle - 1).toString());
-                                                    if (item.cron) {
-                                                        $('[name="' + index + '_visual-checkbox"]').bootstrapSwitch('state', false);
-                                                    } else {
-                                                        $('[name="' + index + '_visual-checkbox"]').bootstrapSwitch('state', true);
-                                                        item.cron = '0 */2 * * * ?';
-                                                        $('#'+ index + '_cycle_input_cron').val(item.cron);
-                                                    }
-                                                    $('.selectpicker').selectpicker('refresh');
-                                                }, 50);
-                                            });
-                                        } else {
-                                            editItem.monitors = data.content;
-                                        }
-                                    }
-                                }
-                            });
                         }
                     }
                 });
@@ -907,6 +629,7 @@
                     $divCluster.hide();
                     $divSparkVersion.hide();
                     $divFlinkVersion.hide();
+                    $divResource.hide();
                     $scope.editItem.spark = Spark.createDefault();
                     $scope.editItem.flink = Flink.createDefault();
                     $a_visual.parent().addClass('disabled');
@@ -934,7 +657,6 @@
                 }, 50);
             }
         };
-        $scope.init();
 
         //保存
         $scope.onSaveItem = function() {
@@ -963,124 +685,18 @@
             $http.post("./save.api", $scope.editItem)
                 .success(function(data) {
                     if (data.code === 0) {
-                        var script = data.content;
-                        var errors = [];
-                        if (script.type === 0 || script.type === 2) {
-                            if ($scope.editItem.tasks) {
-                                $scope.editItem.tasks.forEach(function (task, index) {
-                                    task.scriptId = script.id;
-                                    task.uid = script.uid;
-                                    if ($('[name="' + index + '_visual-checkbox"]').bootstrapSwitch('state')) {
-                                        task.cron = null;
-                                    }
-                                    $.ajax({
-                                        url: '../scheduling/save.api',
-                                        async: false,
-                                        type: 'POST',
-                                        contentType: 'application/json',
-                                        data: JSON.stringify(task),
-                                        success: function (data) {
-                                            if (data.code !== 0) {
-                                                errors.push(index);
-                                            }
-                                        },
-                                        error: function () {
-                                            errors.push(index);
-                                        }
-                                    });
-                                });
-                            }
-                            if ($scope.editItem.id && deleteTasks.length > 0) {
-                                deleteTasks.forEach(function (value) {
-                                    $.ajax({
-                                        url: '../scheduling/delete.api?id=' + value,
-                                        async: false,
-                                        type: 'POST',
-                                        contentType: 'application/json',
-                                        success: function (data) {
-                                            if (data.code !== 0) {
-                                                errors.push(value);
-                                            }
-                                        },
-                                        error: function () {
-                                            errors.push(value);
-                                        }
-                                    });
-                                });
-                            }
-                        } else {
-                            if ($scope.editItem.monitors) {
-                                $scope.editItem.monitors.forEach(function (monitor, index) {
-                                    monitor.scriptId = script.id;
-                                    monitor.uid = script.uid;
-                                    if (script.type === 1) {
-                                        monitor.type = 0;
-                                    } else {
-                                        monitor.type = 1;
-                                    }
-                                    $.ajax({
-                                        url: '../monitor/save.api',
-                                        async: false,
-                                        type: 'POST',
-                                        contentType: 'application/json',
-                                        data: JSON.stringify(monitor),
-                                        success: function (data) {
-                                            if (data.code !== 0) {
-                                                errors.push(index);
-                                            }
-                                        },
-                                        error: function () {
-                                            errors.push(index);
-                                        }
-                                    });
-                                });
-                            }
-                            if ($scope.editItem.id && deleteMonitors.length > 0) {
-                                deleteMonitors.forEach(function (value) {
-                                    $.ajax({
-                                        url: '../monitor/delete.api?id=' + value,
-                                        async: false,
-                                        type: 'POST',
-                                        contentType: 'application/json',
-                                        success: function (data) {
-                                            if (data.code !== 0) {
-                                                errors.push(value);
-                                            }
-                                        },
-                                        error: function () {
-                                            errors.push(value);
-                                        }
-                                    });
-                                });
-                            }
-                        }
-                        if (errors.length > 0) {
-                            var html = '';
-                            if (script.type === 0 || script.type === 2) {
-                                html += '调度任务操作失败，请到<a href="/scheduling/list.html">离线调度</a>中重新操作';
+                        swal({
+                            title: '操作成功',
+                            text: data.msg,
+                            type: 'success',
+                            showConfirmButton: true
+                        }).then(function () {
+                            if (parent.xadmin) {
+                                $scope.closeTab();
                             } else {
-                                html += '监控任务操作失败，请到<a href="/monitor/list.html">实时监控</a>中重新操作';
+                                location.href = "./list.html";
                             }
-                            swal({
-                                title: '操作警告',
-                                html: html,
-                                type: 'warning',
-                                showConfirmButton: true
-                            });
-                        } else {
-                            swal({
-                                title: '操作成功',
-                                text: data.msg,
-                                type: 'success',
-                                showConfirmButton: true
-                            }).then(function () {
-                                if (parent.xadmin) {
-                                    $scope.closeTab();
-                                } else {
-                                    location.href = "./list.html";
-                                }
-                            });
-                        }
+                        });
                     } else {
                         swal('操作失败', data.msg, 'error');
                     }
@@ -1092,8 +708,6 @@
         $selectType.change(function() {
             $scope.editItem.script = '';
             $text.find('textarea').val('');
-            var $divTask = $('.div_task');
-            var $divMonitor = $('.div_monitor');
             if (this.value !== '0') {
                 if (this.value === '1' || this.value === '2') {
                     $divSparkVersion.show();
@@ -1107,13 +721,6 @@
                 $divCluster.find('input').attr('required', true);
                 $divAgent.hide();
                 $divAgent.find('select').removeAttr('required');
-                if (this.value === '2') {
-                    $divMonitor.hide();
-                    $divTask.show();
-                } else {
-                    $divMonitor.show();
-                    $divTask.hide();
-                }
                 //资源选项
                 $divResource.show();
                 if (this.value === '1' || this.value === '3') {
@@ -1150,8 +757,6 @@
                 $divCluster.find('input').removeAttr('required');
                 $divAgent.show();
                 $divAgent.find('select').attr('required', true);
-                $divMonitor.hide();
-                $divTask.show();
                 $divResource.hide();
                 $a_visual.parent().addClass('disabled');
                 $a_text.tab('show');
@@ -1388,146 +993,6 @@
             }
             return target;
         }
-
-        //添加调度或监控
-        $scope.onAddTask = function (tips) {
-            var now = new Date();
-            var tenYearsLater = new Date(now.getTime() + (60 * 60 * 24 * 365 * 10 * 1000));
-            var index = tips.length;
-            if (!tips) {
-                tips = [''];
-            }
-            var tip = {
-                sendMail: true,
-                status: 1,
-                type: 2,
-                cycle: 1,
-                week: ['6'],
-                hour: 0,
-                minute: 0,
-                intervals: 2,
-                subScriptIds: [],
-                repeatSubmit: false,
-                startTime: now.format("yyyy-MM-dd HH:mm:ss"),
-                endTime: tenYearsLater.format("yyyy-MM-dd HH:mm:ss"),
-                cron: '0 */2 * * * ?'
-            };
-            tips.push(tip);
-            $timeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-                $scope.initCycleEvent(index);
-            }, 50);
-        };
-        $scope.onRemoveTask = function (tips, index) {
-            if (!tips) {
-                return;
-            }
-            if (tips[index].id) {
-                deleteTasks.push(tips[index].id);
-            }
-            tips.splice(index, 1);
-        };
-        $scope.onAddMonitor = function (tips) {
-            if (!tips) {
-                tips = [''];
-            }
-            var tip = {
-                sendMail: true,
-                status: 1,
-                autoRestart: false,
-                exAutoRestart: true,
-                waitingBatches: 15,
-                cron: "0 */1 * * * ?"
-            };
-            tips.push(tip);
-            $timeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-            }, 50);
-        };
-        $scope.onRemoveMonitor = function (tips, index) {
-            if (!tips) {
-                return;
-            }
-            if (tips[index].id) {
-                deleteMonitors.push(tips[index].id);
-            }
-            tips.splice(index, 1);
-        };
-        $scope.onAddTip = function (tips) {
-            if (!tips) {
-                tips = [''];
-            }
-            tips.push('');
-            $timeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-            }, 50);
-        };
-        $scope.onRemoveTip = function (tips, index) {
-            if (!tips) {
-                return;
-            }
-            tips.splice(index, 1);
-        };
-        $scope.initCycleEvent = function (index, val) {
-            registerDateRange(app, index + '_inp_start', index + '_inp_end');
-            var $visualCheckbox = $('[name="' + index + '_visual-checkbox"]');
-            var $cycleInputCron = $('#'+ index + '_cycle_input_cron');
-            var $cycleDivVisual = $('#'+ index + '_cycle_div_visual');
-            var $cycleInputInterval = $('#' + index + '_cycle_input_intervals');
-            var $cycleSelectCycle = $('#' + index + '_cycle_select_cycle');
-            var $cycleDivWeek = $('#' + index + '_cycle_div_week');
-            var $cycleDivHour = $('#' + index + '_cycle_div_hour');
-            var $cycleDivMinute = $('#' + index + '_cycle_div_minute');
-            $visualCheckbox.bootstrapSwitch({
-                onColor: "success",
-                offColor: "default",
-                size: "mini",
-                onSwitchChange: function(event, state){
-                    if (state === true){
-                        $cycleInputCron.hide();
-                        $cycleDivVisual.show();
-                    } else {
-                        $cycleInputCron.show();
-                        $cycleDivVisual.hide();
-                    }
-                    $('.selectpicker').selectpicker('refresh');
-                }
-            });
-            $cycleSelectCycle.change(function () {
-                selectCycleChange(this.value);
-            });
-            function selectCycleChange(val) {
-                if (val === '0') {
-                    $cycleInputInterval.show();
-                    $cycleDivWeek.hide();
-                    $cycleDivHour.hide();
-                    $cycleDivMinute.hide();
-                } else if (val === '1') {
-                    $cycleInputInterval.hide();
-                    $cycleDivWeek.hide();
-                    $cycleDivHour.hide();
-                    $cycleDivMinute.show();
-                } else if (val === '2') {
-                    $cycleInputInterval.hide();
-                    $cycleDivWeek.hide();
-                    $cycleDivHour.show();
-                    $cycleDivMinute.show();
-                } else {
-                    $cycleInputInterval.hide();
-                    $cycleDivWeek.show();
-                    $cycleDivHour.show();
-                    $cycleDivMinute.show();
-                }
-            }
-            //初始化状态
-            $cycleInputCron.hide();
-            $cycleDivWeek.hide();
-            $cycleDivHour.hide();
-            $cycleDivMinute.hide();
-            if (val) {
-                selectCycleChange(val);
-            }
-        };
 
         //可视化切换
         $a_visual.on('show.bs.tab', function(e) {
@@ -1936,9 +1401,7 @@
             $('[data-toggle="tooltip"]').tooltip();
         }, 50);
 
-        $timeout(function () {
-            $('.selectpicker').selectpicker('refresh');
-        }, 3000);
+        $scope.init();
 
     });
 

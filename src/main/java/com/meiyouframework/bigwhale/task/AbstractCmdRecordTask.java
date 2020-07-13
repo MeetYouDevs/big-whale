@@ -43,43 +43,42 @@ public abstract class AbstractCmdRecordTask extends AbstractNoticeableTask {
             if (cmdRecord.getCreateTime().before(scheduling.getUpdateTime())) {
                 return;
             }
-            if (StringUtils.isBlank(cmdRecord.getSubScriptIds())) {
+            Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(cmdRecord.getSchedulingNodeId());
+            if (nodeIdToScriptId.isEmpty()) {
                 return;
             }
-            String [] items = cmdRecord.getSubScriptIds().split(",");
-            List<String> subScriptIds = new ArrayList<>(items.length);
-            Collections.addAll(subScriptIds, items);
-            String subScriptId = subScriptIds.remove(0);
-            Script script = scriptService.findById(subScriptId);
-            String agentId = script.getAgentId();
-            if (StringUtils.isBlank(agentId)) {
-                Agent agent = agentService.getByClusterId(script.getClusterId());
-                if (agent != null) {
-                    agentId = agent.getId();
+            for (Map.Entry<String, String> entry : nodeIdToScriptId.entrySet()) {
+                String nodeId = entry.getKey();
+                String scriptId = entry.getValue();
+                Script script = scriptService.findById(scriptId);
+                String agentId = script.getAgentId();
+                if (StringUtils.isBlank(agentId)) {
+                    Agent agent = agentService.getByClusterId(script.getClusterId());
+                    if (agent != null) {
+                        agentId = agent.getId();
+                    }
                 }
-            }
-            CmdRecord record = CmdRecord.builder()
-                    .parentId(cmdRecord.getId())
-                    .uid(scheduling.getUid())
-                    .scriptId(script.getId())
-                    .createTime(new Date())
-                    .content(script.getScript())
-                    .timeout(script.getTimeout())
-                    .status(Constant.EXEC_STATUS_UNSTART)
-                    .agentId(agentId)
-                    .clusterId(script.getClusterId())
-                    .schedulingId(cmdRecord.getSchedulingId())
-                    .schedulingInstanceId(cmdRecord.getSchedulingInstanceId())
-                    .args(cmdRecord.getArgs())
-                    .build();
-            if (!subScriptIds.isEmpty()) {
-                record.setSubScriptIds(StringUtils.join(subScriptIds, ","));
-            }
-            record = cmdRecordService.save(record);
-            try {
-                CmdRecordRunner.build(record);
-            } catch (SchedulerException e) {
-                LOGGER.error("schedule submit error", e);
+                CmdRecord record = CmdRecord.builder()
+                        .parentId(cmdRecord.getId())
+                        .uid(scheduling.getUid())
+                        .scriptId(scriptId)
+                        .createTime(new Date())
+                        .content(script.getScript())
+                        .timeout(script.getTimeout())
+                        .status(Constant.EXEC_STATUS_UNSTART)
+                        .agentId(agentId)
+                        .clusterId(script.getClusterId())
+                        .schedulingId(scheduling.getId())
+                        .schedulingInstanceId(cmdRecord.getSchedulingInstanceId())
+                        .schedulingNodeId(nodeId)
+                        .args(cmdRecord.getArgs())
+                        .build();
+                record = cmdRecordService.save(record);
+                try {
+                    CmdRecordRunner.build(record);
+                } catch (SchedulerException e) {
+                    LOGGER.error("schedule submit error", e);
+                }
             }
         }
     }
