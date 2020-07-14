@@ -33,7 +33,8 @@
 // * 7. 运行此测试
 // * 8. 删除第2步中添加的代码
 // * 9. 执行第3步中注释的SQL语句
-// * 10. 升级完毕
+// * 10. 执行SQL: UPDATE `scheduling` SET `last_execute_time` = Null;
+// * 11. 升级完毕
 // */
 //@SpringBootTest
 //@RunWith(SpringRunner.class)

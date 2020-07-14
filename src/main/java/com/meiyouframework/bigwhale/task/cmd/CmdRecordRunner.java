@@ -110,7 +110,11 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             }
             //为确保调度流程的准确性，应用名称添加实例ID
             if (scheduling != null) {
-                command = command.replace(" " + script.getApp() + " ", " " + script.getApp() + "_instance" + dateFormat.format(now) + " ");
+                if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
+                    command = command.replace("--name " + script.getApp(), "--name " + script.getApp() + "_instance" + dateFormat.format(now));
+                } else if (script.getType() == Constant.SCRIPT_TYPE_FLINK_BATCH) {
+                    command = command.replace("-ynm " + script.getApp(), "-ynm " + script.getApp() + "_instance" + dateFormat.format(now));
+                }
             }
             session.execCommand(command);
             if (!interrupted) {
