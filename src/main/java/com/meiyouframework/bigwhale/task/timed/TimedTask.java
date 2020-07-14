@@ -50,8 +50,12 @@ public class TimedTask implements Job {
                 return;
             }
         }
-        Date now = new Date();
-        scheduling.setLastExecuteTime(now);
+        String now = dateFormat.format(new Date());
+        try {
+            scheduling.setLastExecuteTime(dateFormat.parse(now));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         schedulingService.save(scheduling);
         Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(null);
         nodeIdToScriptId.forEach((nodeId, scriptId) -> {
@@ -73,7 +77,7 @@ public class TimedTask implements Job {
                     .agentId(agentId)
                     .clusterId(script.getClusterId())
                     .schedulingId(scheduling.getId())
-                    .schedulingInstanceId(dateFormat.format(now))
+                    .schedulingInstanceId(now)
                     .schedulingNodeId(nodeId)
                     .build();
             if (!jobExecutionContext.getMergedJobDataMap().isEmpty()) {
@@ -92,11 +96,16 @@ public class TimedTask implements Job {
     private boolean isLastTimeCompleted(Scheduling scheduling) {
         List<CmdRecord> cmdRecords = cmdRecordService.findByQuery(
                 ";schedulingId=" + scheduling.getId() +
-                        ";schedulingInstanceId=" +  dateFormat.format(scheduling.getLastExecuteTime()) +
-                        ";status!=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING,
+                        ";schedulingInstanceId=" +  dateFormat.format(scheduling.getLastExecuteTime()),
                 Sort.by(Sort.Direction.ASC, "createTime"));
+        //非程序意外退出的情况下，相关执行记录不会为空
         if (cmdRecords.isEmpty()) {
-            return false;
+            return true;
+        }
+        for (CmdRecord cmdRecord : cmdRecords) {
+            if (cmdRecord.getStatus() == Constant.EXEC_STATUS_UNSTART || cmdRecord.getStatus() == Constant.EXEC_STATUS_DOING) {
+                return false;
+            }
         }
         if (cmdRecords.size() == scheduling.getScriptIds().split(",").length) {
             for (CmdRecord cmdRecord : cmdRecords) {
