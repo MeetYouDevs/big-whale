@@ -75,9 +75,13 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             return;
         }
         //更新cmdRecord正在执行
-        Date now = new Date();
+        String now = dateFormat.format(new Date());
+        try {
+            cmdRecord.setStartTime(dateFormat.parse(now));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         cmdRecord.setStatus(Constant.EXEC_STATUS_DOING);
-        cmdRecord.setStartTime(now);
         cmdRecordService.save(cmdRecord);
         AgentService agentService = SpringContextUtils.getBean(AgentService.class);
         Agent agent = agentService.findById(cmdRecord.getAgentId());
@@ -110,7 +114,11 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             }
             //为确保调度流程的准确性，应用名称添加实例ID
             if (scheduling != null) {
-                command = command.replace(" " + script.getApp() + " ", " " + script.getApp() + "_instance" + dateFormat.format(now) + " ");
+                if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
+                    command = command.replace("--name " + script.getApp(), "--name " + script.getApp() + "_instance" + now);
+                } else if (script.getType() == Constant.SCRIPT_TYPE_FLINK_BATCH) {
+                    command = command.replace("-ynm " + script.getApp(), "-ynm " + script.getApp() + "_instance" + now);
+                }
             }
             session.execCommand(command);
             if (!interrupted) {
@@ -135,7 +143,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                             cmdRecord.setJobFinalStatus("UNDEFINED");
                         }
                         if (cmdRecord.getJobId() == null) {
-                            LOGGER.error("未能读取到Yarn应用ID！为确保告警的准确性，请将提交Yarn任务的日志级别设置为: INFO");
+                            LOGGER.error("脚本：" + script.getName() + "，未能读取到Yarn应用ID！为确保告警的准确性，请将提交Yarn任务的日志级别设置为: INFO");
                         }
                     }
                 } else {

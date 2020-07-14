@@ -48,8 +48,12 @@ public class TimedTask implements Job {
                 return;
             }
         }
-        Date now = new Date();
-        scheduling.setLastExecuteTime(now);
+        String now = dateFormat.format(new Date());
+        try {
+            scheduling.setLastExecuteTime(dateFormat.parse(now));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         schedulingService.save(scheduling);
         Script script = scriptService.findById(scheduling.getScriptId());
         String agentId = script.getAgentId();
@@ -70,7 +74,7 @@ public class TimedTask implements Job {
                 .agentId(agentId)
                 .clusterId(script.getClusterId())
                 .schedulingId(scheduling.getId())
-                .schedulingInstanceId(dateFormat.format(now))
+                .schedulingInstanceId(now)
                 .build();
         if (!jobExecutionContext.getMergedJobDataMap().isEmpty()) {
             cmdRecord.setArgs(JSON.toJSONString(jobExecutionContext.getMergedJobDataMap()));
@@ -87,11 +91,16 @@ public class TimedTask implements Job {
     private boolean isLastTimeCompleted(Scheduling scheduling) {
         List<CmdRecord> cmdRecords = cmdRecordService.findByQuery(
                 ";schedulingId=" + scheduling.getId() +
-                        ";schedulingInstanceId=" +  dateFormat.format(scheduling.getLastExecuteTime()) +
-                        ";status!=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING,
+                        ";schedulingInstanceId=" +  dateFormat.format(scheduling.getLastExecuteTime()),
                 Sort.by(Sort.Direction.DESC, "createTime"));
+        //非程序意外退出的情况下，相关执行记录不会为空
         if (cmdRecords.isEmpty()) {
-            return false;
+            return true;
+        }
+        for (CmdRecord cmdRecord : cmdRecords) {
+            if (cmdRecord.getStatus() == Constant.EXEC_STATUS_UNSTART || cmdRecord.getStatus() == Constant.EXEC_STATUS_DOING) {
+                return false;
+            }
         }
         CmdRecord lastCmdRecord = cmdRecords.get(0);
         Script script = scriptService.findById(lastCmdRecord.getScriptId());
