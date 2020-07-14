@@ -402,8 +402,10 @@
             }
             canvasOptions.on = onMessage;
             canvas.open(data);
-            canvas.render();
-            canvas.overflow();
+            setTimeout(function () {
+                canvas.render();
+                canvas.overflow();
+            }, 100);
         },
         // 初始化node
         initNode: function () {
@@ -419,7 +421,7 @@
             var _html = "";
             tools.forEach(function (val) {
                 val.children.forEach(function (val1) {
-                    _html += '<a title="' + val1.name + '" ondragstart="onDragStart(event,' + JSON.stringify(val1).replace(/\"/g, "'") + ')" draggable="true">' +
+                    _html += '<a href="#" title="' + val1.name + '" ondragstart="onDragStart(event,' + JSON.stringify(val1).replace(/\"/g, "'") + ')" draggable="true">' +
                         ' <i class="iconfont ' + val1.icon + '"></i> ' + val1.name +
                         '</a>';
                 });

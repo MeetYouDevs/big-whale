@@ -23,7 +23,8 @@
     border: 1px solid #e5e5e5;
     text-align: left;
     margin-top: 7px;
-    overflow: auto;
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 .tools .form-group {
@@ -88,7 +89,7 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     min-width: 16rem;
     text-align: left;
-    font-size: 0.2rem;
+    font-size: 12px;
     padding: 0.08rem 0;
 }
 
