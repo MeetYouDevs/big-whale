@@ -45,7 +45,7 @@ public class ApplicationReadyListener implements ApplicationListener<Application
         //启动监控任务
         startMonitor();
         //启动定时任务
-        startTimerTask();
+        startScheduling();
     }
 
     private void startResidentMission() {
@@ -76,7 +76,7 @@ public class ApplicationReadyListener implements ApplicationListener<Application
         });
     }
 
-    private void startTimerTask() {
+    private void startScheduling() {
         List<Scheduling> schedulings = schedulingService.findByQuery("status=" + Constant.STATUS_ON);
         schedulings.forEach(scheduling -> {
             try {
