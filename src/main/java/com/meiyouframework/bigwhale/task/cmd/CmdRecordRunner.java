@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +45,7 @@ import java.util.regex.Pattern;
 public class CmdRecordRunner extends AbstractCmdRecordTask implements InterruptableJob {
 
     private static final Pattern PATTERN = Pattern.compile("application_\\d+_\\d+");
+    private static final Pattern PATTERN1 = Pattern.compile("time mark: (\\d+)");
     private static final Logger LOGGER = LoggerFactory.getLogger(CmdRecordRunner.class);
 
     private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -51,11 +53,14 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
     private volatile boolean commandFinish = false;
     private volatile boolean interrupted = false;
     private CmdRecord cmdRecord;
+    private Script script;
     private String yarnUrl;
+    private Connection conn;
 
     @Override
     public void interrupt() {
         if (!commandFinish && !interrupted) {
+            kill();
             interrupted = true;
             thread.interrupt();
         }
@@ -70,12 +75,13 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             cmdRecord.setTimeout(5);
         }
         Date timeoutTime = DateUtils.addMinutes(cmdRecord.getCreateTime(), cmdRecord.getTimeout());
+        Date current = new Date();
         //超时的情况统一由CmdTimeoutJob处理
-        if (new Date().after(timeoutTime)) {
+        if (current.after(timeoutTime)) {
             return;
         }
         //更新cmdRecord正在执行
-        String now = dateFormat.format(new Date());
+        String now = dateFormat.format(current);
         try {
             cmdRecord.setStartTime(dateFormat.parse(now));
         } catch (Exception e) {
@@ -86,13 +92,13 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
         AgentService agentService = SpringContextUtils.getBean(AgentService.class);
         Agent agent = agentService.findById(cmdRecord.getAgentId());
         ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
-        Script script = scriptService.findById(cmdRecord.getScriptId());
+        script = scriptService.findById(cmdRecord.getScriptId());
         if (script.getType() != Constant.SCRIPT_TYPE_SHELL) {
             ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
             yarnUrl = clusterService.findById(cmdRecord.getClusterId()).getYarnUrl();
         }
         Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
-        Connection conn = new Connection(agent.getIp());
+        conn = new Connection(agent.getIp());
         Session session = null;
         try {
             SshConfig sshConfig = SpringContextUtils.getBean(SshConfig.class);
@@ -120,7 +126,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                     command = command.replace("-ynm " + script.getApp(), "-ynm " + script.getApp() + "_instance" + now);
                 }
             }
-            session.execCommand(command);
+            session.execCommand("echo time mark: $(date +%s) && " + command);
             if (!interrupted) {
                 //并发执行读取
                 readOutput(session);
@@ -255,6 +261,53 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                 String id = matcher.group();
                 cmdRecord.setJobId(id);
                 cmdRecord.setUrl(yarnUrl + "/proxy/" + id + "/");
+            }
+        }
+    }
+
+    private void kill() {
+        Matcher matcher = PATTERN1.matcher(cmdRecord.getOutputs());
+        if (!matcher.find()) {
+            LOGGER.error("未能匹配时间标记，不能执行kill命令");
+        }
+        DateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy", Locale.ENGLISH);
+        long timestamp = Long.parseLong(matcher.group(1) + "000");
+        String lstartM1 = dateFormat.format(new Date(timestamp - 1000));
+        String lstart = dateFormat.format(new Date(timestamp));
+        String lstartA1 = dateFormat.format(new Date(timestamp + 1000));
+        String cmd;
+        String commandTemplate;
+        if (script.getType() == Constant.SCRIPT_TYPE_SHELL) {
+            cmd = cmdRecord.getContent().replaceAll("/\\*", "/\\\\*");
+            commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s %s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
+        } else {
+            if (script.getType() == Constant.SCRIPT_TYPE_SPARK_STREAMING || script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
+                if (script.getScript().indexOf("--queue " + script.getQueue()) > script.getScript().indexOf("--name " + script.getApp())) {
+                    cmd = script.getApp() + ".*" + script.getQueue();
+                } else {
+                    cmd = script.getQueue() + ".*" + script.getApp();
+                }
+            } else {
+                if (script.getScript().indexOf("-yqu " + script.getQueue()) > script.getScript().indexOf("-ynm " + script.getApp())) {
+                    cmd = script.getApp() + ".*" + script.getQueue();
+                } else {
+                    cmd = script.getQueue() + ".*" + script.getApp();
+                }
+            }
+            commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s.*%s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
+        }
+        String command = String.format(commandTemplate, lstartM1, cmd) + " ; " +
+                String.format(commandTemplate, lstart, cmd) + " ; " +
+                String.format(commandTemplate, lstartA1, cmd);
+        Session session = null;
+        try {
+            session = conn.openSession();
+            session.execCommand(command);
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage(), e);
+        } finally {
+            if (session != null) {
+                session.close();
             }
         }
     }
