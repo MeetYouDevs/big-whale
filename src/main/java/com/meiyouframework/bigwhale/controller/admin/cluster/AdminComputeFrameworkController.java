@@ -47,7 +47,6 @@ public class AdminComputeFrameworkController extends BaseController {
         return success(computeFramework);
     }
 
-
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)
     public Msg delete(@RequestParam String id) {
         computeFrameworkService.deleteById(id);

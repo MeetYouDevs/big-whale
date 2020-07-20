@@ -197,6 +197,10 @@ public class ScriptController extends BaseController {
                 return "名称重复";
             }
             if (req.getType() != Constant.SCRIPT_TYPE_SHELL) {
+                Agent agent = agentService.getByClusterId(req.getClusterId());
+                if (agent == null) {
+                    return "所选集群下暂无可用机器";
+                }
                 //检查yarn应用名称是否重复
                 Set<String> queueAndApps = new HashSet<>();
                 List<Script> scripts = scriptService.findByQuery("clusterId=" + req.getClusterId());
@@ -224,7 +228,11 @@ public class ScriptController extends BaseController {
                 }
             }
             if (req.getType() != Constant.SCRIPT_TYPE_SHELL) {
-                //检查是否和其他任务应用名称冲突
+                Agent agent = agentService.getByClusterId(req.getClusterId());
+                if (agent == null) {
+                    return "所选集群下暂无可用机器";
+                }
+                //检查yarn应用名称是否重复
                 Set<String> queueAndApps = new HashSet<>();
                 List<Script> scripts = new ArrayList<>();
                 scriptService.findByQuery("clusterId=" + req.getClusterId()).forEach(item -> {
