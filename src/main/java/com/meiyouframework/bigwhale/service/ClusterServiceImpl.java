@@ -12,8 +12,6 @@ public class ClusterServiceImpl extends AbstractMysqlPagingAndSortingQueryServic
 
     @Autowired
     private ClusterUserService clusterUserService;
-    @Autowired
-    private ScriptService scriptService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -33,7 +31,7 @@ public class ClusterServiceImpl extends AbstractMysqlPagingAndSortingQueryServic
     @Override
     public void delete(Cluster entity) {
         clusterUserService.deleteByQuery("clusterId=" + entity.getId());
-        scriptService.findByQuery("clusterId=" + entity.getId()).forEach(scriptService::delete);
         super.delete(entity);
     }
+
 }

@@ -2,7 +2,7 @@
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:include="base/resource"/>
-    <title>设备管理 - Big Whale</title>
+    <title>机器管理 - Big Whale</title>
     <link href="../../../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet">
     <link href="../../../css/common.css" rel="stylesheet"/>
 </head>
@@ -77,7 +77,7 @@
         <div class="row">
             <ol class="breadcrumb">
                 <li>集群管理</li>
-                <li class="active">设备管理</li>
+                <li class="active">机器管理</li>
             </ol>
             <a class="bw-refresh" onclick="location.reload()" title="刷新">
                 <i class="fa fa-refresh" style="font-size: 18px"></i>
@@ -142,6 +142,9 @@
                                         <p class="operate">
                                             <span ng-click="onEditItem(item)">
                                                 <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
+                                            </span><br/>
+                                            <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                                <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
                                             </span>
                                         </p>
                                     </td>
@@ -217,6 +220,10 @@
                     }
                     $('#btn_submit').removeAttr('disabled');
                 });
+        };
+
+        $scope.onRemoveItem = function(item) {
+            removeItem('./delete.api', item, $http, $scope.reload);
         };
 
         // 获取数据列表
