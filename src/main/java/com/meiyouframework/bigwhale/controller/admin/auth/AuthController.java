@@ -61,11 +61,6 @@ public class AuthController extends BaseController {
                 return failed("资源已存在");
             }
             req.setCreated(new Date());
-        } else {
-            Resource dbResource = resourceService.findById(req.getId());
-            if (dbResource == null) {
-                return failed();
-            }
         }
         req = resourceService.save(req);
         return success(req);
@@ -102,11 +97,6 @@ public class AuthController extends BaseController {
                 return failed("角色已存在");
             }
             req.setCreated(new Date());
-        } else {
-            Role dbRole = roleService.findById(req.getId());
-            if (dbRole == null) {
-                return failed();
-            }
         }
         req = roleService.save(req);
         return success(req);

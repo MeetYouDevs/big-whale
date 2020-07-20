@@ -6,9 +6,11 @@ import com.meiyouframework.bigwhale.data.domain.PageRequest;
 import com.meiyouframework.bigwhale.dto.DtoClusterUser;
 import com.meiyouframework.bigwhale.entity.Cluster;
 import com.meiyouframework.bigwhale.entity.ClusterUser;
+import com.meiyouframework.bigwhale.entity.Script;
 import com.meiyouframework.bigwhale.service.ClusterService;
 import com.meiyouframework.bigwhale.service.ClusterUserService;
 import com.meiyouframework.bigwhale.controller.BaseController;
+import com.meiyouframework.bigwhale.service.ScriptService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,8 @@ public class AdminClusterUserController extends BaseController {
     private ClusterUserService clusterUserService;
     @Autowired
     private ClusterService clusterService;
+    @Autowired
+    private ScriptService scriptService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
     public Page<ClusterUser> getPage(@RequestBody DtoClusterUser req) {
@@ -87,7 +91,14 @@ public class AdminClusterUserController extends BaseController {
 
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)
     public Msg delete(@RequestParam String id) {
-        clusterUserService.deleteById(id);
+        ClusterUser clusterUser = clusterUserService.findById(id);
+        if (clusterUser != null) {
+            List<Script> scripts = scriptService.findByQuery("clusterId=" + clusterUser.getClusterId() + ";uid=" + clusterUser.getUid());
+            if (!scripts.isEmpty()) {
+                return failed("集群用户下存在脚本，请先删除");
+            }
+            clusterUserService.deleteById(id);
+        }
         return success();
     }
 

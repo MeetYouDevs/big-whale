@@ -3,7 +3,6 @@ package com.meiyouframework.bigwhale.service;
 import com.meiyouframework.bigwhale.data.service.AbstractMysqlPagingAndSortingQueryService;
 import com.meiyouframework.bigwhale.entity.Agent;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Random;
@@ -14,7 +13,7 @@ public class AgentServiceImpl extends AbstractMysqlPagingAndSortingQueryService<
     @Override
     public Agent getByClusterId(String clusterId) {
         List<Agent> agents = findByQuery("status=1;clusterId=" + clusterId);
-        if (!CollectionUtils.isEmpty(agents)) {
+        if (!agents.isEmpty()) {
             int size = agents.size();
             int random = new Random().nextInt(size);
             return agents.get(random);

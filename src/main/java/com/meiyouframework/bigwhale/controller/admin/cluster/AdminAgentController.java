@@ -1,19 +1,20 @@
 package com.meiyouframework.bigwhale.controller.admin.cluster;
 
+import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.Msg;
 import com.meiyouframework.bigwhale.data.domain.PageRequest;
 import com.meiyouframework.bigwhale.dto.DtoAgent;
 import com.meiyouframework.bigwhale.entity.Agent;
+import com.meiyouframework.bigwhale.entity.Script;
 import com.meiyouframework.bigwhale.service.AgentService;
 import com.meiyouframework.bigwhale.controller.BaseController;
+import com.meiyouframework.bigwhale.service.ClusterService;
+import com.meiyouframework.bigwhale.service.ScriptService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,7 +25,11 @@ import java.util.List;
 public class AdminAgentController extends BaseController {
 
     @Autowired
+    private ClusterService clusterService;
+    @Autowired
     private AgentService agentService;
+    @Autowired
+    private ScriptService scriptService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
     public Page<Agent> getPage(@RequestBody DtoAgent req) {
@@ -58,11 +63,38 @@ public class AdminAgentController extends BaseController {
             if (dbAgent == null) {
                 return failed();
             }
+            boolean checkFlag = StringUtils.isNotBlank(dbAgent.getClusterId()) &&
+                    (req.getStatus() == Constant.STATUS_OFF || !dbAgent.getClusterId().equals(req.getClusterId()));
+            if (checkFlag) {
+                List<Agent> agents = agentService.findByQuery("status=1;clusterId=" + dbAgent.getClusterId() + ";id!=" + dbAgent.getId());
+                if (agents.isEmpty()) {
+                    List<Script> scripts = scriptService.findByQuery("clusterId=" + dbAgent.getClusterId());
+                    if (!scripts.isEmpty()) {
+                        return failed("变更配置前绑定的集群下存在脚本，请先添加新的集群机器");
+                    }
+                }
+            }
         }
         Agent agent = new Agent();
         BeanUtils.copyProperties(req, agent);
         agent = agentService.save(agent);
         return success(agent);
+    }
+
+    @RequestMapping(value = "/delete.api", method = RequestMethod.POST)
+    public Msg delete(@RequestParam String id) {
+        Agent agent = agentService.findById(id);
+        if (agent != null) {
+            List<Script> scripts = scriptService.findByQuery("agentId=" + agent.getId());
+            if (!scripts.isEmpty()) {
+                return failed("机器下存在脚本，请先删除");
+            }
+            if (StringUtils.isNotBlank(agent.getClusterId()) && clusterService.findById(agent.getClusterId()) != null) {
+                return failed("机器绑定了集群，请先解绑");
+            }
+            agentService.deleteById(id);
+        }
+        return success();
     }
 
 }
