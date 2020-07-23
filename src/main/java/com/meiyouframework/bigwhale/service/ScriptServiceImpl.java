@@ -49,7 +49,7 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         }
         String id = entity.getId();
         monitorService.deleteByQuery("scriptId=" + id);
-        schedulingService.deleteByQuery("scriptId=" + id);
+        schedulingService.deleteByQuery("scriptIds?" + id);
         cmdRecordService.deleteByQuery("scriptId=" + id);
         super.delete(entity);
     }

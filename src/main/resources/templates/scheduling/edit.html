@@ -622,6 +622,9 @@
                                 topology.nodes,
                                 topology.lines
                             );
+                            $timeout(function () {
+                                $scope.selectCycleChange($cycleSelectCycle.val());
+                            }, 50);
                         }
                     }
                 });

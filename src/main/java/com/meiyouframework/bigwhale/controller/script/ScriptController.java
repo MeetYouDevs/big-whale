@@ -144,7 +144,7 @@ public class ScriptController extends BaseController {
                     e.printStackTrace();
                 }
             });
-            schedulingService.findByQuery("scriptId=" + script.getId()).forEach(item -> {
+            schedulingService.findByQuery("scriptIds?" + script.getId()).forEach(item -> {
                 try {
                     SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.TIMED);
                 } catch (Exception e) {
