@@ -63,6 +63,14 @@ public class AdminAgentController extends BaseController {
             if (dbAgent == null) {
                 return failed();
             }
+            //shell类型检查
+            if (req.getStatus() == Constant.STATUS_OFF) {
+                List<Script> scripts = scriptService.findByQuery("agentId=" + dbAgent.getId());
+                if (!scripts.isEmpty()) {
+                    return failed("停用机器前先迁移相关脚本");
+                }
+            }
+            //spark或flink类型检查
             boolean checkFlag = StringUtils.isNotBlank(dbAgent.getClusterId()) &&
                     (req.getStatus() == Constant.STATUS_OFF || !dbAgent.getClusterId().equals(req.getClusterId()));
             if (checkFlag) {
