@@ -220,28 +220,6 @@
 
     });
 
-    app.filter('scriptFilter', function () {
-        return function (scripts, uid, scriptId) {
-            scripts = scripts.filter(function (script) {
-                if (uid) {
-                    if (script.uid !== uid) {
-                        return false;
-                    }
-                }
-                if (scriptId) {
-                    if (script['id'] === scriptId) {
-                        return false;
-                    }
-                }
-                return true;
-            });
-            setTimeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-            }, 100);
-            return scripts;
-        }
-    });
-
 </script>
 </body>
 </html>
