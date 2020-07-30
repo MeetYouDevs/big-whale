@@ -8,14 +8,11 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.config.SshConfig;
-import com.meiyouframework.bigwhale.entity.Scheduling;
+import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.task.AbstractCmdRecordTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import com.meiyouframework.bigwhale.util.SpringContextUtils;
-import com.meiyouframework.bigwhale.entity.Agent;
-import com.meiyouframework.bigwhale.entity.CmdRecord;
-import com.meiyouframework.bigwhale.entity.Script;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
@@ -89,27 +86,27 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
         }
         cmdRecord.setStatus(Constant.EXEC_STATUS_DOING);
         cmdRecordService.save(cmdRecord);
-        AgentService agentService = SpringContextUtils.getBean(AgentService.class);
-        Agent agent = agentService.findById(cmdRecord.getAgentId());
         ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
+        AgentService agentService = SpringContextUtils.getBean(AgentService.class);
         script = scriptService.findById(cmdRecord.getScriptId());
-        if (script.getType() != Constant.SCRIPT_TYPE_SHELL) {
-            ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
-            yarnUrl = clusterService.findById(cmdRecord.getClusterId()).getYarnUrl();
-        }
         Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
-        conn = new Connection(agent.getIp());
         Session session = null;
         try {
+            String instance;
+            if (script.getType() != Constant.SCRIPT_TYPE_SHELL) {
+                ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
+                yarnUrl = clusterService.findById(cmdRecord.getClusterId()).getYarnUrl();
+                instance = agentService.getInstanceByClusterId(cmdRecord.getClusterId(), true);
+                cmdRecord.setAgentInstance(instance);
+            } else {
+                instance = agentService.getInstanceByAgentId(cmdRecord.getAgentId(), true);
+                cmdRecord.setAgentInstance(instance);
+            }
+            conn = new Connection(instance);
             SshConfig sshConfig = SpringContextUtils.getBean(SshConfig.class);
             conn.connect(null, sshConfig.getConnectTimeout(), 30000);
+            conn.authenticateWithPassword(sshConfig.getUser(), sshConfig.getPassword());
             int ret;
-            boolean isAuthenticated = conn.authenticateWithPassword(sshConfig.getUser(), sshConfig.getPassword());
-            if (!isAuthenticated) {
-                throw new IllegalArgumentException("Incorrect username or password");
-            }
-            agent.setLastConnTime(new Date());
-            agentService.save(agent);
             session = conn.openSession();
             String command = cmdRecord.getContent();
             if (cmdRecord.getArgs() != null) {
@@ -142,14 +139,14 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FINISH);
                     if (script.getType() == Constant.SCRIPT_TYPE_SHELL) {
                         //Shell脚本提交子任务(定时任务)
-                        submitNextCmdRecord(cmdRecord, scheduling, agentService, scriptService);
+                        submitNextCmdRecord(cmdRecord, scheduling, scriptService);
                     } else {
                         //设置yarn任务状态
                         if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH || script.getType() == Constant.SCRIPT_TYPE_FLINK_BATCH) {
                             cmdRecord.setJobFinalStatus("UNDEFINED");
                         }
                         if (cmdRecord.getJobId() == null) {
-                            LOGGER.error("脚本：" + script.getName() + "，未能读取到Yarn应用ID！为确保告警的准确性，请将提交Yarn任务的日志级别设置为: INFO");
+                            LOGGER.warn("脚本：" + script.getName() + "，未能读取到Yarn应用ID！为确保告警的准确性，请将提交Yarn任务的日志级别设置为: INFO");
                         }
                     }
                 } else {
@@ -178,7 +175,9 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             if (session != null) {
                 session.close();
             }
-            conn.close();
+            if (conn != null) {
+                conn.close();
+            }
         }
     }
 

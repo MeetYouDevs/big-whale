@@ -116,16 +116,16 @@
                                 <cite>集群用户</cite>
                             </a>
                         </li>
+                        <li th:if="${session.user.check('cluster_agent_manage')}">
+                            <a bw-target="代理管理$admin/cluster/agent/list.html" onclick="xadmin.add_tab('代理管理', 'admin/cluster/agent/list.html')">
+                                <i class="fa fa-angle-right" aria-hidden="true"></i>
+                                <cite>代理管理</cite>
+                            </a>
+                        </li>
                         <li th:if="${session.user.check('cluster_compute_framework_manage')}">
                             <a bw-target="版本管理$admin/cluster/compute_framework/list.html" onclick="xadmin.add_tab('版本管理', 'admin/cluster/compute_framework/list.html')">
                                 <i class="fa fa-angle-right" aria-hidden="true"></i>
                                 <cite>版本管理</cite>
-                            </a>
-                        </li>
-                        <li th:if="${session.user.check('cluster_agent_manage')}">
-                            <a bw-target="机器管理$admin/cluster/agent/list.html" onclick="xadmin.add_tab('机器管理', 'admin/cluster/agent/list.html')">
-                                <i class="fa fa-angle-right" aria-hidden="true"></i>
-                                <cite>机器管理</cite>
                             </a>
                         </li>
                     </ul>

@@ -5,7 +5,6 @@ import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
 import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.util.SpringContextUtils;
-import org.apache.commons.lang.StringUtils;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +33,9 @@ public abstract class AbstractCmdRecordTask extends AbstractNoticeableTask {
      * 提交下一个任务
      * @param cmdRecord
      * @param scheduling
-     * @param agentService
      * @param scriptService
      */
-    protected void submitNextCmdRecord(CmdRecord cmdRecord, Scheduling scheduling, AgentService agentService, ScriptService scriptService) {
+    protected void submitNextCmdRecord(CmdRecord cmdRecord, Scheduling scheduling, ScriptService scriptService) {
         if (scheduling != null) {
             //在上一次脚本任务链未执行完毕的情况下，更新过调度，则跳过余下脚本任务
             if (cmdRecord.getCreateTime().before(scheduling.getUpdateTime())) {
@@ -51,13 +49,6 @@ public abstract class AbstractCmdRecordTask extends AbstractNoticeableTask {
                 String nodeId = entry.getKey();
                 String scriptId = entry.getValue();
                 Script script = scriptService.findById(scriptId);
-                String agentId = script.getAgentId();
-                if (StringUtils.isBlank(agentId)) {
-                    Agent agent = agentService.getByClusterId(script.getClusterId());
-                    if (agent != null) {
-                        agentId = agent.getId();
-                    }
-                }
                 CmdRecord record = CmdRecord.builder()
                         .parentId(cmdRecord.getId())
                         .uid(scheduling.getUid())
@@ -66,7 +57,7 @@ public abstract class AbstractCmdRecordTask extends AbstractNoticeableTask {
                         .content(script.getScript())
                         .timeout(script.getTimeout())
                         .status(Constant.EXEC_STATUS_UNSTART)
-                        .agentId(agentId)
+                        .agentId(script.getAgentId())
                         .clusterId(script.getClusterId())
                         .schedulingId(scheduling.getId())
                         .schedulingInstanceId(cmdRecord.getSchedulingInstanceId())

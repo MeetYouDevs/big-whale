@@ -86,8 +86,7 @@ public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implement
             cmdRecord.setJobFinalStatus(finalStatus);
             if ("SUCCEEDED".equals(finalStatus)) {
                 //提交子任务
-                AgentService agentService = SpringContextUtils.getBean(AgentService.class);
-                submitNextCmdRecord(cmdRecord, scheduling, agentService, scriptService);
+                submitNextCmdRecord(cmdRecord, scheduling, scriptService);
             } else {
                 if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
                     notice(cmdRecord, null, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_BATCH_UNUSUAL, finalStatus));

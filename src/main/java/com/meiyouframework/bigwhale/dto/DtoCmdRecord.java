@@ -18,8 +18,8 @@ public class DtoCmdRecord extends AbstractPageDto {
     private String monitorId;
     private String scriptId;
     private Integer status;
-    private String clusterId;
     private String agentId;
+    private String clusterId;
     private String uid;
     private String content;
 

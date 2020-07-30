@@ -58,7 +58,7 @@ public abstract class AbstractNoticeableTask {
         } else {
             AgentService agentService = SpringContextUtils.getBean(AgentService.class);
             Agent agent = agentService.findById(script.getAgentId());
-            content = MsgTools.getPlainErrorMsg(agent.getIp(), userName, script.getName(), errorType);
+            content = MsgTools.getPlainErrorMsg(agent.getName(), userName, script.getName(), errorType);
         }
         NoticeService noticeService = SpringContextUtils.getBean(NoticeService.class);
         //发送邮件

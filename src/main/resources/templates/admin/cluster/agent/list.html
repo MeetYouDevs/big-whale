@@ -2,7 +2,7 @@
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:include="base/resource"/>
-    <title>机器管理 - Big Whale</title>
+    <title>代理管理 - Big Whale</title>
     <link href="../../../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet">
     <link href="../../../css/common.css" rel="stylesheet"/>
 </head>
@@ -18,27 +18,32 @@
             <form class="form-horizontal" ng-submit="onSaveItem()">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="modal_input_ip" class="col-sm-4 control-label">
-                            IP&nbsp;<B>*</B>
+                        <label for="modal_input_name" class="col-sm-4 control-label">
+                            名称&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_ip" class="form-control" ng-model="editItem.ip" required="required">
+                            <input id="modal_input_name" class="form-control" ng-model="editItem.name" required="required">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_host" class="col-sm-4 control-label">
-                            HOST&nbsp;<B>*</B>
+                        <label for="modal_input_description" class="col-sm-4 control-label">
+                            描述
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_host" class="form-control" ng-model="editItem.host" required="required">
+                            <input id="modal_input_description" class="form-control" ng-model="editItem.description">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_mac" class="col-sm-4 control-label">
-                            MAC&nbsp;<B>*</B>
+                        <label class="col-sm-4 control-label">
+                            实例&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_mac" class="form-control" ng-model="editItem.mac" required="required">
+                            <div ng-repeat="tip in editItem.instances track by $index">
+                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.instances[$index]" placeholder="机器IP或主机名" required><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.instances, $index)"></span>
+                            </div>
+                            <div ng-click="!editItem.instances ? editItem.instances = []: '';onAddTip(editItem.instances);">
+                                <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -49,16 +54,6 @@
                             <select id="modal_select_clusterId" class="form-control selectpicker show-tick"
                                     ng-model="editItem.clusterId" ng-options="item.id as item.name for item in clusterList">
                                 <option value="">请选择</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="modal_select_status" class="col-sm-4 control-label">
-                            状态
-                        </label>
-                        <div class="col-sm-5">
-                            <select id="modal_select_status" class="form-control selectpicker show-tick"
-                                    ng-model="editItem.status" ng-options="item.value as item.name for item in enableTypeList" required>
                             </select>
                         </div>
                     </div>
@@ -77,7 +72,7 @@
         <div class="row">
             <ol class="breadcrumb">
                 <li>集群管理</li>
-                <li class="active">机器管理</li>
+                <li class="active">代理管理</li>
             </ol>
             <a class="bw-refresh" onclick="location.reload()" title="刷新">
                 <i class="fa fa-refresh" style="font-size: 18px"></i>
@@ -90,10 +85,7 @@
                 <div class="col-md-12 search-form">
                     <form class="form-inline" ng-submit="options.mypage.toFirst()">
                         <div class="form-group">
-                            <input type="text" class="form-control" placeholder="ip" ng-model="options.query.ip">
-                        </div>
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="host" ng-model="options.query.host">
+                            <input type="text" class="form-control" placeholder="名称" ng-model="options.query.name">
                         </div>
                         <div class="form-group">
                             <label for="query_select_clusterId">集群</label>
@@ -112,63 +104,53 @@
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
-                                <tr>
-                                    <th>
-                                        操作
-                                    </th>
-                                    <th>
-                                        IP
-                                    </th>
-                                    <th>
-                                        HOST
-                                    </th>
-                                    <th>
-                                        MAC
-                                    </th>
-                                    <th>
-                                        集群
-                                    </th>
-                                    <th>
-                                        状态
-                                    </th>
-                                    <th>
-                                        最后连接时间
-                                    </th>
-                                </tr>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th>
+                                    名称
+                                </th>
+                                <th>
+                                    描述
+                                </th>
+                                <th>
+                                    实例
+                                </th>
+                                <th>
+                                    集群
+                                </th>
+                            </tr>
                             </thead>
                             <tbody>
-                                <tr ng-repeat="item in options.items">
-                                    <td>
-                                        <p class="operate">
+                            <tr ng-repeat="item in options.items">
+                                <td>
+                                    <p class="operate">
                                             <span ng-click="onEditItem(item)">
                                                 <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
                                             </span><br/>
-                                            <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
                                                 <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
                                             </span>
-                                        </p>
-                                    </td>
-                                    <td>
-                                        {{item.ip}}
-                                    </td>
-                                    <td>
-                                        {{item.host}}
-                                    </td>
-                                    <td>
-                                        {{item.mac}}
-                                    </td>
-                                    <td>
-                                        {{clusterMap[item.clusterId].name}}
-                                    </td>
-                                    <td>
-                                        <label ng-if="enableTypeMap[item.status]" class="label label-{{enableTypeMap[item.status].style}}">
-                                            {{enableTypeMap[item.status].name}}
-                                        </label>
-                                    </td>
-                                    <td>
-                                        {{item.lastConnTime}}
-                                    </td>
-                                </tr>
+                                    </p>
+                                </td>
+                                <td>
+                                    {{item.name}}
+                                </td>
+                                <td>
+                                    {{item.description}}
+                                </td>
+                                <td>
+                                    <ul style="padding-left: 0; margin-bottom: 0; list-style: none">
+                                        <li ng-repeat="instance in item.instances">
+                                            <label class="label label-info">{{instance}}</label >
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td>
+                                    {{clusterMap[item.clusterId].name}}
+                                </td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
@@ -201,6 +183,22 @@
         $scope.onEditItem = function(item) {
             $scope.editItem = angular.copy(item);
             $('#editDlg').modal();
+        };
+
+        //添加实例
+        $scope.onAddTip = function(tips) {
+            if (!tips) {
+                tips = [];
+            }
+            tips.push('');
+        };
+
+        //移除实例
+        $scope.onRemoveTip = function(tips, index) {
+            if (!tips) {
+                return;
+            }
+            tips.splice(index,1);
         };
 
         $('#editDlg').on('shown.bs.modal', function () {

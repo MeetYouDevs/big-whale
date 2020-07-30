@@ -4,12 +4,10 @@ import com.alibaba.fastjson.JSON;
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.Msg;
 import com.meiyouframework.bigwhale.controller.BaseController;
-import com.meiyouframework.bigwhale.entity.Agent;
 import com.meiyouframework.bigwhale.entity.CmdRecord;
 import com.meiyouframework.bigwhale.entity.Scheduling;
 import com.meiyouframework.bigwhale.entity.Script;
 import com.meiyouframework.bigwhale.entity.auth.User;
-import com.meiyouframework.bigwhale.service.AgentService;
 import com.meiyouframework.bigwhale.service.CmdRecordService;
 import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.service.ScriptService;
@@ -46,8 +44,6 @@ public class OpenApiController extends BaseController {
     @Autowired
     private UserService userService;
     @Autowired
-    private AgentService agentService;
-    @Autowired
     private SchedulingService schedulingService;
     @Autowired
     private CmdRecordService cmdRecordService;
@@ -69,16 +65,6 @@ public class OpenApiController extends BaseController {
         if (!passwordEncoder.matches(password, user.getPassword())) {
             return failed("签名验证失败");
         }
-        String agentId = script.getAgentId();
-        if (StringUtils.isBlank(agentId)) {
-            Agent agent = agentService.getByClusterId(script.getClusterId());
-            if (agent != null) {
-                agentId = agent.getId();
-            }
-        }
-        if (StringUtils.isBlank(agentId)) {
-            return failed("未能获取代理机器");
-        }
         CmdRecord cmdRecord = CmdRecord.builder()
                 .uid(script.getUid())
                 .scriptId(script.getId())
@@ -86,7 +72,7 @@ public class OpenApiController extends BaseController {
                 .content(script.getScript())
                 .timeout(script.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
-                .agentId(agentId)
+                .agentId(script.getAgentId())
                 .clusterId(script.getClusterId())
                 .build();
         if (args.args != null && !args.args.isEmpty()) {

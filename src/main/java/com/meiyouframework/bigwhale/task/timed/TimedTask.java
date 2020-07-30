@@ -43,7 +43,6 @@ public class TimedTask implements Job {
     public void execute(JobExecutionContext jobExecutionContext) {
         String schedulingId = jobExecutionContext.getJobDetail().getKey().getName();
         SchedulingService schedulingService = SpringContextUtils.getBean(SchedulingService.class);
-        AgentService agentService = SpringContextUtils.getBean(AgentService.class);
         Scheduling scheduling = schedulingService.findById(schedulingId);
         if (scheduling.getLastExecuteTime() != null && !scheduling.getRepeatSubmit()) {
             if (!isLastTimeCompleted(scheduling)) {
@@ -60,13 +59,6 @@ public class TimedTask implements Job {
         Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(null);
         nodeIdToScriptId.forEach((nodeId, scriptId) -> {
             Script script = scriptService.findById(scriptId);
-            String agentId = script.getAgentId();
-            if (StringUtils.isBlank(agentId)) {
-                Agent agent = agentService.getByClusterId(script.getClusterId());
-                if (agent != null) {
-                    agentId = agent.getId();
-                }
-            }
             CmdRecord cmdRecord = CmdRecord.builder()
                     .uid(scheduling.getUid())
                     .scriptId(scriptId)
@@ -74,7 +66,7 @@ public class TimedTask implements Job {
                     .content(script.getScript())
                     .timeout(script.getTimeout())
                     .status(Constant.EXEC_STATUS_UNSTART)
-                    .agentId(agentId)
+                    .agentId(script.getAgentId())
                     .clusterId(script.getClusterId())
                     .schedulingId(scheduling.getId())
                     .schedulingInstanceId(now)

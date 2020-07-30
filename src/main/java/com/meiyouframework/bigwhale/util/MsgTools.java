@@ -33,10 +33,10 @@ public class MsgTools {
         return msg.toString();
     }
 
-    public static String getPlainErrorMsg(String agent, String userName, String taskName, String errorType) {
+    public static String getPlainErrorMsg(String agentName, String userName, String taskName, String errorType) {
         StringBuilder msg = new StringBuilder("<告警信息>\n");
-        if (agent != null) {
-            msg.append("机器: ").append(agent).append("\n");
+        if (agentName != null) {
+            msg.append("代理: ").append(agentName).append("\n");
         }
         if (errorType != null) {
             msg.append("类型: ").append(errorType).append("\n");

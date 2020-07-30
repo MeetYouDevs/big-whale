@@ -75,10 +75,10 @@
                             </div>
                         </div>
                         <div id="div_agent" class="form-group">
-                            <label for="select_agentId" class="col-sm-2 control-label">机器&nbsp;<B>*</B></label>
+                            <label for="select_agentId" class="col-sm-2 control-label">运行代理&nbsp;<B>*</B></label>
                             <div class="col-sm-4">
                                 <select id="select_agentId" class="form-control selectpicker show-tick"
-                                        ng-model="editItem.agentId" ng-options="item.id as item.host for item in agentList">
+                                        ng-model="editItem.agentId" ng-options="item.id as item.name for item in agentList">
                                     <option value="">请选择</option>
                                 </select>
                             </div>
@@ -151,7 +151,7 @@
                                             <option value="batch">非批处理节点</option>
                                         </select>
                                     </div>
-                                    <label class="col-sm-2 control-label">分配策略<B class="help" data-toggle="tooltip" data-placement="top" title="容器分配策略：(1) 根据总资源（根据节点总cores做判断，即使cores已被耗光也与其他节点拥有同样的权重，影响权重的因素只有机器的规格）、(2) 根据剩余可用资源（根据当前剩余可用的cores作为权重判断，剩余可用的cores越多则权重越高）">?</B></label>
+                                    <label class="col-sm-2 control-label">分配策略<B class="help" data-toggle="tooltip" data-placement="top" title="容器分配策略：(1) 根据总资源（根据节点总cores做判断，即使cores已被耗光也与其他节点拥有同样的权重，影响权重的因素只有代理实例的规格）、(2) 根据剩余可用资源（根据当前剩余可用的cores作为权重判断，剩余可用的cores越多则权重越高）">?</B></label>
                                     <div class="col-sm-4">
                                         <select class="form-control selectpicker show-tick" ng-model="editItem.allocateBalancerType" ng-change="onAllocateBalancerTypeChange()" title="请选择" required>
                                             <option value="" selected>无</option>
