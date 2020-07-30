@@ -35,7 +35,7 @@ public abstract class AbstractCmdRecordTask extends AbstractNoticeableTask {
      * @param scheduling
      * @param scriptService
      */
-    protected void submitNextCmdRecord(CmdRecord cmdRecord, Scheduling scheduling,ScriptService scriptService) {
+    protected void submitNextCmdRecord(CmdRecord cmdRecord, Scheduling scheduling, ScriptService scriptService) {
         if (scheduling != null) {
             //在上一次脚本任务链未执行完毕的情况下，更新过调度，则跳过余下脚本任务
             if (cmdRecord.getCreateTime().before(scheduling.getUpdateTime())) {
