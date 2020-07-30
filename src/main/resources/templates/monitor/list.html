@@ -118,7 +118,7 @@
                         </label>
                         <div class="col-sm-4">
                             <div ng-repeat="tip in editItem.dingdingHooks track by $index">
-                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.dingdingHooks[$index]" placeholder="钉钉token"><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.dingdingHooks, $index)"></span>
+                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.dingdingHooks[$index]" placeholder="钉钉token" required><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.dingdingHooks, $index)"></span>
                             </div>
                             <div ng-click="!editItem.dingdingHooks ? editItem.dingdingHooks = []: '';onAddTip(editItem.dingdingHooks);">
                                 <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>

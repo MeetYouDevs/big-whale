@@ -57,7 +57,7 @@ public class DtoScript extends AbstractPageDto {
         if (type == null) {
             return "类型不能为空";
         }
-        //检查集群或机器参数
+        //检查集群或代理参数
         if (type != Constant.SCRIPT_TYPE_SHELL) {
             if (StringUtils.isBlank(clusterId)) {
                 return "集群不能为空";
@@ -65,7 +65,7 @@ public class DtoScript extends AbstractPageDto {
             agentId = null;
         } else {
             if (StringUtils.isBlank(agentId)) {
-                return "机器不能为空";
+                return "代理不能为空";
             }
             clusterId = null;
         }

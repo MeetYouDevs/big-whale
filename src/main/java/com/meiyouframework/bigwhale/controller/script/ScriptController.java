@@ -159,16 +159,6 @@ public class ScriptController extends BaseController {
     @RequestMapping(value = "/execute.api", method = RequestMethod.POST)
     public Msg execute(@RequestBody DtoScript scriptInfo) throws SchedulerException {
         LoginUser user = getCurrentUser();
-        String agentId = scriptInfo.getAgentId();
-        if (StringUtils.isBlank(agentId)) {
-            Agent agent = agentService.getByClusterId(scriptInfo.getClusterId());
-            if (agent != null) {
-                agentId = agent.getId();
-            }
-        }
-        if (StringUtils.isBlank(agentId)) {
-            return failed("未能获取代理机器");
-        }
         CmdRecord cmdRecord = CmdRecord.builder()
                 .uid(user.getId())
                 .scriptId(scriptInfo.getId())
@@ -176,7 +166,7 @@ public class ScriptController extends BaseController {
                 .content(scriptInfo.getScript())
                 .timeout(scriptInfo.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
-                .agentId(agentId)
+                .agentId(scriptInfo.getAgentId())
                 .clusterId(scriptInfo.getClusterId())
                 .build();
         cmdRecord = cmdRecordService.save(cmdRecord);
@@ -197,9 +187,10 @@ public class ScriptController extends BaseController {
                 return "名称重复";
             }
             if (req.getType() != Constant.SCRIPT_TYPE_SHELL) {
-                Agent agent = agentService.getByClusterId(req.getClusterId());
-                if (agent == null) {
-                    return "所选集群下暂无可用机器";
+                try {
+                    agentService.getInstanceByClusterId(req.getClusterId(), false);
+                } catch (IllegalStateException e) {
+                    return "所选集群下暂无可用代理实例";
                 }
                 //检查yarn应用名称是否重复
                 Set<String> queueAndApps = new HashSet<>();
@@ -211,6 +202,12 @@ public class ScriptController extends BaseController {
                     if (queueAndApp.equals(tmp)) {
                         return "YARN应用重复";
                     }
+                }
+            } else {
+                try {
+                    agentService.getInstanceByAgentId(req.getAgentId(), false);
+                } catch (IllegalStateException e) {
+                    return "所选代理下暂无可用实例";
                 }
             }
         } else {
@@ -228,9 +225,10 @@ public class ScriptController extends BaseController {
                 }
             }
             if (req.getType() != Constant.SCRIPT_TYPE_SHELL) {
-                Agent agent = agentService.getByClusterId(req.getClusterId());
-                if (agent == null) {
-                    return "所选集群下暂无可用机器";
+                try {
+                    agentService.getInstanceByClusterId(req.getClusterId(), false);
+                } catch (IllegalStateException e) {
+                    return "所选集群下暂无可用代理实例";
                 }
                 //检查yarn应用名称是否重复
                 Set<String> queueAndApps = new HashSet<>();
@@ -248,6 +246,12 @@ public class ScriptController extends BaseController {
                     if (queueAndApp.equals(tmp)) {
                         return "YARN应用重复";
                     }
+                }
+            } else {
+                try {
+                    agentService.getInstanceByAgentId(req.getAgentId(), false);
+                } catch (IllegalStateException e) {
+                    return "所选代理下暂无可用实例";
                 }
             }
         }

@@ -73,14 +73,14 @@ public class WebHdfsUtils {
                                 request = builder.url(url).put(body).build();
                                 try (Response response2 = OK_HTTP_CLIENT.newCall(request).execute()) {
                                     if (!response2.isSuccessful()) {
-                                        LOGGER.error("SETOWNER unsuccessful, server response: " + response2.message());
+                                        LOGGER.warn("SETOWNER unsuccessful, server response: " + response2.message());
                                     }
                                     return response2.isSuccessful();
                                 }
                             }
                             return true;
                         } else {
-                            LOGGER.error("MKDIRS unsuccessful, server response: " + response1.message());
+                            LOGGER.warn("MKDIRS unsuccessful, server response: " + response1.message());
                             return false;
                         }
                     }
@@ -125,16 +125,16 @@ public class WebHdfsUtils {
                                         request = builder.url(url).put(body).build();
                                         try (Response newResponse2 = OK_HTTP_CLIENT.newCall(request).execute()) {
                                             if (!newResponse2.isSuccessful()) {
-                                                LOGGER.error("SETPERMISSION unsuccessful, server response: " + newResponse2.message());
+                                                LOGGER.warn("SETPERMISSION unsuccessful, server response: " + newResponse2.message());
                                             }
                                             return newResponse2.isSuccessful();
                                         }
                                     } else {
-                                        LOGGER.error("SETOWNER unsuccessful, server response: " + newResponse1.message());
+                                        LOGGER.warn("SETOWNER unsuccessful, server response: " + newResponse1.message());
                                     }
                                 }
                             } else {
-                                LOGGER.error("CREATE unsuccessful, server response: " + newResponse.message());
+                                LOGGER.warn("CREATE unsuccessful, server response: " + newResponse.message());
                             }
                         }
                     }
@@ -186,7 +186,7 @@ public class WebHdfsUtils {
             Request request = builder.url(url).delete(body).build();
             try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    LOGGER.error("DELETE unsuccessful, server response: " + response.message());
+                    LOGGER.warn("DELETE unsuccessful, server response: " + response.message());
                 }
                 return response.code();
             } catch (Exception e) {
@@ -210,7 +210,7 @@ public class WebHdfsUtils {
                     return JSON.parseObject(response.body().string()).getJSONObject("FileStatuses").getJSONArray("FileStatus");
                 } else {
                     if (response.code() != 404) {
-                        LOGGER.error("LISTSTATUS unsuccessful, server response: " + response.message());
+                        LOGGER.warn("LISTSTATUS unsuccessful, server response: " + response.message());
                     }
                 }
             } catch (Exception e) {

@@ -129,14 +129,14 @@ public class PathController {
         return "admin/cluster/cluster_user/list";
     }
 
-    @GetMapping("/admin/cluster/compute_framework/list.html")
-    public String computeFrameworkPage() {
-        return "admin/cluster/compute_framework/list";
-    }
-
     @GetMapping("/admin/cluster/agent/list.html")
     public String agentPage() {
         return "admin/cluster/agent/list";
+    }
+
+    @GetMapping("/admin/cluster/compute_framework/list.html")
+    public String computeFrameworkPage() {
+        return "admin/cluster/compute_framework/list";
     }
 
     @GetMapping("/auth/resource/list.html")

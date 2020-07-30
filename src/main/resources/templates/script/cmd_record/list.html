@@ -49,9 +49,9 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="query_select_agentId">机器</label>
+                            <label for="query_select_agentId">代理</label>
                             <select id="query_select_agentId" class="selectpicker show-tick"
-                                    ng-model="options.query.agentId" ng-options="item.id as item.host for item in agentList">
+                                    ng-model="options.query.agentId" ng-options="item.id as item.name for item in agentList">
                                 <option value="">不限</option>
                             </select>
                         </div>
@@ -87,7 +87,7 @@
                                         脚本
                                     </th>
                                     <th>
-                                        集群/机器
+                                        集群/代理
                                     </th>
                                     <th>
                                         超时
@@ -117,8 +117,10 @@
                                         <label ng-if="item.monitorId != null" class="label label-info">实时监控</label><br ng-if="item.monitorId != null" />
                                     </td>
                                     <td>
+                                        <span ng-if="agentMap[item.agentId]">{{agentMap[item.agentId].name}}</span>
                                         <span ng-if="clusterMap[item.clusterId]">{{clusterMap[item.clusterId].name}}</span>
-                                        <span ng-if="!clusterMap[item.clusterId]">{{agentMap[item.agentId].host}}</span>
+                                        <br/>
+                                        <label ng-if="item.agentInstance != null" class="label label-info">代理实例：{{item.agentInstance}}</label>
                                     </td>
                                     <td>
                                         {{item.timeout}}分

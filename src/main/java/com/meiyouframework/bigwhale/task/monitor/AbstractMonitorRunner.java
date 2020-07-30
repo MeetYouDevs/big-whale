@@ -113,8 +113,6 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
      */
     protected boolean restart() {
         Script script = scriptService.findById(monitor.getScriptId());
-        AgentService agentService = SpringContextUtils.getBean(AgentService.class);
-        Agent agent = agentService.getByClusterId(script.getClusterId());
         CmdRecordService cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
         //检查是否存在当前脚本未执行或正在执行的任务
         CmdRecord cmdRecord = cmdRecordService.findOneByQuery("scriptId=" + monitor.getScriptId() + ";status=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING);
@@ -128,7 +126,7 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
                 .content(script.getScript())
                 .timeout(script.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
-                .agentId(agent.getId())
+                .agentId(script.getAgentId())
                 .clusterId(script.getClusterId())
                 .monitorId(monitor.getId())
                 .build();

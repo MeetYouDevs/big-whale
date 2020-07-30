@@ -66,7 +66,7 @@ public class AdminClusterController extends BaseController {
             }
             List<Agent> agents = agentService.findByQuery("clusterId=" + cluster.getId());
             if (!agents.isEmpty()) {
-                return failed("集群下存在机器，请先删除");
+                return failed("集群下存在代理，请先删除");
             }
             clusterService.delete(cluster);
         }

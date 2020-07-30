@@ -455,3 +455,18 @@ ALTER TABLE `scheduling` DROP COLUMN `sub_script_ids`;
 
 ALTER TABLE `cmd_record` DROP COLUMN `sub_script_ids`;
 ALTER TABLE `cmd_record` ADD COLUMN `scheduling_node_id` varchar(255) NULL AFTER `scheduling_instance_id`;
+
+ALTER TABLE `agent` CHANGE COLUMN `host` `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL AFTER `id`;
+ALTER TABLE `agent` ADD UNIQUE INDEX `name`(`name`);
+ALTER TABLE `agent` ADD COLUMN `description` varchar(255) NULL AFTER `name`;
+ALTER TABLE `agent` CHANGE COLUMN `ip` `instances` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL AFTER `description`;
+ALTER TABLE `agent` DROP COLUMN `mac`;
+ALTER TABLE `agent` DROP COLUMN `socket_port`;
+ALTER TABLE `agent` DROP COLUMN `status`;
+ALTER TABLE `agent` DROP COLUMN `create_time`;
+ALTER TABLE `agent` DROP COLUMN `last_conn_time`;
+ALTER TABLE `agent` DROP COLUMN `user`;
+ALTER TABLE `agent` DROP COLUMN `password`;
+
+ALTER TABLE `cmd_record` MODIFY COLUMN `agent_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `parent_id`;
+ALTER TABLE `cmd_record` ADD COLUMN `agent_instance` varchar(255) NULL AFTER `agent_id`;

@@ -1,24 +1,81 @@
 package com.meiyouframework.bigwhale.service;
 
+import ch.ethz.ssh2.Connection;
+import com.meiyouframework.bigwhale.config.SshConfig;
 import com.meiyouframework.bigwhale.data.service.AbstractMysqlPagingAndSortingQueryService;
 import com.meiyouframework.bigwhale.entity.Agent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+/**
+ * @author progr1mmer
+ */
 @Service
 public class AgentServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Agent, String> implements AgentService {
 
+    private Logger logger = LoggerFactory.getLogger(AgentServiceImpl.class);
+
+    @Autowired
+    private SshConfig sshConfig;
+
     @Override
-    public Agent getByClusterId(String clusterId) {
-        List<Agent> agents = findByQuery("status=1;clusterId=" + clusterId);
-        if (!agents.isEmpty()) {
-            int size = agents.size();
-            int random = new Random().nextInt(size);
-            return agents.get(random);
+    public String getInstanceByClusterId(String clusterId, boolean check) {
+        List<Agent> agents = findByQuery("clusterId=" + clusterId);
+        while (!agents.isEmpty()) {
+            int random = new Random().nextInt(agents.size());
+            Agent agent = agents.get(random);
+            try {
+                return getInstanceByAgentId(agent.getId(), check);
+            } catch (IllegalStateException e) {
+                agents.remove(agent);
+            }
         }
-        return null;
+        throw new IllegalStateException("No agent instance accessible");
+    }
+
+    @Override
+    public String getInstanceByAgentId(String agentId, boolean check) {
+        Agent agent = findById(agentId);
+        List<String> instances = new ArrayList<>();
+        Collections.addAll(instances, agent.getInstances().split(","));
+        while (!instances.isEmpty()) {
+            int random = new Random().nextInt(instances.size());
+            String instance = instances.get(random);
+            if (check) {
+                if (isAccessible(instance)) {
+                    return instance;
+                } else {
+                    instances.remove(instance);
+                }
+            } else {
+                return instance;
+            }
+        }
+        throw new IllegalStateException("No agent instance accessible");
+    }
+
+    private boolean isAccessible(String instance) {
+        Connection conn = null;
+        try {
+            conn = new Connection(instance);
+            conn.connect(null, sshConfig.getConnectTimeout(), 30000);
+            boolean isAuthenticated = conn.authenticateWithPassword(sshConfig.getUser(), sshConfig.getPassword());
+            if (!isAuthenticated) {
+                throw new IllegalArgumentException("Incorrect username or password");
+            }
+            return true;
+        } catch (Exception e) {
+            logger.warn(e.getMessage());
+        } finally {
+            if (conn != null) {
+                conn.close();
+            }
+        }
+        return false;
     }
 
 }

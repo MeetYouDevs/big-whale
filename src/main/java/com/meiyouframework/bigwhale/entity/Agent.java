@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-import java.util.Date;
 
 @Data
 @Builder
@@ -21,14 +20,9 @@ public class Agent {
     @GenericGenerator(name = "idGenerator", strategy = "uuid")
     @GeneratedValue(generator = "idGenerator")
     private String id;
-    private String host;
-    private String mac;
-    private String ip;
-    private Integer status;
-    private Date createTime;
-    private Date lastConnTime;
-    private Integer socketPort;
+    private String name;
+    private String description;
+    private String instances;
     private String clusterId;
 
 }
-

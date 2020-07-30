@@ -5,8 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang.StringUtils;
+import java.util.List;
 
-import java.util.Date;
 
 @Data
 @Builder
@@ -15,26 +15,18 @@ import java.util.Date;
 public class DtoAgent extends AbstractPageDto {
 
     private String id;
-    private String host;
-    private String mac;
-    private String ip;
-    private Integer status;
-    private Integer version;
-    private Date createTime;
-    private Date lastConnTime;
-    private Integer socketPort;
+    private String name;
+    private String description;
+    private List<String> instances;
     private String clusterId;
 
     @Override
     public String validate() {
-        if (StringUtils.isBlank(ip)) {
-            return "IP不能为空";
+        if (StringUtils.isBlank(name)) {
+            return "名称不能为空";
         }
-        if (StringUtils.isBlank(host)) {
-            return "HOST不能为空";
-        }
-        if (StringUtils.isBlank(mac)) {
-            return "MAC不能为空";
+        if (instances == null || instances.isEmpty()) {
+            return "实例不能为空";
         }
         return null;
     }

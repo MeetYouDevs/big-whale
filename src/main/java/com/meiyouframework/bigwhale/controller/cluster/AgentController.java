@@ -17,7 +17,7 @@ public class AgentController extends BaseController {
 
     @RequestMapping(value = "/getall.api", method = RequestMethod.GET)
     public Iterable<Agent> getAll() {
-        return agentService.findByQuery("status=1");
+        return agentService.findAll();
     }
 
 }

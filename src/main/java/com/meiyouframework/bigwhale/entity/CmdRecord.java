@@ -27,8 +27,9 @@ public class CmdRecord {
      * 脚本执行状态
      */
     private Integer status;
-    private String clusterId;
     private String agentId;
+    private String clusterId;
+    private String agentInstance;
     private String uid;
     /**
      * 离线调度ID
