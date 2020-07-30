@@ -10,7 +10,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 * 为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/master/doc/hosts)
 ## 2.安装
 * 创建数据库：big-whale
-* 运行数据库脚本：[big-whale.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/big-whale.sql)
+* 运行数据库脚本：[big-whale.sql](https://github.com/MeetYouDevs/big-whale/blob/1.0/script/big-whale.sql)
 * 根据Spring Boot环境，配置相关数据库账号密码，以及SMTP信息
 * 配置：[big-whale.properties](https://github.com/MeetYouDevs/big-whale/blob/master/src/main/resources/big-whale.properties)
   * 配置项说明
@@ -38,7 +38,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
   * “支持Flink任务代理用户”“流式任务黑名单”和“批处理任务黑名单”为内部定制的任务分配规则，可不填
 * 添加机器
   * 集群管理->机器管理->新增  
-  ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step3-cluster_agent_add.png)
+  ![image](https://gitee.com/progr1mmer/big-whale/raw/1.0/doc/images/step3-cluster_agent_add.png)
   * 选择集群后，会作为该集群下提交Spark或Flink任务的客户机之一（注意！！！当有多台机器属于同个集群的时，会随机选择客户机提交任务）
 * 添加集群用户
   * 集群管理->集群用户->新增  
