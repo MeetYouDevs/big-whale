@@ -76,7 +76,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/steperr-monitor_spark_failed.png)
 ## 4.离线调度
 * 对于类型为“shell”、“spark离线”和“flink离线”的脚本，可通过添加此功能实现定时执行，通过添加子脚本的形式可实现串行任务调度  
-![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step12-script_schedule.png)  
+![image](https://gitee.com/progr1mmer/big-whale/raw/1.0/doc/images/step12-script_schedule.png)  
   * 说明：平台提交saprk或flink任务的时候默认都会以“后台”的方式执行，对应spark配置：--conf spark.yarn.submit.waitAppCompletion=false，flink配置：-d，但是基于后台任务监测的实现，通过回调实现串行任务调度的时候会等待真正运行的任务完成后再执行下一脚本
 ## 5.Openapi
  * /openapi/script/execute.api 可执行携带可变参数的脚本
