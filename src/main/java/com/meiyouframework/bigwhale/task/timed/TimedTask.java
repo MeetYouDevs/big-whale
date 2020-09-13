@@ -4,13 +4,12 @@ import com.alibaba.fastjson.JSON;
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
-import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
-import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 
 import java.text.DateFormat;
@@ -31,18 +30,17 @@ public class TimedTask implements Job {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimedTask.class);
 
     private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-    private CmdRecordService cmdRecordService;
-    private ScriptService scriptService;
 
-    public TimedTask() {
-        cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
-        scriptService = SpringContextUtils.getBean(ScriptService.class);
-    }
+    @Autowired
+    private CmdRecordService cmdRecordService;
+    @Autowired
+    private ScriptService scriptService;
+    @Autowired
+    private SchedulingService schedulingService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         String schedulingId = jobExecutionContext.getJobDetail().getKey().getName();
-        SchedulingService schedulingService = SpringContextUtils.getBean(SchedulingService.class);
         Scheduling scheduling = schedulingService.findById(schedulingId);
         if (scheduling.getLastExecuteTime() != null && !scheduling.getRepeatSubmit()) {
             if (!isLastTimeCompleted(scheduling)) {
@@ -62,15 +60,15 @@ public class TimedTask implements Job {
             CmdRecord cmdRecord = CmdRecord.builder()
                     .uid(scheduling.getUid())
                     .scriptId(scriptId)
-                    .createTime(new Date())
-                    .content(script.getScript())
-                    .timeout(script.getTimeout())
                     .status(Constant.EXEC_STATUS_UNSTART)
                     .agentId(script.getAgentId())
                     .clusterId(script.getClusterId())
                     .schedulingId(scheduling.getId())
                     .schedulingInstanceId(now)
                     .schedulingNodeId(nodeId)
+                    .content(script.getScript())
+                    .timeout(script.getTimeout())
+                    .createTime(new Date())
                     .build();
             if (!jobExecutionContext.getMergedJobDataMap().isEmpty()) {
                 cmdRecord.setArgs(JSON.toJSONString(jobExecutionContext.getMergedJobDataMap()));
@@ -156,29 +154,13 @@ public class TimedTask implements Job {
     }
 
     public static void build(Scheduling scheduling) throws SchedulerException {
-        Date startDate = scheduling.getStartTime();
-        Date endDate = scheduling.getEndTime();
-        if (new Date().after(endDate)) {
-            return;
-        }
-        if (StringUtils.isNotBlank(scheduling.getCron())) {
-            SchedulerUtils.scheduleCornJob(TimedTask.class, scheduling.getId(), Constant.JobGroup.TIMED, scheduling.getCron(), null, startDate, endDate);
-        } else {
-            String cron = null;
-            if (scheduling.getCycle() == Constant.TIMER_CYCLE_MINUTE) {
-                cron = "0 */" + scheduling.getIntervals() + " * * * ? *";
-            } else if (scheduling.getCycle() == Constant.TIMER_CYCLE_HOUR) {
-                cron = "0 " + scheduling.getMinute() + " * * * ? *";
-            } else if (scheduling.getCycle() == Constant.TIMER_CYCLE_DAY) {
-                cron = "0 " + scheduling.getMinute() + " " + scheduling.getHour() + " * * ? *";
-            } else if (scheduling.getCycle() == Constant.TIMER_CYCLE_WEEK) {
-                cron = "0 " + scheduling.getMinute() + " " + scheduling.getHour() + " ? * " + scheduling.getWeek() + " *";
-            }
-            if (cron == null) {
-                throw new SchedulerException("cron expression is incorrect");
-            }
-            SchedulerUtils.scheduleCornJob(TimedTask.class, scheduling.getId(), Constant.JobGroup.TIMED, cron, null, startDate, endDate);
-        }
+        SchedulerUtils.scheduleCornJob(TimedTask.class,
+                scheduling.getId(),
+                Constant.JobGroup.TIMED,
+                scheduling.generateCron(),
+                null,
+                scheduling.getStartTime(),
+                scheduling.getEndTime());
     }
 
 }

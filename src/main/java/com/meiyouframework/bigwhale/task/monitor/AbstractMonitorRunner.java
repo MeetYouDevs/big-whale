@@ -3,19 +3,19 @@ package com.meiyouframework.bigwhale.task.monitor;
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.HttpYarnApp;
 import com.meiyouframework.bigwhale.task.AbstractNoticeableTask;
+import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import com.meiyouframework.bigwhale.util.YarnApiUtils;
 import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
-import com.meiyouframework.bigwhale.service.auth.UserService;
 import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
-import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import org.quartz.InterruptableJob;
 import org.quartz.JobExecutionContext;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Date;
@@ -29,26 +29,22 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMonitorRunner.class);
 
-    protected Monitor monitor;
+    protected Scheduling scheduling;
     protected Script script;
     protected Cluster cluster;
-    protected MonitorService monitorService;
-    protected UserService userService;
-    protected NoticeService noticeService;
-    protected ScriptService scriptService;
-    protected ClusterService clusterService;
-    protected YarnAppService yarnAppService;
-    protected Thread thread;
-    protected volatile boolean interrupted = false;
+    private Thread thread;
+    private volatile boolean interrupted = false;
 
-    protected AbstractMonitorRunner() {
-        monitorService = SpringContextUtils.getBean(MonitorService.class);
-        userService = SpringContextUtils.getBean(UserService.class);
-        noticeService = SpringContextUtils.getBean(NoticeService.class);
-        scriptService = SpringContextUtils.getBean(ScriptService.class);
-        clusterService = SpringContextUtils.getBean(ClusterService.class);
-        yarnAppService = SpringContextUtils.getBean(YarnAppService.class);
-    }
+    @Autowired
+    private SchedulingService schedulingService;
+    @Autowired
+    private ScriptService scriptService;
+    @Autowired
+    private ClusterService clusterService;
+    @Autowired
+    private YarnAppService yarnAppService;
+    @Autowired
+    private CmdRecordService cmdRecordService;
 
     @Override
     public void interrupt() {
@@ -62,13 +58,13 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
     public void execute(JobExecutionContext jobExecutionContext) {
         thread = Thread.currentThread();
         String monitorInfoId = jobExecutionContext.getJobDetail().getKey().getName();
-        monitor = monitorService.findById(monitorInfoId);
-        if (monitor == null) {
+        scheduling = schedulingService.findById(monitorInfoId);
+        if (scheduling == null) {
             return;
         }
-        monitor.setExecuteTime(new Date());
-        monitorService.save(monitor);
-        script = scriptService.findById(monitor.getScriptId());
+        scheduling.setLastExecuteTime(new Date());
+        schedulingService.save(scheduling);
+        script = scriptService.findById(scheduling.getScriptIds());
         cluster = clusterService.findById(script.getClusterId());
         executeJob();
     }
@@ -79,7 +75,7 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
     public abstract void executeJob();
 
     protected YarnApp getYarnAppFromDatabase() {
-        List<YarnApp> yarnApps = yarnAppService.findByQuery("scriptId=" + monitor.getScriptId());
+        List<YarnApp> yarnApps = yarnAppService.findByQuery("scriptId=" + scheduling.getScriptIds());
         if (!CollectionUtils.isEmpty(yarnApps)) {
             return yarnApps.get(0);
         }
@@ -112,23 +108,22 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
      * @return
      */
     protected boolean restart() {
-        Script script = scriptService.findById(monitor.getScriptId());
-        CmdRecordService cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
+        Script script = scriptService.findById(scheduling.getScriptIds());
         //检查是否存在当前脚本未执行或正在执行的任务
-        CmdRecord cmdRecord = cmdRecordService.findOneByQuery("scriptId=" + monitor.getScriptId() + ";status=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING);
+        CmdRecord cmdRecord = cmdRecordService.findOneByQuery("scriptId=" + scheduling.getScriptIds() + ";status=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING);
         if (cmdRecord != null) {
             return true;
         }
         CmdRecord record = CmdRecord.builder()
-                .uid(monitor.getUid())
+                .uid(scheduling.getUid())
                 .scriptId(script.getId())
-                .createTime(new Date())
-                .content(script.getScript())
-                .timeout(script.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
                 .agentId(script.getAgentId())
                 .clusterId(script.getClusterId())
-                .monitorId(monitor.getId())
+                .schedulingId(scheduling.getId())
+                .content(script.getScript())
+                .timeout(script.getTimeout())
+                .createTime(new Date())
                 .build();
         record = cmdRecordService.save(record);
         try {
@@ -140,17 +135,24 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
         return true;
     }
 
-    public static void build(Monitor monitor) throws SchedulerException {
-        if (monitor.getType() == Constant.MONITOR_TYPE_SPARK_STREAMING) {
+    public static void build(Scheduling scheduling) throws SchedulerException {
+        Script script = SpringContextUtils.getBean(ScriptService.class).findById(scheduling.getScriptIds());
+        if (script.getType() == Constant.SCRIPT_TYPE_SPARK_STREAMING) {
             SchedulerUtils.scheduleCornJob(SparkMonitorRunner.class,
-                    monitor.getId(),
+                    scheduling.getId(),
                     Constant.JobGroup.MONITOR,
-                    monitor.getCron());
-        } else if (monitor.getType() == Constant.MONITOR_TYPE_FLINK_STREAMING) {
+                    scheduling.generateCron(),
+                    null,
+                    scheduling.getStartTime(),
+                    scheduling.getEndTime());
+        } else if (script.getType() == Constant.SCRIPT_TYPE_FLINK_STREAMING) {
             SchedulerUtils.scheduleCornJob(FlinkMonitorRunner.class,
-                    monitor.getId(),
+                    scheduling.getId(),
                     Constant.JobGroup.MONITOR,
-                    monitor.getCron());
+                    scheduling.generateCron(),
+                    null,
+                    scheduling.getStartTime(),
+                    scheduling.getEndTime());
         }
     }
 }

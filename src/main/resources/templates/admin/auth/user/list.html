@@ -3,6 +3,7 @@
 <head>
     <th:block th:include="base/resource"/>
     <title>用户管理 - Big Whale</title>
+    <link href="../../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet">
     <link href="../../css/common.css" rel="stylesheet"/>
 </head>
 <body ng-app="content-app" ng-controller="content-controller">
@@ -29,7 +30,7 @@
                             昵称
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_nickname" class="form-control" ng-model="editItem.nickname"/>
+                            <input id="modal_input_nickname" class="form-control" ng-model="editItem.nickname" autocomplete="off"/>
                         </div>
                     </div>
                     <div class="form-group">
@@ -70,10 +71,11 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="col-sm-4 control-label">角色</label>
+                        <label for="modal_select_role" class="col-sm-4 control-label">角色</label>
                         <div class="col-sm-5">
-                            <mymulti-bigselector ng-model="editItem.roles" ng-selector="roles">
-                            </mymulti-bigselector>
+                            <select id="modal_select_role" class="form-control selectpicker show-tick" data-actions-box="true" data-select-all-text="全选" data-deselect-all-text="反选"
+                                    ng-model="editItem.roles" ng-options="item.value as item.name for item in roles" title="请选择" multiple>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -140,6 +142,9 @@
                                     <th>
                                         创建时间
                                     </th>
+                                    <th>
+                                        修改时间
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -175,7 +180,10 @@
                                         <label ng-if="!item.enabled" class="label label-danger">禁用</label>
                                     </td>
                                     <td>
-                                        {{item.created}}
+                                        {{item.createTime}}
+                                    </td>
+                                    <td>
+                                        {{item.updateTime}}
                                     </td>
                                 </tr>
                             </tbody>
@@ -186,14 +194,15 @@
         </div>
     </div>
 </div>
+<script src="../../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
+<script src="../../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
 <script src="../../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
 <script src="../../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
 <script src="../../js/common.js" type="text/javascript"></script>
 <script type="text/javascript">
     var app = angular.module('content-app', []);
-    registerAuth(app);
-    registerMultiBigSelector(app);
-    app.controller('content-controller', function ($scope, $http) {
+    registerHttpInterceptor(app);
+    app.controller('content-controller', function ($scope, $http, $timeout) {
         $scope.query = {searchText: ''};
         $scope.items = [];
         $scope.permissions = [];
@@ -214,18 +223,27 @@
             $('#editDlg').modal();
         };
 
+        $('#editDlg').on('shown.bs.modal', function () {
+            $('.selectpicker').selectpicker('refresh');
+        });
+
         $scope.onSaveItem = function () {
             $('#btn_submit').attr('disabled', 'true');
             $http.post('./save.api', $scope.editItem)
                 .success(function (data) {
-                    if (data.code === 0) {
-                        $('#editDlg').modal('hide');
-                        swal('操作成功', data.msg, 'success');
-                        $scope.reload();
-                    } else {
-                        swal('操作失败', data.msg, 'error');
-                    }
                     $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
+                    $scope.reload();
+                    swal({
+                        title: '保存成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                })
+                .error(function (data) {
+                    $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
                 });
         };
 
@@ -238,11 +256,15 @@
             $http.get('../role/list.api')
                 .success(function (roles) {
                     $scope.roles = [];
-                    for (var i in roles) {
-                        var role = roles[i];
-                        $scope.roles.push({value: role.code, name: role.name});
+                    roles.forEach(function (role) {
+                        $scope.roles.push(
+                            {
+                                value: role.code,
+                                name: role.name
+                            }
+                        );
                         $scope.roleMap[role.code] = role.name;
-                    }
+                    });
                     $http.get('./list.api')
                         .success(function (data) {
                             $scope.items = data;
@@ -252,7 +274,7 @@
                                 } else {
                                     var ret = '';
                                     for (var i in item.roles) {
-                                        if (ret != '') {
+                                        if (ret !== '') {
                                             ret += ',';
                                         }
                                         ret += $scope.roleMap[item.roles[i]];
@@ -265,6 +287,9 @@
                                 }
                             });
                         });
+                    $timeout(function () {
+                        $('.selectpicker').selectpicker('refresh');
+                    }, 50);
                 });
         };
 

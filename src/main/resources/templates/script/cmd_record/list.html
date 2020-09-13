@@ -112,9 +112,8 @@
                                         {{userMap[item.uid].username}}
                                     </td>
                                     <td>
-                                        {{scriptMap[item.scriptId].name}}<br/>
-                                        <label ng-if="item.schedulingId != null" class="label label-info">离线调度-{{item.schedulingInstanceId}}</label><br ng-if="item.schedulingId != null" />
-                                        <label ng-if="item.monitorId != null" class="label label-info">实时监控</label><br ng-if="item.monitorId != null" />
+                                        <span class="script-name">{{scriptMap[item.scriptId].name}}</span><br/>
+                                        <label ng-if="item.schedulingId != null" class="label label-info">任务调度{{item.schedulingInstanceId != null ? '(批处理) - ' + item.schedulingInstanceId : '(流处理)'}}</label>
                                     </td>
                                     <td>
                                         <span ng-if="agentMap[item.agentId]">{{agentMap[item.agentId].name}}</span>
@@ -161,9 +160,9 @@
 <script src="../../libs/laydate/laydate.js" type="application/javascript"></script>
 <script th:inline="javascript">
     var app = angular.module('content-app', []);
+    registerHttpInterceptor(app);
     registerPage(app);
     registerDateRangePicker(app);
-    registerAuth(app);
     var user = [[${session.user}]];
     app.controller('content-controller', function ($scope, $http) {
         getScript($scope, $http, false);
@@ -176,7 +175,6 @@
 
         var id = [[${id}]];
         var schedulingId = [[${schedulingId}]];
-        var monitorId = [[${monitorId}]];
         var scriptId = [[${scriptId}]];
 
         var t1 = null;
@@ -185,7 +183,6 @@
             query: {
                 id: id,
                 schedulingId: schedulingId,
-                monitorId: monitorId,
                 scriptId: scriptId
             },
             listUrl: './getpage.api',
@@ -198,18 +195,6 @@
                     t1 = window.setInterval($scope.reloadData, 2000);
                 }
             }
-        };
-
-        $scope.isFinish = function (items) {
-            var size = items.length;
-            var finish = 0;
-            for (var i = 0; i < items.length; i++) {
-                var item = items[i];
-                if (item.status !== 1 && item.status !== 2) {
-                    finish += 1;
-                }
-            }
-            return finish >= size;
         };
 
         $scope.reloadData = function () {
@@ -231,6 +216,18 @@
                         window.clearInterval(t1);
                     }
                 });
+        };
+
+        $scope.isFinish = function (items) {
+            var size = items.length;
+            var finish = 0;
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (item.status !== 1 && item.status !== 2) {
+                    finish += 1;
+                }
+            }
+            return finish >= size;
         };
 
     });

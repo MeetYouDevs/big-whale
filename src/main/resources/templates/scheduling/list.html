@@ -2,18 +2,32 @@
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:include="base/resource"/>
-    <title>离线调度 - Big Whale</title>
+    <title>任务调度 - Big Whale</title>
     <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
     <link href="../libs/bootstrap-treeview/bootstrap-treeview.min.css" rel="stylesheet"/>
     <link href="../css/common.css" rel="stylesheet"/>
     <link href="../libs/fonts/script-type/script-type.css" rel="stylesheet">
+    <style type="text/css">
+        .treeview .list-group-item {
+            max-width: 350px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: unset;
+        }
+        .treeview .list-group-item:not(.node-disabled):hover {
+            background-color: #fff;
+        }
+        .treeview .list-group-item span {
+            display: inline;
+        }
+    </style>
 </head>
 <body ng-app="content-app" ng-controller="content-controller">
 <div class="container-fluid animated fadeInDown">
     <div class="bw-nav">
         <div class="row">
             <ol class="breadcrumb">
-                <li class="active">离线调度</li>
+                <li class="active">任务调度</li>
             </ol>
             <a class="bw-refresh" onclick="location.reload()" title="刷新">
                 <i class="fa fa-refresh" style="font-size: 18px"></i>
@@ -29,6 +43,13 @@
                             <label for="query_select_user">用户</label>
                             <select id="query_select_user" class="selectpicker show-tick" data-live-search="true"
                                     ng-model="options.query.uid" ng-options="item.id as item.username for item in userList">
+                                <option value="">不限</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="query_select_type">类型</label>
+                            <select id="query_select_type" class="selectpicker show-tick"
+                                    ng-model="options.query.type" ng-options="item.value as item.name for item in schedulingTypeList">
                                 <option value="">不限</option>
                             </select>
                         </div>
@@ -56,20 +77,41 @@
                                     <th th:if="${session.user.root}">
                                         用户
                                     </th>
+                                    <th class="order" ng-click="sort('type', asc)">
+                                        <div>类型</div>
+                                        <div>
+                                            <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'type' && asc === true) ? 'active' : ''"></i>
+                                            <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'type' && asc === false) ? 'active' : ''"></i>
+                                        </div>
+                                    </th>
                                     <th>
                                         脚本
                                     </th>
                                     <th>
-                                        调度周期
+                                        执行/监测周期
                                     </th>
                                     <th>
-                                        状态
+                                        是否启用
                                     </th>
                                     <th class="order" ng-click="sort('lastExecuteTime', asc)">
-                                        <div>上一次运行</div>
+                                        <div>上一次调度</div>
                                         <div>
                                             <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'lastExecuteTime' && asc === true) ? 'active' : ''"></i>
                                             <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'lastExecuteTime' && asc === false) ? 'active' : ''"></i>
+                                        </div>
+                                    </th>
+                                    <th class="order" ng-click="sort('createTime', asc)">
+                                        <div>创建时间</div>
+                                        <div>
+                                            <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'createTime' && asc === true) ? 'active' : ''"></i>
+                                            <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'createTime' && asc === false) ? 'active' : ''"></i>
+                                        </div>
+                                    </th>
+                                    <th class="order" ng-click="sort('updateTime', asc)">
+                                        <div>修改时间</div>
+                                        <div>
+                                            <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'updateTime' && asc === true) ? 'active' : ''"></i>
+                                            <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'updateTime' && asc === false) ? 'active' : ''"></i>
                                         </div>
                                     </th>
                                 </tr>
@@ -93,31 +135,43 @@
                                         {{userMap[item.uid].username}}
                                     </td>
                                     <td>
+                                        {{schedulingTypeMap[item.type].name}}
+                                    </td>
+                                    <td>
                                         <span id="{{item.id}}"></span>
                                     </td>
                                     <td>
-                                        <span class="badge">from: {{item.startTime}}</span>
-                                        <p style="margin-bottom: 0" ng-if="item.cron != null">
-                                            <span class="badge">{{item.cron}}</span>
+                                        <p style="margin-bottom: 1px;">
+                                            <span class="badge">from: {{item.startTime}}</span>
                                         </p>
-                                        <!-- 可视化 -->
-                                        <p style="margin-bottom: 0" ng-if="item.cron == null">
-                                            <span class="badge">
+                                        <p style="margin-bottom: 1px;" ng-if="item.cron != null">
+                                            <span class="badge" style="max-width: 200px; white-space: pre-wrap; word-wrap: break-word;">{{item.cron}}</span>
+                                        </p>
+                                        <p style="margin-bottom: 1px;" ng-if="item.cron == null">
+                                            <span class="badge" style="max-width: 200px;">
                                                 <span ng-if="item.cycle == 1">每{{item.intervals}}分钟</span>
                                                 <span ng-if="item.cycle == 2">每小时{{item.minute}}分</span>
                                                 <span ng-if="item.cycle == 3">每天{{item.hour}}点{{item.minute}}分</span>
-                                                <span ng-if="item.cycle == 4">每周{{item.weekName}}{{item.hour}}点{{item.minute}}分</span>
+                                                <span ng-if="item.cycle == 4" style="white-space: pre-wrap; word-wrap: break-word;">每周{{item.weekName}}{{item.hour}}点{{item.minute}}分</span>
                                             </span>
                                         </p>
-                                        <span class="badge">to: {{item.endTime}}</span>
+                                        <p style="margin-bottom: 1px;">
+                                            <span class="badge">to: {{item.endTime}}</span>
+                                        </p>
                                     </td>
                                     <td>
-                                        <label ng-if="enableTypeMap[item.status]" class="label label-{{enableTypeMap[item.status].style}}">
-                                            {{enableTypeMap[item.status].name}}
+                                        <label class="label label-{{booleanTypeMap[item.enabled].style}}">
+                                            {{booleanTypeMap[item.enabled].name}}
                                         </label>
                                     </td>
                                     <td>
                                         {{item.lastExecuteTime}}
+                                    </td>
+                                    <td>
+                                        {{item.createTime}}
+                                    </td>
+                                    <td>
+                                        {{item.updateTime}}
                                     </td>
                                 </tr>
                             </tbody>
@@ -140,20 +194,23 @@
 <script th:inline="javascript">
     var user = [[${session.user}]];
     var app = angular.module('content-app', []);
+    registerHttpInterceptor(app);
     registerPage(app);
-    registerAuth(app);
-
     app.controller('content-controller', function ($scope, $http, $timeout) {
         if (user.root) {
             getAuthUser($scope, $http);
         }
-        getScript($scope, $http, false, true);
-        appendEnableType($scope);
+        appendSchedulingType($scope);
+        getScript($scope, $http);
+        appendBooleanType($scope);
         appendWeek($scope);
-        registerSort($scope);
+        defineSort($scope);
+
         $scope.scriptIconClass = {
             0: 'icon-shell',
+            1: 'icon-spark',
             2: 'icon-spark',
+            3: 'icon-flink',
             4: 'icon-flink'
         };
 
@@ -161,9 +218,9 @@
         $scope.onNewItem = function () {
             if (parent.xadmin) {
                 parent.xadmin.reloadScheduling = $scope.reload;
-                parent.xadmin.add_tab('离线调度新增', 'scheduling/edit.html');
+                parent.xadmin.add_tab('任务调度新增', 'scheduling/edit.html');
             } else {
-                window.open('./edit.html', '离线调度新增');
+                window.open('./edit.html', '任务调度新增');
             }
         };
 
@@ -171,16 +228,16 @@
         $scope.onEditItem = function (item) {
             if (parent.xadmin) {
                 parent.xadmin.reloadScheduling = $scope.reload;
-                parent.xadmin.add_tab('离线调度编辑', 'scheduling/edit.html?id=' + item.id);
+                parent.xadmin.add_tab('任务调度编辑', 'scheduling/edit.html?id=' + item.id);
             } else {
-                window.open('./edit.html?id=' + item.id, '离线调度编辑');
+                window.open('./edit.html?id=' + item.id, '任务调度编辑');
             }
         };
 
         //执行日志
         $scope.onOpenLog = function (item) {
             if (parent.xadmin) {
-                parent.xadmin.open('离线调度 - 执行日志', 'script/cmd_record/list.html?schedulingId=' + item.id);
+                parent.xadmin.open('任务调度 - 执行日志', 'script/cmd_record/list.html?schedulingId=' + item.id);
             } else {
                 window.open('../script/cmd_record/list.html?schedulingId=' + item.id);
             }
@@ -197,7 +254,7 @@
             reloadAfter : function (items) {
                 items.forEach(function (item) {
                     var weekName = [];
-                    if (item.week != null && item.week.length > 0) {
+                    if (item.week !== null && item.week.length > 0) {
                         item.week.forEach(function (value) {
                             weekName.push($scope.weekMap[value].name);
                         })
@@ -208,7 +265,7 @@
                             data: item.nodeTree,
                             showBorder: false
                         })
-                    }, 100)
+                    }, 50)
                 })
             }
         };

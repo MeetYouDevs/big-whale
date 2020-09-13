@@ -15,61 +15,67 @@ Date.prototype.format = function (fmt) {
 };
 
 function appendScriptType($scope) {
-    $scope.scriptTypeList = [{name: 'shell', value: 0, style: 'info'}, {name: 'spark实时', value: 1, style: 'info'}, {name: 'spark离线', value: 2, style: 'info'},
-        {name: 'flink实时', value: 3, style: 'info'}, {name: 'flink离线', value: 4, style: 'info'}];
+    $scope.scriptTypeList = [{name: 'shell批处理', value: 0}, {name: 'spark流处理', value: 1}, {name: 'spark批处理', value: 2},
+        {name: 'flink流处理', value: 3}, {name: 'flink批处理', value: 4}];
     $scope.scriptTypeMap = {};
-    for (var i = 0; i < $scope.scriptTypeList.length; i++) {
-        var item = $scope.scriptTypeList[i];
+    $scope.scriptTypeList.forEach(function (item) {
         $scope.scriptTypeMap[item.value] = item;
-    }
+    });
+}
+
+function appendSchedulingType($scope) {
+    $scope.schedulingTypeList = [{name: '批处理', value: 0}, {name: '流处理', value: 1}];
+    $scope.schedulingTypeMap = {};
+    $scope.schedulingTypeList.forEach(function (item) {
+        $scope.schedulingTypeMap[item.value] = item;
+    });
+}
+
+function appendCmdStatus($scope) {
+    $scope.cmdStatusList = [{name: '未开始', value:1, style: 'info'}, {name: '执行中', value: 2, style: 'warning'},
+        {name: '已完成', value: 3, style: 'success'}, {name: '运行超时', value: 4, style: 'danger'}, {name: '运行失败', value: 5, style: 'danger'}];
+    $scope.cmdStatusMap = {};
+    $scope.cmdStatusList.forEach(function (item) {
+        $scope.cmdStatusMap[item.value] = item;
+    });
+}
+
+function appendYarnJobState($scope) {
+    $scope.yarnJobStateList = [{name: '初始状态', value: 'NEW', style: 'warning'}, {name: '作业提交请求', value: 'NEW_SAVING', style: 'warning'}, {name: '提交成功', value: 'SUBMITTED', style: 'warning'},
+        {name: '等待调度', value: 'ACCEPTED', style: 'warning'}, {name: '运行中', value: 'RUNNING', style: 'success'},{name: '已完成', value: 'FINISHED', style: 'success'},
+        {name: '手动停止', value: 'KILLED', style: 'danger'}, {name: '运行失败', value: 'FAILED', style: 'danger'}
+    ];
+    $scope.yarnJobStateMap = {};
+    $scope.yarnJobStateList.forEach(function (item) {
+        $scope.yarnJobStateMap[item.value] = item;
+    });
 }
 
 function appendBooleanType($scope) {
     $scope.booleanTypeList = [{name: '否', value: false, style: 'danger'}, {name: '是', value: true, style: 'success'}];
     $scope.booleanTypeMap = {};
-    for (var i = 0; i < $scope.booleanTypeList.length; i++) {
-        var item = $scope.booleanTypeList[i];
+    $scope.booleanTypeList.forEach(function (item) {
         $scope.booleanTypeMap[item.value] = item;
-    }
+    });
 }
 
-function appendEnableType($scope) {
-    $scope.enableTypeList = [{name: '停用', value: 0, style: 'danger'}, {name: '启用', value: 1, style: 'success'}];
-    $scope.enableTypeMap = {};
-    for (var i = 0; i < $scope.enableTypeList.length; i++) {
-        var item = $scope.enableTypeList[i];
-        $scope.enableTypeMap[item.value] = item;
-    }
-}
-
-function appendMonitorType($scope) {
-    $scope.monitorTypeList = [{name: 'spark实时', value: 0}, {name: 'flink实时', value: 1}];
-    $scope.monitorTypeMap = {};
-    for (var i = 0; i < $scope.monitorTypeList.length; i++) {
-        var item = $scope.monitorTypeList[i];
-        $scope.monitorTypeMap[item.value] = item;
-    }
-}
-
-function appendTaskCycle($scope) {
-    $scope.taskCycleList = [{name: '分钟', value: 1, style: 'info'}, {name: '小时',value: 2, style: 'info'}, {name: '天', value: 3, style: 'info'},
-        {name: '周', value: 4, style: 'info'}];
-    $scope.taskCycleMap = {};
-    for (var i = 0; i < $scope.taskCycleList.length; i++) {
-        var item = $scope.taskCycleList[i];
-        $scope.taskCycleMap[item.value] = item;
-    }
+function appendCycle($scope) {
+    $scope.cycleList = [{name: '分钟', value: 1}, {name: '小时',value: 2}, {name: '天', value: 3},
+        {name: '周', value: 4}];
+    $scope.cycleMap = {};
+    $scope.cycleList.forEach(function (item) {
+        $scope.cycleMap[item.value] = item;
+    });
 }
 
 function appendWeek($scope) {
-    $scope.weekList = [{name: '星期天', value: '1', style: 'info'}, {name: '星期一', value: '2', style: 'info'}, {name: '星期二', value: '3', style: 'info'},
-        {name: '星期三', value: '4', style: 'info'}, {name: '星期四', value: '5', style: 'info'}, {name: '星期五', value:'6', style: 'info'},
-        {name: '星期六', value: '7', style: 'info'}];
+    $scope.weekList = [{name: '星期天', value: '1'}, {name: '星期一', value: '2'}, {name: '星期二', value: '3'},
+        {name: '星期三', value: '4'}, {name: '星期四', value: '5'}, {name: '星期五', value:'6'},
+        {name: '星期六', value: '7'}];
     $scope.weekMap = {};
-    for (var i = 0; i < $scope.weekList.length; i++) {
-        var item = $scope.weekList[i];
+    $scope.weekList.forEach(function (item) {
         $scope.weekMap[item.value] = item;
-    }
+    });
 }
 
 function appendHour($scope) {
@@ -82,10 +88,9 @@ function appendHour($scope) {
         {name: '18点', value: 18}, {name: '19点', value: 19}, {name: '20点', value: 20},
         {name: '21点', value: 21}, {name: '22点', value: 22}, {name: '23点', value: 23}];
     $scope.hourMap = {};
-    for (var i = 0; i < $scope.hourList.length; i++) {
-        var item = $scope.hourList[i];
+    $scope.hourList.forEach(function (item) {
         $scope.hourMap[item.value] = item;
-    }
+    });
 }
 
 function appendMinute($scope) {
@@ -110,64 +115,47 @@ function appendMinute($scope) {
         {name: '54分', value: 54}, {name: '55分', value: 55}, {name: '56分', value: 56},
         {name: '57分', value: 57}, {name: '58分', value: 58}, {name: '59分', value: 59}];
     $scope.minuteMap = {};
-    for (var i = 0; i < $scope.minuteList.length; i++) {
-        var item = $scope.minuteList[i];
+    $scope.minuteList.forEach(function (item) {
         $scope.minuteMap[item.value] = item;
-    }
+    });
 }
 
-function appendYarnJobState($scope) {
-    $scope.yarnJobStateList = [{name: '初始状态', value: 'NEW', style: 'warning'}, {name: '作业提交请求', value: 'NEW_SAVING', style: 'warning'}, {name: '提交成功', value: 'SUBMITTED', style: 'warning'},
-        {name: '等待调度', value: 'ACCEPTED', style: 'warning'}, {name: '运行中', value: 'RUNNING', style: 'success'},{name: '已完成', value: 'FINISHED', style: 'success'},
-        {name: '手动停止', value: 'KILLED', style: 'danger'}, {name: '运行失败', value: 'FAILED', style: 'danger'}
-    ];
-    $scope.yarnJobStateMap = {};
-    for (var i = 0; i < $scope.yarnJobStateList.length; i++) {
-        var item = $scope.yarnJobStateList[i];
-        $scope.yarnJobStateMap[item.value] = item;
-    }
-}
-
-function appendCmdStatus($scope) {
-    $scope.cmdStatusList = [{name: '未开始', value:1, style: 'info'}, {name: '执行中', value: 2, style: 'warning'},
-        {name: '已完成', value: 3, style: 'success'}, {name: '运行超时', value: 4, style: 'danger'}, {name: '运行失败', value: 5, style: 'danger'}];
-    $scope.cmdStatusMap = {};
-    for (var i = 0; i < $scope.cmdStatusList.length; i++) {
-        var item = $scope.cmdStatusList[i];
-        $scope.cmdStatusMap[item.value] = item;
-    }
+function defineSort($scope) {
+    //排序
+    $scope.sort = function(title, asc) {
+        if (title !== $scope.title) {
+            asc = undefined;
+        }
+        if (asc === false) {
+            $scope.title = null;
+            $scope.asc = null;
+        } else {
+            $scope.title = title;
+            $scope.asc = !asc;
+        }
+    };
 }
 
 function removeItem(url, item, $http, afterRemoveItem) {
-    $('#' + item.id + '_removeBtn').attr('disabled', 'true');
     swal({
-        title: '操作确认',
-        text: '确认删除？',
+        title: '确认删除？',
         type: 'question',
         showConfirmButton: true,
         showCancelButton: true
     }).then(function (result) {
         if (result.value) {
             $http.post(url + '?id=' + item.id)
-                .success(function (data) {
-                    if (data) {
-                        if (data.code === 0) {
-                            swal('操作成功', data.msg, 'success');
-                            if (afterRemoveItem) {
-                                afterRemoveItem()
-                            }
-                        } else {
-                            swal('操作失败', data.msg, 'error');
-                            $('#' + item.id + '_removeBtn').removeAttr('disabled');
-                        }
+                .success(function () {
+                    swal({
+                        title: '删除成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    if (afterRemoveItem) {
+                        afterRemoveItem()
                     }
                 })
-                .error(function () {
-                    swal('操作失败', '删除失败', 'error');
-                    $('#' + item.id + '_removeBtn').removeAttr('disabled');
-                });
-        } else {
-            $('#' + item.id + '_removeBtn').removeAttr('disabled');
         }
     });
 }
@@ -177,11 +165,10 @@ function getAuthUser($scope, $http) {
     $scope.userMap = {};
     $http.get($contextPath + 'auth/user/getall.api')
         .success(function (data) {
-            for (var i in data) {
-                var item = data[i];
+            data.forEach(function (item) {
                 $scope.userList.push(item);
                 $scope.userMap[item.id] = item;
-            }
+            });
             setTimeout(function () {
                 $('.selectpicker').selectpicker('refresh');
             }, 100);
@@ -193,12 +180,58 @@ function getCluster($scope, $http, callback) {
     $scope.clusterMap = {};
     $http.get($contextPath + 'cluster/getall.api')
         .success(function (data) {
-            for (var i in data) {
-                var item = data[i];
-                item.value = item.id;
+            data.forEach(function (item) {
                 $scope.clusterList.push(item);
                 $scope.clusterMap[item.id] = item;
+            });
+            if (callback) {
+                callback();
             }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
+        });
+}
+
+function getAgent($scope, $http) {
+    $scope.agentList = [];
+    $scope.agentMap = {};
+    $http.get($contextPath + 'cluster/agent/getall.api')
+        .success(function (data) {
+            data.forEach(function (item) {
+                $scope.agentList.push(item);
+                $scope.agentMap[item.id] = item;
+            });
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
+        });
+}
+
+function getClusterUser($scope, $http) {
+    $scope.clusterUserList = [];
+    $scope.clusterUserMap = {};
+    $http.get($contextPath + 'cluster/cluster_user/getall.api')
+        .success(function (data) {
+            data.forEach(function (item) {
+                $scope.clusterUserList.push(item);
+                $scope.clusterUserMap[item.uid + '_' + item.clusterId] = item;
+            });
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
+        });
+}
+
+function getScript($scope, $http, callback) {
+    $scope.scriptList = [];
+    $scope.scriptMap = {};
+    $http.get($contextPath + 'script/getall.api')
+        .success(function (data) {
+            data.forEach(function (item) {
+                $scope.scriptList.push(item);
+                $scope.scriptMap[item.id] = item;
+            });
             if (callback) {
                 callback();
             }
@@ -217,102 +250,72 @@ function getClusterSync($scope) {
         type: 'GET',
         contentType: 'application/json',
         success: function (data) {
-            for (var i in data) {
-                var item = data[i];
-                item.value = item.id;
-                $scope.clusterList.push(item);
-                $scope.clusterMap[item.id] = item;
+            if (data.code === 0) {
+                data.content.forEach(function (item) {
+                    $scope.clusterList.push(item);
+                    $scope.clusterMap[item.id] = item;
+                })
+            } else {
+                swal({
+                    title: '后台接口异常，请联系管理员',
+                    type: 'error',
+                    showConfirmButton: true
+                });
             }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
         }
     });
 }
 
-function getAgent($scope, $http) {
-    $scope.agentList = [];
-    $scope.agentMap = {};
-    $http.get($contextPath + 'cluster/agent/getall.api')
-        .success(function (data) {
-            for (var i in data) {
-                var item = data[i];
-                $scope.agentList.push(item);
-                $scope.agentMap[item.id] = item;
-            }
-            setTimeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-            }, 100);
-        });
-}
-
-function getScript($scope, $http, isMonitor, isTask, callback) {
-    $scope.scriptList = [];
-    $scope.scriptMap = {};
-    $http.get($contextPath + 'script/getall.api')
-        .success(function (data) {
-            for (var i in data) {
-                var item = data[i];
-                item.value = item.id;
-                if (isMonitor) {
-                    if (item.type === 1 || item.type === 3) {
-                        $scope.scriptList.push(item);
-                        $scope.scriptMap[item.id] = item;
-                    }
-                } else if (isTask) {
-                    if (item.type === 0 || item.type === 2 || item.type === 4) {
-                        $scope.scriptList.push(item);
-                        $scope.scriptMap[item.id] = item;
-                    }
-                } else {
-                    $scope.scriptList.push(item);
-                    $scope.scriptMap[item.id] = item;
-                }
-            }
-            if (callback) {
-                callback();
-            }
-            setTimeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-            }, 100);
-        });
-}
-
-function getClusterUser($scope, $http) {
-    $scope.clusterUserList = [];
-    $scope.clusterUserMap = {};
-    $http.get($contextPath + 'cluster/cluster_user/getall.api')
-        .success(function (data) {
-            for (var i in data) {
-                var item = data[i];
-                $scope.clusterUserList.push(item);
-                $scope.clusterUserMap[item.uid + '_' + item.clusterId] = item;
-            }
-            setTimeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-            }, 100);
-        });
-}
-
 function getComputeFrameworkVersionSync($scope) {
     $scope.sparkVersionList = [];
+    $scope.sparkVersionMap = {};
     $scope.flinkVersionList = [];
+    $scope.flinkVersionMap = [];
     $.ajax({
         url: $contextPath + 'cluster/compute_framework/getall.api',
         async: false,
         type: 'GET',
         contentType: 'application/json',
         success: function (data) {
-            data.forEach(function (item) {
-                if (item.type === 'Spark') {
-                    $scope.sparkVersionList.push(item);
-                } else if (item.type === 'Flink') {
-                    $scope.flinkVersionList.push(item);
-                }
-            });
+            if (data.code === 0) {
+                data.content.forEach(function (item) {
+                    if (item.type === 'Spark') {
+                        $scope.sparkVersionList.push(item);
+                        $scope.sparkVersionMap[item.command] = item;
+                    } else if (item.type === 'Flink') {
+                        $scope.flinkVersionList.push(item);
+                        $scope.flinkVersionMap[item.command] = item;
+                    }
+                });
+            } else {
+                swal({
+                    title: '后台接口异常，请联系管理员',
+                    type: 'error',
+                    showConfirmButton: true
+                });
+            }
             if ($scope.sparkVersionList.length === 0) {
-                $scope.sparkVersionList.push({version: 'default', command: 'spark-submit'});
+                var spark = {
+                    version: 'default',
+                    command: 'spark-submit'
+                };
+                $scope.sparkVersionList.push(spark);
+                $scope.sparkVersionMap[spark.command] = spark;
             }
             if ($scope.flinkVersionList.length === 0) {
-                $scope.flinkVersionList.push({version: 'default', command: 'flink'});
+                var flink = {
+                    version: 'default',
+                    command: 'flink'
+                };
+                $scope.flinkVersionList.push(flink);
+                $scope.flinkVersionMap[flink.command] = flink;
             }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 100);
         }
     });
 }

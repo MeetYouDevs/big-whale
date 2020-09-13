@@ -22,7 +22,7 @@
                             名称&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_name" class="form-control" ng-model="editItem.name" required="required">
+                            <input id="modal_input_name" class="form-control" ng-model="editItem.name" required autocomplete="off" />
                         </div>
                     </div>
                     <div class="form-group">
@@ -30,7 +30,7 @@
                             描述
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_description" class="form-control" ng-model="editItem.description">
+                            <textarea id="modal_input_description" class="form-control" ng-model="editItem.description"></textarea>
                         </div>
                     </div>
                     <div class="form-group">
@@ -39,7 +39,7 @@
                         </label>
                         <div class="col-sm-5">
                             <div ng-repeat="tip in editItem.instances track by $index">
-                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.instances[$index]" placeholder="机器IP或主机名" required><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.instances, $index)"></span>
+                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.instances[$index]" placeholder="机器IP或主机名" required autocomplete="off"/><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.instances, $index)"></span>
                             </div>
                             <div ng-click="!editItem.instances ? editItem.instances = []: '';onAddTip(editItem.instances);">
                                 <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
@@ -168,11 +168,10 @@
 <script src="../../../js/common.js" type="text/javascript"></script>
 <script type="text/javascript">
     var app = angular.module('content-app', []);
-    registerAuth(app);
+    registerHttpInterceptor(app);
     registerPage(app);
 
     app.controller('content-controller', function ($scope, $http) {
-        appendEnableType($scope);
         getCluster($scope, $http);
 
         $scope.onNewItem = function () {
@@ -209,14 +208,19 @@
             $('#btn_submit').attr('disabled', 'true');
             $http.post('./save.api', $scope.editItem)
                 .success(function(data) {
-                    $('#editDlg').modal('hide');
-                    if (data.code === 0) {
-                        swal('操作成功', data.msg, 'success');
-                        $scope.reload();
-                    } else {
-                        swal('操作失败', data.msg, 'error');
-                    }
                     $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
+                    $scope.reload();
+                    swal({
+                        title: '保存成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                })
+                .error(function (data) {
+                    $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
                 });
         };
 
@@ -226,9 +230,7 @@
 
         // 获取数据列表
         $scope.options = {
-            query: {
-                status: ''
-            },
+            query: {},
             listUrl: './getpage.api'
         };
 

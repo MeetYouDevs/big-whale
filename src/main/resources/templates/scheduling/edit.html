@@ -2,7 +2,7 @@
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:include="base/resource"/>
-    <title>离线调度编辑 - Big Whale</title>
+    <title>任务调度编辑 - Big Whale</title>
     <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
     <link href="../libs/bootstrap-switch/bootstrap-switch.min.css" rel="stylesheet"/>
     <link href="../css/common.css" rel="stylesheet"/>
@@ -14,7 +14,7 @@
     <div class="bw-nav">
         <div class="row">
             <ol class="breadcrumb">
-                <li><a href="javascript:" ng-click="onOpenList()">离线调度</a></li>
+                <li><a href="javascript:" ng-click="onOpenList()">任务调度</a></li>
                 <li class="active">{{editItem.id ? "编辑" : "新增"}}</li>
             </ol>
             <a class="bw-refresh" onclick="location.reload()" title="刷新">
@@ -26,8 +26,8 @@
         <div class="row">
             <div class="col-md-12">
                 <form class="form-horizontal" ng-submit="onSaveItem()">
-                    <div class="container shadow" th:if="${session.user.root}">
-                        <div class="form-group">
+                    <div class="container shadow">
+                        <div class="form-group" th:if="${session.user.root}">
                             <label for="select_user" class="col-sm-2 control-label">
                                 用户&nbsp;<B>*</B>
                             </label>
@@ -38,9 +38,19 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label for="select_type" class="col-sm-2 control-label">
+                                类型
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_type" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.type" ng-options="item.value as item.name for item in schedulingTypeList" required>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="container shadow topology">
+                    <div class="container shadow topology" ng-show="editItem && editItem.type == 0">
                         <div class="form-group">
                             <label class="col-sm-2 control-label" id="flex_tools">
                                 拓扑<B class="help" data-toggle="tooltip" data-placement="top" title="有向无环，有且只能有一个根节点">?</B>&nbsp;<B>*</B>
@@ -57,37 +67,95 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label for="select_repeatSubmit" class="col-sm-2 control-label">
+                                可重复提交<B class="help" data-toggle="tooltip" data-placement="top" title="上一次调度任务未完成的情况下，是否允许提交当前调度任务">?</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_repeatSubmit" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.repeatSubmit" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container shadow" ng-if="editItem && editItem.type == 1">
+                        <div class="form-group">
+                            <label for="select_scriptId" class="col-sm-2 control-label">
+                                脚本&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_scriptId" class="form-control selectpicker show-tick" data-live-search="true"
+                                        ng-model="editItem.scriptId" ng-options="item.id as item.name for item in scriptList | scriptFilter :editItem.type :editItem.uid" required>
+                                    <option value="">请选择</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="select_exRestart" class="col-sm-2 control-label">
+                                异常重启
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_exRestart" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.exRestart" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="input_waitingBatches" class="col-sm-2 control-label">
+                                {{isSparkScript() ? '批次积压告警阈值' : '任务阻塞告警阈值(%)'}}&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input id="input_waitingBatches" class="form-control" type="number" ng-model="editItem.waitingBatches" min="0" required>
+                            </div>
+                            <div class="col-sm-5">
+                                <p class="help-block">{{isSparkScript() ? '批次积压大于等于该值的时候将进行告警，为0禁用' : '单位时间内，任务阻塞比(阻塞任务数 / 消费任务数)大于等于该值的时候将进行告警，为0禁用，最大100'}}</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="select_blockingRestart" class="col-sm-2 control-label">
+                                {{isSparkScript() ? '批次积压重启' : '任务阻塞重启'}}
+                            </label>
+                            <div class="col-sm-4">
+                                <select id="select_blockingRestart" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.blockingRestart" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                </select>
+                            </div>
+                            <div class="col-sm-5">
+                                <p class="help-block">{{isSparkScript() ? '批次积压达到阈值后，自动进行任务重启' : '任务阻塞达到阈值后，自动进行任务重启'}}</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="container shadow">
                         <div class="form-group">
                             <label class="col-sm-2 control-label">
-                                调度周期&nbsp;<B>*</B>
+                                {{isBatch() ? '执行周期' : '监测周期'}}&nbsp;<B>*</B>
                             </label>
                             <div class="col-sm-4">
-                                <input id="cycle_input_cron" class="form-control" ng-model="editItem.cron" placeholder="cron表达式" required>
-                                <div id="cycle_div_visual">
+                                <input ng-if="!editItem.showVisual_" class="form-control" ng-model="editItem.cron" placeholder="cron表达式" required>
+                                <div ng-if="editItem.showVisual_">
                                     <h4 style="margin: 0 0; padding: 5px 0;">
                                         <label class="label label-info">
                                             每
                                         </label>
                                     </h4>
-                                    <input id="cycle_input_intervals" class="form-control" type="number" min="1" ng-model="editItem.intervals" placeholder="间隔" required>
-                                    <select id="cycle_select_cycle" class="form-control selectpicker show-tick" title="维度"
-                                            ng-model="editItem.cycle" ng-options="item.value as item.name for item in taskCycleList">
+                                    <input ng-if="editItem.cycle == 1" class="form-control" type="number" min="1" ng-model="editItem.intervals" placeholder="间隔" required>
+                                    <select class="form-control selectpicker show-tick"
+                                            ng-model="editItem.cycle" ng-options="item.value as item.name for item in cycleList" ng-change="onCycleChange()">
                                     </select>
-                                    <div id="cycle_div_week">
-                                        <select class="form-control selectpicker show-tick" title="星期"
+                                    <div ng-if="editItem.cycle == 4">
+                                        <select class="form-control selectpicker show-tick"
                                                 ng-model="editItem.week" ng-options="item.value as item.name for item in weekList"  multiple required>
                                         </select>
                                     </div>
-                                    <div id="cycle_div_hour">
-                                        <select class="form-control selectpicker show-tick" title="时"
+                                    <div ng-if="editItem.cycle >= 3">
+                                        <select class="form-control selectpicker show-tick"
                                                 ng-model="editItem.hour" ng-options="item.value as item.name for item in hourList">
                                         </select>
                                     </div>
-                                    <div id="cycle_div_minute">
-                                        <select class="form-control selectpicker show-tick" title="分"
+                                    <div ng-if="editItem.cycle >=2">
+                                        <select class="form-control selectpicker show-tick"
                                                 ng-model="editItem.minute" ng-options="item.value as item.name for item in minuteList" >
                                         </select>
                                     </div>
@@ -115,22 +183,12 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="select_repeatSubmit" class="col-sm-2 control-label">
-                                可重复提交<B class="help" data-toggle="tooltip" data-placement="top" title="上一次调度任务未完成的情况下，是否允许提交当前调度任务">?</B>
-                            </label>
-                            <div class="col-sm-4">
-                                <select id="select_repeatSubmit" class="form-control selectpicker show-tick"
-                                        ng-model="editItem.repeatSubmit" ng-options="item.value as item.name for item in booleanTypeList" required>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="select_sendMail" class="col-sm-2 control-label">
+                            <label for="select_sendEmail" class="col-sm-2 control-label">
                                 发送邮件
                             </label>
                             <div class="col-sm-4">
-                                <select id="select_sendMail" class="form-control selectpicker show-tick"
-                                        ng-model="editItem.sendMail" ng-options="item.value as item.name for item in booleanTypeList" required>
+                                <select id="select_sendEmail" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.sendEmail" ng-options="item.value as item.name for item in booleanTypeList" required>
                                 </select>
                             </div>
                         </div>
@@ -146,12 +204,15 @@
                                     <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
                                 </div>
                             </div>
+                            <div class="col-sm-5">
+                                <p class="help-block">需要指定@用户，可用“&”拼接，如：token&@phone1@phone2</p>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="select_status" class="col-sm-2 control-label">状态</label>
+                            <label for="select_enabled" class="col-sm-2 control-label">启用</label>
                             <div class="col-sm-4">
-                                <select id="select_status" class="form-control selectpicker show-tick"
-                                        ng-model="editItem.status" ng-options="item.value as item.name for item in enableTypeList" required>
+                                <select id="select_enabled" class="form-control selectpicker show-tick"
+                                        ng-model="editItem.enabled" ng-options="item.value as item.name for item in booleanTypeList" required>
                                 </select>
                             </div>
                         </div>
@@ -405,7 +466,7 @@
             setTimeout(function () {
                 canvas.render();
                 canvas.overflow();
-            }, 100);
+            }, 50);
         },
         // 初始化node
         initNode: function () {
@@ -498,23 +559,23 @@
         var nodes = canvas.data.nodes;
         var lines = canvas.data.lines;
         if (nodes.length === 0) {
-            return '拓扑不能为空';
+            return '节点不能为空';
         }
         if (nodes.length !== lines.length  + 1) {
-            return '拓扑必须满足：节点数 = 分支数 + 1';
+            return '须满足：节点数 = 分支数 + 1';
         }
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
             if (!line.from.id || !line.to.id || line.from.id === line.to.id) {
-                return '拓扑分支的起点和终点必须指向不同节点';
+                return '分支的起点和终点必须指向不同节点';
             }
             for (var j = i + 1; j < lines.length; j ++) {
                 var lineNext = lines[j];
                 if (line.to.id === lineNext.to.id) {
-                    return '拓扑不同分支的终点必须指向不同节点';
+                    return '不同分支的终点必须指向不同节点';
                 }
                 if (line.from.id === lineNext.to.id && line.to.id === lineNext.from.id) {
-                    return '拓扑不能存在回环';
+                    return '不能存在回环';
                 }
             }
         }
@@ -553,41 +614,98 @@
     };
     var user = [[${session.user}]];
     var app = angular.module("content-app", []);
+    registerHttpInterceptor(app);
     registerDateRange(app, 'inp_start', 'inp_end');
-    registerAuth(app);
 
     var $visualCheckbox = $('[name="visual-checkbox"]');
-    var $cycleInputCron = $('#cycle_input_cron');
-    var $cycleDivVisual = $('#cycle_div_visual');
-    var $cycleInputIntervals = $('#cycle_input_intervals');
-    var $cycleSelectCycle = $('#cycle_select_cycle');
-    var $cycleDivWeek = $('#cycle_div_week');
-    var $cycleDivHour = $('#cycle_div_hour');
-    var $cycleDivMinute = $('#cycle_div_minute');
     var $btnSubmit = $('#btn_submit');
 
     app.controller("content-controller", function ($scope, $http, $timeout) {
-        $scope.query = {searchText: ''};
         if (user.root) {
             getAuthUser($scope, $http);
         }
-        appendEnableType($scope);
-        appendTaskCycle($scope);
-        appendHour($scope);
+        appendSchedulingType($scope);
+        appendCycle($scope);
         appendMinute($scope);
+        appendHour($scope);
         appendWeek($scope);
         appendBooleanType($scope);
+        getScript($scope, $http, function () {
+            if ($scope.editItem) {
+                onLoadTools($scope.generateTools())
+            }
+        });
+
+        $scope.query = {searchText: ''};
+        var schedulingId = [[${schedulingId}]];
 
         $scope.onOpenList = function () {
             if (parent.xadmin) {
-                parent.xadmin.add_tab('离线调度', 'scheduling/list.html');
+                parent.xadmin.add_tab('任务调度', 'scheduling/list.html');
             } else {
-                window.open('./list.html', '离线调度');
+                window.open('./list.html', '任务调度');
             }
         };
 
         $scope.init = function() {
-            var schedulingId = [[${schedulingId}]];
+            Topology.init([], []);
+            $scope.scriptList = [];
+            $scope.scriptMap = {};
+            var initDefault = function () {
+                var now = new Date();
+                var tenYearsLater = new Date(now.getTime() + (60 * 60 * 24 * 365 * 10 * 1000));
+                $scope.editItem = {
+                    type: 0,
+                    cycle: 1,
+                    intervals: 2,
+                    minute: 0,
+                    hour: 0,
+                    week: ['6'],
+                    cron: '0 */2 * * * ?',
+                    startTime: now.format('yyyy-MM-dd HH:mm:ss'),
+                    endTime: tenYearsLater.format('yyyy-MM-dd HH:mm:ss'),
+                    repeatSubmit: false,
+                    exRestart: true,
+                    waitingBatches: 15,
+                    blockingRestart: true,
+                    sendEmail: true,
+                    enabled: true,
+                    showVisual_: true
+                };
+            };
+            var initItem = function (item) {
+                if (item.intervals === null) {
+                    item.intervals = 2;
+                }
+                if (item.minute === null) {
+                    item.minute = 0;
+                }
+                if (item.hour === null) {
+                    item.hour = 0;
+                }
+                if (item.week === null) {
+                    item.week = ['6'];
+                }
+                if (item.cron) {
+                    item.showVisual_ = false;
+                } else {
+                    item.showVisual_ = true;
+                    item.cron = '0 */2 * * * ?';
+                }
+                if (item.type === 0) {
+                    var topology = JSON.parse(item.topology);
+                    clearCanvas();
+                    $timeout(function () {
+                        Topology.initCanvas(
+                            topology.nodes,
+                            topology.lines
+                        );
+                    }, 50);
+                } else {
+                    item.scriptId = item.scriptIds[0];
+                }
+                $scope.editItem = item;
+            };
             if (schedulingId) {
                 var query = {
                     'id': schedulingId,
@@ -595,63 +713,31 @@
                     'pageSize': 1,
                     'limit': 1
                 };
-                $.ajax({
-                    url: './getpage.api',
-                    async: false,
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(query),
-                    success: function (data) {
-                        if (data.content) {
-                            var item = data.content[0];
-                            $scope.editItem = angular.copy(item);
-                            if ($scope.editItem.week === null) {
-                                $scope.editItem.week = ['6'];
-                            }
-                            if ($scope.editItem.intervals === null) {
-                                $scope.editItem.intervals = 2;
-                            }
-                            if ($scope.editItem.cron) {
-                                $visualCheckbox.bootstrapSwitch('state', false);
-                            } else {
-                                $visualCheckbox.bootstrapSwitch('state', true);
-                                $scope.editItem.cron = '0 */2 * * * ?';
-                            }
-                            var topology = JSON.parse($scope.editItem.topology);
-                            Topology.init(
-                                topology.nodes,
-                                topology.lines
-                            );
-                            $timeout(function () {
-                                $scope.selectCycleChange($cycleSelectCycle.val());
-                            }, 50);
+                $http.post('./getpage.api', query)
+                    .success(function (data) {
+                        if (data.content.length) {
+                            initItem(data.content[0]);
+                        } else {
+                            initDefault();
                         }
-                    }
-                });
+                        if ($scope.scriptList.length) {
+                            onLoadTools($scope.generateTools())
+                        }
+                        $visualCheckbox.bootstrapSwitch('state', $scope.editItem.showVisual_);
+                        $timeout(function () {
+                            $('.selectpicker').selectpicker('render');
+                        }, 50);
+                    });
             } else {
-                var now = new Date();
-                var tenYearsLater = new Date(now.getTime() + (60 * 60 * 24 * 365 * 10 * 1000));
-                $scope.editItem = {
-                    sendMail: true,
-                    status: 1,
-                    type: 2,
-                    cycle: 1,
-                    week: ['6'],
-                    hour: 0,
-                    minute: 0,
-                    intervals: 2,
-                    subScriptIds: [],
-                    repeatSubmit: false,
-                    startTime: now.format('yyyy-MM-dd HH:mm:ss'),
-                    endTime: tenYearsLater.format('yyyy-MM-dd HH:mm:ss'),
-                    cron: '0 */2 * * * ?'
-                };
-                $visualCheckbox.bootstrapSwitch('state', true);
-                Topology.init([], []);
+                initDefault();
+                if ($scope.scriptList.length) {
+                    onLoadTools($scope.generateTools())
+                }
+                $visualCheckbox.bootstrapSwitch('state', $scope.editItem.showVisual_);
+                $timeout(function () {
+                    $('.selectpicker').selectpicker('render');
+                }, 50);
             }
-            getScript($scope, $http, false, true, function () {
-                onLoadTools($scope.generateTools())
-            });
         };
 
         $scope.onUidChange = function() {
@@ -659,15 +745,89 @@
             onLoadTools($scope.generateTools())
         };
 
+        $scope.onCycleChange = function () {
+            $timeout(function () {
+                $('.selectpicker').selectpicker('render');
+            }, 50);
+        };
+
         $scope.onQuerySearchTextChange = function() {
             onLoadTools($scope.generateTools())
+        };
+
+        $scope.onAddTip = function (tips) {
+            if (!tips) {
+                tips = [''];
+            }
+            tips.push('');
+        };
+
+        $scope.onRemoveTip = function (tips, index) {
+            if (!tips) {
+                return;
+            }
+            tips.splice(index, 1);
+        };
+
+        //保存
+        $scope.onSaveItem = function () {
+            var startTime = $('#inp_start').val();
+            var endTime = $('#inp_end').val();
+            $scope.editItem.startTime = startTime;
+            $scope.editItem.endTime = endTime;
+            var req = angular.copy($scope.editItem);
+            if (req.type === 0) {
+                var err = validateTopology();
+                if (err) {
+                    swal('拓扑构建失败', err, 'error');
+                    return;
+                }
+                var fields = $scope.generateFields();
+                req.topology = JSON.stringify(fields.topology);
+                req.scriptIds = fields.scriptIds;
+            } else {
+                req.topology = null;
+                req.scriptIds = [req.scriptId];
+                if (!$scope.isSparkScript()) {
+                    if (req.waitingBatches > 100) {
+                        req.waitingBatches = 100;
+                    }
+                }
+            }
+            if (req.showVisual_) {
+                req.cron = null;
+            }
+            delete req.scriptId;
+            delete req.showVisual_;
+            $btnSubmit.attr('disabled', 'true');
+            $http.post('./save.api', req)
+                .success(function (data) {
+                    $btnSubmit.removeAttr('disabled');
+                    swal({
+                        title: '保存成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(function () {
+                        if (parent.xadmin) {
+                            $scope.closeTab();
+                        } else {
+                            location.href = "./list.html";
+                        }
+                    });
+                })
+                .error(function (data) {
+                    $btnSubmit.removeAttr('disabled');
+                });
         };
 
         $scope.generateTools = function() {
             var children = [];
             $scope.scriptList.forEach(function (item) {
                 var push = true;
-                if ($scope.editItem.uid && $scope.query.searchText) {
+                if (item.type === 1 || item.type === 3) {
+                    push = false;
+                } else if ($scope.editItem.uid && $scope.query.searchText) {
                     if (item.uid !== $scope.editItem.uid || item.name.indexOf($scope.query.searchText) === -1) {
                         push = false;
                     }
@@ -709,65 +869,6 @@
             return [
                 scriptTool
             ];
-        };
-
-        $scope.onAddTip = function (tips) {
-            if (!tips) {
-                tips = [''];
-            }
-            tips.push('');
-            $timeout(function () {
-                $('.selectpicker').selectpicker('refresh');
-            }, 50);
-        };
-
-        $scope.onRemoveTip = function (tips, index) {
-            if (!tips) {
-                return;
-            }
-            tips.splice(index, 1);
-        };
-
-        //保存
-        $scope.onSaveItem = function () {
-            var err = validateTopology();
-            if (err) {
-                swal('操作失败', err, 'error');
-                return;
-            }
-            var startTime = $('#inp_start').val();
-            var endTime = $('#inp_end').val();
-            $scope.editItem.startTime = startTime;
-            $scope.editItem.endTime = endTime;
-            var fields = $scope.generateFields();
-            $scope.editItem.topology = JSON.stringify(fields.topology);
-            $scope.editItem.scriptIds = fields.scriptIds;
-            var cron = $scope.editItem.cron;
-            if ($visualCheckbox.bootstrapSwitch('state')) {
-                $scope.editItem.cron = null;
-            }
-            $btnSubmit.attr('disabled', 'true');
-            $http.post('./save.api', $scope.editItem)
-                .success(function (data) {
-                    if (data.code === 0) {
-                        swal({
-                            title: '操作成功',
-                            text: data.msg,
-                            type: 'success',
-                            showConfirmButton: true
-                        }).then(function () {
-                            if (parent.xadmin) {
-                                $scope.closeTab();
-                            } else {
-                                location.href = "./list.html";
-                            }
-                        });
-                    } else {
-                        $scope.editItem.cron = cron;
-                        swal('操作失败', data.msg, 'error');
-                    }
-                    $btnSubmit.removeAttr('disabled');
-                });
         };
 
         $scope.generateFields = function() {
@@ -821,65 +922,61 @@
                 parent.xadmin.reloadScheduling();
                 el.click();
             }, 50);
-            parent.xadmin.add_tab('离线调度', 'scheduling/list.html');
+            parent.xadmin.add_tab('任务调度', 'scheduling/list.html');
         };
 
+        $scope.isBatch = function () {
+          return $scope.editItem && $scope.editItem.type === 0;
+        };
+
+        $scope.isSparkScript = function () {
+            return !$scope.editItem ||
+                !$scope.scriptMap ||
+                !$scope.scriptMap[$scope.editItem.scriptId] ||
+                $scope.scriptMap[$scope.editItem.scriptId].type === 1;
+        };
+
+        //提示控件
+        $('[data-toggle="tooltip"]').tooltip();
+
         //初始化切换开关
-        $visualCheckbox.bootstrapSwitch({
+        $('[name="visual-checkbox"]').bootstrapSwitch({
             onColor: 'success',
             offColor: 'default',
             size: 'mini',
             onSwitchChange: function(event, state){
-                if (state === true){
-                    $cycleInputCron.hide();
-                    $cycleDivVisual.show();
-                } else {
-                    $cycleInputCron.show();
-                    $cycleDivVisual.hide();
-                }
+                $timeout(function () {
+                    $scope.editItem.showVisual_ = state;
+                    $timeout(function () {
+                        $('.selectpicker').selectpicker('render');
+                    }, 50);
+                }, 50);
             }
         });
 
-        //处理可视化调度周期
-        $cycleSelectCycle.change(function () {
-            $scope.selectCycleChange(this.value);
-            $('.selectpicker').selectpicker('refresh');
-        });
-        $scope.selectCycleChange = function (val) {
-            if (val === '0') {
-                $cycleInputIntervals.show();
-                $cycleDivWeek.hide();
-                $cycleDivHour.hide();
-                $cycleDivMinute.hide();
-            } else if (val === '1') {
-                $cycleInputIntervals.hide();
-                $cycleDivWeek.hide();
-                $cycleDivHour.hide();
-                $cycleDivMinute.show();
-            } else if (val === '2') {
-                $cycleInputIntervals.hide();
-                $cycleDivWeek.hide();
-                $cycleDivHour.show();
-                $cycleDivMinute.show();
-            } else {
-                $cycleInputIntervals.hide();
-                $cycleDivWeek.show();
-                $cycleDivHour.show();
-                $cycleDivMinute.show();
-            }
-        };
-        //初始化状态
-        $cycleInputCron.hide();
-        $cycleDivWeek.hide();
-        $cycleDivHour.hide();
-        $cycleDivMinute.hide();
-
-        //提示控件
         $timeout(function () {
-            $('[data-toggle="tooltip"]').tooltip();
+            $('.selectpicker').selectpicker();
         }, 50);
 
         $scope.init();
+    });
+
+    app.filter('scriptFilter', function () {
+        return function (scripts, type, uid) {
+            if (uid) {
+                scripts = scripts.filter(function (script) {
+                    return (script.type === 1 || script.type === 3) && script.uid === uid;
+                });
+            } else {
+                scripts = scripts.filter(function (script) {
+                    return script.type === 1 || script.type === 3;
+                });
+            }
+            setTimeout(function () {
+                $('.selectpicker').selectpicker('refresh');
+            }, 50);
+            return scripts;
+        }
     });
 </script>
 </body>

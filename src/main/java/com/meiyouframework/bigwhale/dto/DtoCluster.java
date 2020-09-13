@@ -19,9 +19,9 @@ public class DtoCluster extends AbstractPageDto {
     private String fsWebhdfs;
     private String fsUser;
     private String fsDir;
-    private boolean defaultFileCluster;
-    private boolean flinkProxyUserEnabled;
-    private String streamBlackNodeList;
+    private Boolean defaultFileCluster;
+    private Boolean flinkProxyUserEnabled;
+    private String streamingBlackNodeList;
     private String batchBlackNodeList;
 
     @Override

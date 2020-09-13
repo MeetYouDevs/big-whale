@@ -67,7 +67,6 @@
             $.ajax({
                 url: './login.html',
                 type: 'POST',
-                //contentType: 'application/json',
                 data: $('#loginForm').serialize(),
                 success: function (data) {
                     if (data.code === 0) {

@@ -5,14 +5,6 @@
     <title>YARN应用 - Big Whale</title>
     <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
     <link href="../css/common.css" rel="stylesheet"/>
-    <style type="text/css">
-        .name {
-            display: inline-block;
-            max-width: 150px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-    </style>
 </head>
 <body ng-app="content-app" ng-controller="content-controller">
 <div class="container-fluid animated fadeInDown">
@@ -113,11 +105,6 @@
                                 <tr ng-repeat="item in options.items | orderBy : title : !asc">
                                     <td>
                                         <p class="operate">
-                                            <span>
-                                                <a href="http://123.56.5.44:4000/d/l7utNapsW/spark-application-monitor-detail?orgId=1&var-applicationId={{item.appId}}" target="_blank" style="text-decoration: none">
-                                                    <i class="fa fa-line-chart" aria-hidden="true" title="资源诊断"></i>
-                                                </a>
-                                            </span><br/>
                                             <span ng-click="onKillItem(item)">
                                                 <i class="glyphicon glyphicon-stop" aria-hidden="true" title="停止"></i>
                                             </span>
@@ -127,7 +114,7 @@
                                         {{userMap[item.uid].username}}
                                     </td>
                                     <td>
-                                        <span class="name">{{item.name}}</span>
+                                        <span class="script-name">{{item.name}}</span>
                                     </td>
                                     <td>
                                         {{item.applicationType}}
@@ -171,8 +158,8 @@
 <script th:inline="javascript">
     var user = [[${session.user}]];
     var app = angular.module('content-app', []);
+    registerHttpInterceptor(app);
     registerPage(app);
-    registerAuth(app);
     app.controller('content-controller', function ($scope, $http) {
         var appId = [[${appId}]];
         getScript($scope, $http, false);
@@ -181,13 +168,12 @@
             getAuthUser($scope, $http);
         }
         appendYarnJobState($scope);
-        registerSort($scope);
+        defineSort($scope);
 
         //删除
         $scope.onKillItem = function (item) {
             swal({
-                title: '操作确认',
-                text: '确认停止？',
+                title: '确认停止？',
                 type: 'question',
                 showConfirmButton: true,
                 showCancelButton: true
@@ -195,13 +181,14 @@
                 if (result.value) {
                     $http.post('./kill.api?appId=' + item.appId)
                         .success(function (data) {
-                            if (data.code === 0) {
-                                swal('操作成功', '停止成功', 'success');
-                                $scope.reload();
-                            } else {
-                                swal('操作失败', '停止失败', 'error');
-                            }
-                        })
+                            $scope.reload();
+                            swal({
+                                title: '停止成功',
+                                type: 'success',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        });
                 }
             });
         };

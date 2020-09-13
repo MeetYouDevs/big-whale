@@ -28,7 +28,7 @@ public class Cluster {
     private String fsDir;
     private Boolean defaultFileCluster;
     private Boolean flinkProxyUserEnabled;
-    private String streamBlackNodeList;
+    private String streamingBlackNodeList;
     private String batchBlackNodeList;
 
 }

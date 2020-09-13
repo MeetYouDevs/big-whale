@@ -18,7 +18,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="modal_select_uid" class="col-sm-4 control-label">
-                            用户&nbsp;<B>*</B>
+                            平台用户&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
                             <select id="modal_select_uid" class="form-control selectpicker show-tick" data-live-search="true" ng-model="editItem.uid"
@@ -27,22 +27,16 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-group" ng-if="editItem.id == null">
+                    <div class="form-group">
                         <label for="modal_select_clusterId_new" class="col-sm-4 control-label">
                             集群&nbsp;<B>*</B>
                         </label>
-                        <div class="col-sm-5">
+                        <div class="col-sm-5" ng-if="editItem.id == null">
                             <select id="modal_select_clusterId_new" class="form-control selectpicker show-tick" data-actions-box="true" data-select-all-text="全选" data-deselect-all-text="反选"
-                                    ng-model="editItem.clusterId" ng-options="item.id as item.name for item in clusterList" multiple required>
-                                <option value="">请选择</option>
+                                    ng-model="editItem.clusterId" ng-options="item.id as item.name for item in clusterList" title="请选择" multiple required>
                             </select>
                         </div>
-                    </div>
-                    <div class="form-group" ng-if="editItem.id != null">
-                        <label for="modal_select_clusterId_edit" class="col-sm-4 control-label">
-                            集群&nbsp;<B>*</B>
-                        </label>
-                        <div class="col-sm-5">
+                        <div class="col-sm-5" ng-if="editItem.id != null">
                             <select id="modal_select_clusterId_edit" class="form-control selectpicker show-tick"
                                     ng-model="editItem.clusterId" ng-options="item.id as item.name for item in clusterList" required>
                             </select>
@@ -181,18 +175,15 @@
 <script src="../../../js/common.js" type="text/javascript"></script>
 <script th:inline="javascript">
     var app = angular.module('content-app', []);
-    registerAuth(app);
+    registerHttpInterceptor(app);
     registerPage(app);
     app.controller('content-controller', function ($scope, $http) {
         var clusterId = [[${clusterId}]];
-        appendEnableType($scope);
         getCluster($scope, $http);
         getAuthUser($scope, $http);
 
         $scope.onNewItem = function () {
-            $scope.editItem = {
-                status: 1
-            };
+            $scope.editItem = {};
             $('#editDlg').modal();
         };
 
@@ -219,14 +210,19 @@
             }
             $http.post('./save.api', $scope.editItem)
                 .success(function(data) {
-                    $('#editDlg').modal('hide');
-                    if (data.code === 0) {
-                        swal('操作成功', data.msg, 'success');
-                        $scope.reload();
-                    } else {
-                        swal('操作失败', data.msg, 'error');
-                    }
                     $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
+                    $scope.reload();
+                    swal({
+                        title: '保存成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                })
+                .error(function (data) {
+                    $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
                 });
         };
 

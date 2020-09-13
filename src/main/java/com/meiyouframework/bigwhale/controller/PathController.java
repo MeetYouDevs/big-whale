@@ -58,11 +58,6 @@ public class PathController {
         return "script/edit";
     }
 
-    @GetMapping("/monitor/list.html")
-    public String monitorPage() {
-        return "monitor/list";
-    }
-
     @GetMapping("/scheduling/list.html")
     public String taskPage() {
         return "scheduling/list";
@@ -90,21 +85,17 @@ public class PathController {
     @GetMapping("/script/cmd_record/list.html")
     public String cmdRecordPage(
             @RequestParam(name = "id", required = false) String id,
-            @RequestParam(name = "schedulingId", required = false) String schedulingId,
-            @RequestParam(name = "monitorId", required = false) String monitorId,
             @RequestParam(name = "scriptId", required = false) String scriptId,
+            @RequestParam(name = "schedulingId", required = false) String schedulingId,
             Model viewObjects) {
         if (StringUtils.isNotBlank(id)) {
             viewObjects.addAttribute("id", id);
         }
-        if (StringUtils.isNotBlank(schedulingId)) {
-            viewObjects.addAttribute("schedulingId", schedulingId);
-        }
-        if (StringUtils.isNotBlank(monitorId)) {
-            viewObjects.addAttribute("monitorId", monitorId);
-        }
         if (StringUtils.isNotBlank(scriptId)) {
             viewObjects.addAttribute("scriptId", scriptId);
+        }
+        if (StringUtils.isNotBlank(schedulingId)) {
+            viewObjects.addAttribute("schedulingId", schedulingId);
         }
         return "script/cmd_record/list";
     }

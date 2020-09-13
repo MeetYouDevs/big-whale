@@ -4,10 +4,10 @@ import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
 import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
-import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -21,13 +21,10 @@ public abstract class AbstractCmdRecordTask extends AbstractNoticeableTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCmdRecordTask.class);
 
+    @Autowired
     protected CmdRecordService cmdRecordService;
+    @Autowired
     protected SchedulingService schedulingService;
-
-    protected AbstractCmdRecordTask () {
-        cmdRecordService = SpringContextUtils.getBean(CmdRecordService.class);
-        schedulingService = SpringContextUtils.getBean(SchedulingService.class);
-    }
 
     /**
      * 提交下一个任务

@@ -4,6 +4,7 @@ import com.meiyouframework.bigwhale.data.service.AbstractMysqlPagingAndSortingQu
 import com.meiyouframework.bigwhale.entity.auth.User;
 import com.meiyouframework.bigwhale.entity.auth.UserRole;
 import com.meiyouframework.bigwhale.service.ClusterUserService;
+import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.service.ScriptService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,8 @@ public class UserServiceImpl extends AbstractMysqlPagingAndSortingQueryService<U
     private ClusterUserService clusterUserService;
     @Autowired
     private ScriptService scriptService;
+    @Autowired
+    private SchedulingService schedulingService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -48,10 +51,10 @@ public class UserServiceImpl extends AbstractMysqlPagingAndSortingQueryService<U
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void delete(User entity) {
-        String id = entity.getId();
         userRoleService.deleteByQuery("username=" + entity.getUsername());
         clusterUserService.deleteByQuery("uid=" + entity.getId());
-        scriptService.findByQuery("uid=" + id).forEach(scriptService::delete);
+        schedulingService.deleteByQuery("uid=" + entity.getId());
+        scriptService.findByQuery("uid=" + entity.getId()).forEach(scriptService::delete);
         super.delete(entity);
     }
 }

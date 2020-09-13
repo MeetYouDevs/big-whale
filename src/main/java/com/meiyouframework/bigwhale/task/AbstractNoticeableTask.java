@@ -7,8 +7,8 @@ import com.meiyouframework.bigwhale.entity.auth.User;
 import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.service.auth.UserService;
 import com.meiyouframework.bigwhale.util.MsgTools;
-import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -19,22 +19,32 @@ import java.util.List;
  */
 public abstract class AbstractNoticeableTask {
 
-    protected void notice(CmdRecord cmdRecord, Monitor monitor, Scheduling scheduling, String appId, String errorType) {
-        UserService userService = SpringContextUtils.getBean(UserService.class);
-        ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private ScriptService scriptService;
+    @Autowired
+    private ClusterService clusterService;
+    @Autowired
+    private AgentService agentService;
+    @Autowired
+    private NoticeService noticeService;
+    @Autowired
+    private ClusterUserService clusterUserService;
+
+    protected void notice(CmdRecord cmdRecord, Scheduling scheduling, String appId, String errorType) {
         Script script = null;
         User user = null;
         String email = null;
         String dingDingHooks = null;
-        if (monitor != null) {
-            script = scriptService.findById(monitor.getScriptId());
-            user = userService.findById(monitor.getUid());
-            email = monitor.getSendMail() ? user.getEmail() : null;
-            dingDingHooks = monitor.getDingdingHooks();
-        } else if (scheduling != null) {
-            script = scriptService.findById(cmdRecord.getScriptId());
+        if (scheduling != null) {
+            if (scheduling.getType() == Constant.SCHEDULING_TYPE_STREAMING) {
+                script = scriptService.findById(scheduling.getScriptIds());
+            } else {
+                script = scriptService.findById(cmdRecord.getScriptId());
+            }
             user = userService.findById(scheduling.getUid());
-            email = scheduling.getSendMail() ? user.getEmail() : null;
+            email = scheduling.getSendEmail() ? user.getEmail() : null;
             dingDingHooks = scheduling.getDingdingHooks();
         } else if (cmdRecord != null) {
             //手动执行
@@ -47,8 +57,7 @@ public abstract class AbstractNoticeableTask {
         }
         String userName = user.getNickname() == null ? user.getUsername() : user.getNickname();
         String content;
-        if (script.getType() != Constant.SCRIPT_TYPE_SHELL) {
-            ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
+        if (script.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
             Cluster cluster = clusterService.findById(script.getClusterId());
             String trackingUrl = cluster.getYarnUrl();
             if (StringUtils.isNotBlank(appId)) {
@@ -56,17 +65,15 @@ public abstract class AbstractNoticeableTask {
             }
             content = MsgTools.getPlainErrorMsg(cluster.getName(), trackingUrl, userName, script.getName(), errorType);
         } else {
-            AgentService agentService = SpringContextUtils.getBean(AgentService.class);
             Agent agent = agentService.findById(script.getAgentId());
             content = MsgTools.getPlainErrorMsg(agent.getName(), userName, script.getName(), errorType);
         }
-        NoticeService noticeService = SpringContextUtils.getBean(NoticeService.class);
         //发送邮件
         if (StringUtils.isNotBlank(email)) {
-            noticeService.sendMail(email, content);
+            noticeService.sendEmail(email, content);
         }
         //发送钉钉
-        boolean publicWatchFlag = monitor != null || scheduling != null;
+        boolean publicWatchFlag = scheduling != null;
         if (StringUtils.isNotBlank(dingDingHooks)) {
             String[] ats = null;
             for (String token : dingDingHooks.split(",")) {
@@ -97,12 +104,10 @@ public abstract class AbstractNoticeableTask {
         User user = null;
         String msg;
         if (script != null) {
-            UserService userService = SpringContextUtils.getBean(UserService.class);
             user = userService.findById(script.getUid());
             String userName = user.getNickname() != null ? user.getNickname() : user.getUsername();
             msg = MsgTools.getPlainErrorMsg(cluster.getName(), trackingUrls, userName, script.getName(), errorType);
         } else {
-            ClusterUserService clusterUserService = SpringContextUtils.getBean(ClusterUserService.class);
             String queue = httpYarnApp.getQueue();
             List<ClusterUser> clusterUsers = clusterUserService.findByQuery("clusterId=" + cluster.getId() + ";queue=" + queue);
             if (clusterUsers.isEmpty()) {
@@ -112,7 +117,6 @@ public abstract class AbstractNoticeableTask {
                 }
             }
             if (!clusterUsers.isEmpty()) {
-                UserService userService = SpringContextUtils.getBean(UserService.class);
                 boolean match = false;
                 for (ClusterUser clusterUser : clusterUsers) {
                     if (httpYarnApp.getUser().equals(clusterUser.getUser())) {
@@ -130,9 +134,8 @@ public abstract class AbstractNoticeableTask {
                 msg = MsgTools.getPlainErrorMsg(cluster.getName(), trackingUrls, httpYarnApp.getUser(), httpYarnApp.getName(), errorType);
             }
         }
-        NoticeService noticeService = SpringContextUtils.getBean(NoticeService.class);
         if (user != null && StringUtils.isNotBlank(user.getEmail())) {
-            noticeService.sendMail(user.getEmail(), msg);
+            noticeService.sendEmail(user.getEmail(), msg);
         }
         noticeService.sendDingding(new String[0], msg);
     }

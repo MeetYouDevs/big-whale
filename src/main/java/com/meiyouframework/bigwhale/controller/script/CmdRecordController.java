@@ -1,12 +1,13 @@
 package com.meiyouframework.bigwhale.controller.script;
 
+import com.meiyouframework.bigwhale.common.pojo.Msg;
 import com.meiyouframework.bigwhale.data.domain.PageRequest;
 import com.meiyouframework.bigwhale.dto.DtoCmdRecord;
-import com.meiyouframework.bigwhale.entity.CmdRecord;
 import com.meiyouframework.bigwhale.service.CmdRecordService;
 import com.meiyouframework.bigwhale.controller.BaseController;
 import com.meiyouframework.bigwhale.security.LoginUser;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -30,7 +31,7 @@ public class CmdRecordController extends BaseController{
     private CmdRecordService cmdRecordService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
-    public Page<CmdRecord> getPage(@RequestBody DtoCmdRecord req) {
+    public Msg getPage(@RequestBody DtoCmdRecord req) {
         LoginUser user = getCurrentUser();
         if (!user.isRoot()) {
             req.setUid(user.getId());
@@ -60,15 +61,17 @@ public class CmdRecordController extends BaseController{
         if (req.getScriptId() != null) {
             tokens.add("scriptId=" + req.getScriptId());
         }
-        if (req.getMonitorId() != null) {
-            tokens.add("monitorId=" + req.getMonitorId());
-        }
         if (req.getSchedulingId() != null) {
             tokens.add("schedulingId=" + req.getSchedulingId());
         }
         if (req.getId() != null) {
             tokens.add("id=" + req.getId());
         }
-        return cmdRecordService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";"), new Sort(Sort.Direction.DESC, "createTime")));
+        Page<DtoCmdRecord> dtoCmdRecordPage = cmdRecordService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";"), new Sort(Sort.Direction.DESC, "createTime"))).map((item) -> {
+            DtoCmdRecord dtoCmdRecord = new DtoCmdRecord();
+            BeanUtils.copyProperties(item, dtoCmdRecord);
+            return dtoCmdRecord;
+        });
+        return success(dtoCmdRecordPage);
     }
 }

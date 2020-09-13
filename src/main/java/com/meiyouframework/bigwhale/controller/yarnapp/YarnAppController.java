@@ -11,6 +11,7 @@ import com.meiyouframework.bigwhale.service.ClusterService;
 import com.meiyouframework.bigwhale.service.YarnAppService;
 import com.meiyouframework.bigwhale.util.YarnApiUtils;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,7 @@ public class YarnAppController extends BaseController {
     private ClusterService clusterService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
-    public Page<YarnApp> getPage(@RequestBody DtoYarnApp req) {
+    public Msg getPage(@RequestBody DtoYarnApp req) {
         LoginUser user = getCurrentUser();
         if (!user.isRoot()) {
             req.setUid(user.getId());
@@ -46,7 +47,12 @@ public class YarnAppController extends BaseController {
         if (StringUtils.isNotBlank(req.getClusterId())) {
             tokens.add("clusterId=" + req.getClusterId());
         }
-        return yarnAppService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";")));
+        Page<DtoYarnApp> dtoYarnAppPage = yarnAppService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";"))).map(item -> {
+            DtoYarnApp dtoYarnApp = new DtoYarnApp();
+            BeanUtils.copyProperties(item, dtoYarnApp);
+            return dtoYarnApp;
+        });
+        return success(dtoYarnAppPage);
     }
 
     @RequestMapping(value = "/kill.api", method = RequestMethod.POST)

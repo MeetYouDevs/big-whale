@@ -29,7 +29,6 @@ public class Role {
     private String id;
     private String name;
     private String code;
-    private Date created;
     @Transient
     private List<String> resources;
 

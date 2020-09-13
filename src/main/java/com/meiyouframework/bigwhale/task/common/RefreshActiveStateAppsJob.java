@@ -10,9 +10,9 @@ import com.meiyouframework.bigwhale.entity.ClusterUser;
 import com.meiyouframework.bigwhale.entity.Script;
 import com.meiyouframework.bigwhale.entity.YarnApp;
 import com.meiyouframework.bigwhale.service.*;
-import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import org.quartz.*;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -34,22 +34,19 @@ public class RefreshActiveStateAppsJob extends AbstractNoticeableTask implements
 
     private static int checkAppDuplicateSkipCount = 0;
     private static int checkAppMemorySkipCount = 0;
-    private ClusterService clusterService;
-    private YarnAppService yarnAppService;
-    private ScriptService scriptService;
-    private ClusterUserService clusterUserService;
-    private YarnConfig yarnConfig;
-
     private Thread thread;
     private volatile boolean interrupted = false;
 
-    public RefreshActiveStateAppsJob() {
-        clusterService = SpringContextUtils.getBean(ClusterService.class);
-        yarnAppService = SpringContextUtils.getBean(YarnAppService.class);
-        scriptService = SpringContextUtils.getBean(ScriptService.class);
-        clusterUserService = SpringContextUtils.getBean(ClusterUserService.class);
-        yarnConfig = SpringContextUtils.getBean(YarnConfig.class);
-    }
+    @Autowired
+    private ClusterService clusterService;
+    @Autowired
+    private YarnAppService yarnAppService;
+    @Autowired
+    private ScriptService scriptService;
+    @Autowired
+    private ClusterUserService clusterUserService;
+    @Autowired
+    private YarnConfig yarnConfig;
 
     @Override
     public void interrupt() {

@@ -68,12 +68,12 @@ public class OpenApiController extends BaseController {
         CmdRecord cmdRecord = CmdRecord.builder()
                 .uid(script.getUid())
                 .scriptId(script.getId())
-                .createTime(new Date())
-                .content(script.getScript())
-                .timeout(script.getTimeout())
                 .status(Constant.EXEC_STATUS_UNSTART)
                 .agentId(script.getAgentId())
                 .clusterId(script.getClusterId())
+                .content(script.getScript())
+                .timeout(script.getTimeout())
+                .createTime(new Date())
                 .build();
         if (args.args != null && !args.args.isEmpty()) {
             cmdRecord.setArgs(JSON.toJSONString(args.args));
@@ -95,6 +95,9 @@ public class OpenApiController extends BaseController {
         User user = userService.findById(scheduling.getUid());
         if (user == null) {
             return failed("用户不存在");
+        }
+        if (scheduling.getType() == Constant.SCHEDULING_TYPE_STREAMING) {
+            return failed("类型不支持");
         }
         String password = new String(Base64.decodeBase64(args.sign), StandardCharsets.UTF_8);
         if (!passwordEncoder.matches(password, user.getPassword())) {

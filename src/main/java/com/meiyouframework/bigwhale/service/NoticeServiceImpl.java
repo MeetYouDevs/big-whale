@@ -33,7 +33,7 @@ public class NoticeServiceImpl implements NoticeService {
     private DingdingConfig dingdingConfig;
 
     @Override
-    public void sendMail(String to, String content) {
+    public void sendEmail(String to, String content) {
         if (!MAIL_PATTERN.matcher(to).find()) {
             LOGGER.error("illegal email address, use console\n" + content);
             return;

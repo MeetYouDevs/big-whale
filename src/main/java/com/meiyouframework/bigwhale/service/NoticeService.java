@@ -2,7 +2,7 @@ package com.meiyouframework.bigwhale.service;
 
 public interface NoticeService {
 
-    void sendMail(String to, String content);
+    void sendEmail(String to, String content);
 
     /**
      * 发送公共群（不设置公共群Token则不发送）
