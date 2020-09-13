@@ -105,11 +105,6 @@
                                 <tr ng-repeat="item in options.items | orderBy : title : !asc">
                                     <td>
                                         <p class="operate">
-                                            <span>
-                                                <a href="http://123.56.5.44:4000/d/l7utNapsW/spark-application-monitor-detail?orgId=1&var-applicationId={{item.appId}}" target="_blank" style="text-decoration: none">
-                                                    <i class="fa fa-line-chart" aria-hidden="true" title="资源诊断"></i>
-                                                </a>
-                                            </span><br/>
                                             <span ng-click="onKillItem(item)">
                                                 <i class="glyphicon glyphicon-stop" aria-hidden="true" title="停止"></i>
                                             </span>

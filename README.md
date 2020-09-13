@@ -35,7 +35,7 @@
   ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step2-cluster_add.png)
   * “yarn管理地址”为Yarn ResourceManager的WEB UI地址
   * “程序包存储目录”为程序包上传至hdfs集群时的存储路径，如：/data/big-whale/storage
-  * “支持Flink任务代理用户”“流处理任务黑名单”和“批处理任务黑名单”为内部定制的任务分配规则，可不填
+  * “支持Flink任务代理用户”“流处理任务黑名单”和“批处理任务黑名单”为内部定制的任务分配规则，勿填
 * 添加代理
   * 集群管理->代理管理->新增  
   ![image](https://gitee.com/progr1mmer/big-whale/raw/master/doc/images/step3-cluster_agent_add.png)
