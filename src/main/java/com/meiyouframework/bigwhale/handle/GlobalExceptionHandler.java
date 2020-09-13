@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
     public Msg errorHandler(Exception e) {
         logger.error(e.getMessage(), e);
-        return Msg.create(-1, "请求出错", e.getMessage());
+        return Msg.create(-999, "请求出错", e.getMessage());
     }
 
 }

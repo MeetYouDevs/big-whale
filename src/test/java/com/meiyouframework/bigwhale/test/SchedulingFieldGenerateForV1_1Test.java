@@ -21,7 +21,7 @@
 ///**
 // * @author Suxy
 // * @date 2020/7/10
-// * @description v1.0 离线调度迁移到 v1.1
+// * @description v1.0离线调度迁移到v1.1
 // * 1. 全选，打开文件注释
 // * 2. 在{@link com.meiyouframework.bigwhale.entity.Scheduling}中添加以下代码
 // *      private String scriptId;

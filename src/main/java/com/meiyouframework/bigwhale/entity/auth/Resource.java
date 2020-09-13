@@ -29,6 +29,5 @@ public class Resource {
     public String name;
     private String code;
     private String url;
-    private Date created;
 
 }

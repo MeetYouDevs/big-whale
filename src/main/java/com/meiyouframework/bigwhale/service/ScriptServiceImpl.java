@@ -32,10 +32,6 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
     @Autowired
     private CmdRecordService cmdRecordService;
     @Autowired
-    private MonitorService monitorService;
-    @Autowired
-    private SchedulingService schedulingService;
-    @Autowired
     private ClusterService clusterService;
     @Autowired
     private UserService userService;
@@ -44,13 +40,10 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
     @Override
     public void delete(Script entity) {
         //删除jar包
-        if (entity.getType() != Constant.SCRIPT_TYPE_SHELL) {
+        if (entity.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
             deleteJar(entity);
         }
-        String id = entity.getId();
-        monitorService.deleteByQuery("scriptId=" + id);
-        schedulingService.deleteByQuery("scriptIds?" + id);
-        cmdRecordService.deleteByQuery("scriptId=" + id);
+        cmdRecordService.deleteByQuery("scriptId=" + entity.getId());
         super.delete(entity);
     }
 
@@ -65,8 +58,8 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         this.predicate(builder, criteriaQuery, root, req);
         this.predicate(builder, countCriteriaQuery, countRoot, req);
         long totalCount = entityManager.createQuery(countCriteriaQuery).getSingleResult();
-        int pageNo = req.getPageNo() - 1;
-        int pageSize = req.getPageSize();
+        int pageNo = req.pageNo - 1;
+        int pageSize = req.pageSize;
         TypedQuery<Script> typedQuery = entityManager.createQuery(criteriaQuery);
         typedQuery.setFirstResult(pageNo * pageSize);
         typedQuery.setMaxResults(pageSize);
@@ -80,7 +73,7 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         List<Script> data = findByQuery("clusterId=" + clusterId);
         if (!CollectionUtils.isEmpty(data)) {
             for (Script script : data) {
-                if (script.getType() == Constant.SCRIPT_TYPE_SHELL) {
+                if (script.getType() == Constant.SCRIPT_TYPE_SHELL_BATCH) {
                     continue;
                 }
                 String user = script.getUser();

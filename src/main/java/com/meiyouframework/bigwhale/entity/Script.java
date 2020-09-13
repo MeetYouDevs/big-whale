@@ -1,5 +1,6 @@
 package com.meiyouframework.bigwhale.entity;
 
+import com.meiyouframework.bigwhale.common.Constant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,8 +46,9 @@ public class Script {
     private String queue;
     private String app;
 
-    @Transient
-    private Integer totalMemory;
-    @Transient
-    private Integer totalCores;
+    public boolean isOffline() {
+        return type == Constant.SCRIPT_TYPE_SHELL_BATCH ||
+                type == Constant.SCRIPT_TYPE_SPARK_BATCH ||
+                type == Constant.SCRIPT_TYPE_FLINK_BATCH;
+    }
 }

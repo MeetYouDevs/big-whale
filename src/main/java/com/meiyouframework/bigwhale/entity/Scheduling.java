@@ -3,10 +3,12 @@ package com.meiyouframework.bigwhale.entity;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.meiyouframework.bigwhale.common.Constant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang.StringUtils;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -24,6 +26,13 @@ public class Scheduling {
     @GenericGenerator(name = "idGenerator", strategy = "uuid")
     @GeneratedValue(generator = "idGenerator")
     private String id;
+    private String uid;
+    private Integer type;
+    /**
+     * 多条数据用,分割
+     */
+    private String scriptIds;
+
     /**
      * 周期
      */
@@ -39,32 +48,72 @@ public class Scheduling {
      * cron表达式
      */
     private String cron;
-    private Date createTime;
-    private Date updateTime;
     private Date startTime;
     private Date endTime;
-    private Date lastExecuteTime;
-    private Integer status;
-    private String uid;
-    private String topology;
-    /**
-     * 多条数据用,分割
-     */
-    private String scriptIds;
 
+    /* ---------------- 离线调度 start ---------------- */
+
+    private String topology;
     /**
      * 可重复提交
      */
     private Boolean repeatSubmit;
-    private Boolean sendMail;
+
+    /* ---------------- 离线调度 end ---------------- */
+
+    /* ---------------- 实时监控 start ---------------- */
+
+    /**
+     * 是否异常重启
+     */
+    private Boolean exRestart;
+    /**
+     * spark 挤压批次
+     * flink 背压监控的任务阻塞次数
+     */
+    private Integer waitingBatches;
+    private Boolean blockingRestart;
+
+    /* ---------------- 实时监控 end ---------------- */
+
+    private Date lastExecuteTime;
+
+    private Boolean sendEmail;
     /**
      * 多条数据用,分割
      */
     private String dingdingHooks;
+    private Date createTime;
+    private Date updateTime;
+    private Boolean enabled;
+
+    public String generateCron() {
+        if (StringUtils.isNotBlank(cron)) {
+            return cron;
+        } else {
+            String cron = null;
+            if (cycle == Constant.TIMER_CYCLE_MINUTE) {
+                cron = "0 */" + intervals + " * * * ? *";
+            } else if (cycle == Constant.TIMER_CYCLE_HOUR) {
+                cron = "0 " + minute + " * * * ? *";
+            } else if (cycle == Constant.TIMER_CYCLE_DAY) {
+                cron = "0 " + minute + " " + hour + " * * ? *";
+            } else if (cycle == Constant.TIMER_CYCLE_WEEK) {
+                cron = "0 " + minute + " " + hour + " ? * " + week + " *";
+            }
+            if (cron == null) {
+                throw new IllegalArgumentException("cron expression is incorrect");
+            }
+            return cron;
+        }
+    }
 
     public Map<String, String> analyzeNextNode(String currentNodeId) {
         Map<String, String> nodeIdToScriptId = new HashMap<>();
-        if (topology == null) {
+        if (type == Constant.SCHEDULING_TYPE_STREAMING) {
+            if (currentNodeId == null) {
+                nodeIdToScriptId.put(scriptIds, scriptIds);
+            }
             return nodeIdToScriptId;
         }
         JSONObject jsonObject = JSON.parseObject(topology);

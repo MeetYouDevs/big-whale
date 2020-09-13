@@ -21,10 +21,10 @@ public class ClusterUser {
     @GeneratedValue(generator = "idGenerator")
     private String id;
     private String uid;
+    private String clusterId;
     /**
      * 多个队列用,分割
      */
     private String queue;
     private String user;
-    private String clusterId;
 }

@@ -52,7 +52,7 @@ public class CmdRecordTimeoutJob extends AbstractCmdRecordTask implements Job {
             }
             if (timeoutFlag) {
                 Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
-                notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_TIMEOUT);
+                notice(cmdRecord, scheduling, null, Constant.ERROR_TYPE_TIMEOUT);
                 cmdRecordService.save(cmdRecord);
                 //处理调度
                 try {

@@ -12,12 +12,12 @@ import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.task.AbstractCmdRecordTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
-import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -54,6 +54,15 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
     private String yarnUrl;
     private Connection conn;
 
+    @Autowired
+    private ScriptService scriptService;
+    @Autowired
+    private AgentService agentService;
+    @Autowired
+    private ClusterService clusterService;
+    @Autowired
+    private SshConfig sshConfig;
+
     @Override
     public void interrupt() {
         if (!commandFinish && !interrupted) {
@@ -86,15 +95,12 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
         }
         cmdRecord.setStatus(Constant.EXEC_STATUS_DOING);
         cmdRecordService.save(cmdRecord);
-        ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
-        AgentService agentService = SpringContextUtils.getBean(AgentService.class);
         script = scriptService.findById(cmdRecord.getScriptId());
         Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
         Session session = null;
         try {
             String instance;
-            if (script.getType() != Constant.SCRIPT_TYPE_SHELL) {
-                ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
+            if (script.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
                 yarnUrl = clusterService.findById(cmdRecord.getClusterId()).getYarnUrl();
                 instance = agentService.getInstanceByClusterId(cmdRecord.getClusterId(), true);
                 cmdRecord.setAgentInstance(instance);
@@ -103,7 +109,6 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                 cmdRecord.setAgentInstance(instance);
             }
             conn = new Connection(instance);
-            SshConfig sshConfig = SpringContextUtils.getBean(SshConfig.class);
             conn.connect(null, sshConfig.getConnectTimeout(), 30000);
             conn.authenticateWithPassword(sshConfig.getUser(), sshConfig.getPassword());
             int ret;
@@ -137,7 +142,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                 ret = session.getExitStatus();
                 if (ret == 0) {
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FINISH);
-                    if (script.getType() == Constant.SCRIPT_TYPE_SHELL) {
+                    if (script.getType() == Constant.SCRIPT_TYPE_SHELL_BATCH) {
                         //Shell脚本提交子任务(定时任务)
                         submitNextCmdRecord(cmdRecord, scheduling, scriptService);
                     } else {
@@ -152,7 +157,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                 } else {
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
                     //处理失败(定时任务)
-                    notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_FAILED);
+                    notice(cmdRecord, scheduling, null, Constant.ERROR_TYPE_FAILED);
                 }
                 cmdRecord.setFinishTime(new Date());
             } else {
@@ -164,7 +169,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             LOGGER.error(e.getMessage(), e);
             if (!interrupted) {
                 cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
-                notice(cmdRecord, null, scheduling, null, Constant.ERROR_TYPE_FAILED);
+                notice(cmdRecord, scheduling, null, Constant.ERROR_TYPE_FAILED);
             } else {
                 CmdRecord recordForTimeout = cmdRecordService.findById(cmdRecordId);
                 cmdRecord.setStatus(recordForTimeout.getStatus());
@@ -205,7 +210,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
         } catch (InterruptedException e) {
 
         } finally {
-            executorService.shutdown();
+            executorService.shutdownNow();
         }
     }
 
@@ -276,7 +281,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
         String lstartA1 = dateFormat.format(new Date(timestamp + 1000));
         String cmd;
         String commandTemplate;
-        if (script.getType() == Constant.SCRIPT_TYPE_SHELL) {
+        if (script.getType() == Constant.SCRIPT_TYPE_SHELL_BATCH) {
             cmd = cmdRecord.getContent().replaceAll("/\\*", "/\\\\*");
             commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s %s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
         } else {

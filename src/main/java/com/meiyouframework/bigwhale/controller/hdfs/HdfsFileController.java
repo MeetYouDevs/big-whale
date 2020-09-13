@@ -116,7 +116,7 @@ public class HdfsFileController extends BaseController {
     }
 
     @RequestMapping(value = "/list.api", method = RequestMethod.GET)
-    public List<FileStatus> list(
+    public Msg list(
             @RequestParam String clusterId,
             @RequestParam String path) {
         path = regularPath(path);
@@ -150,7 +150,7 @@ public class HdfsFileController extends BaseController {
                 dtos.add(fileStatusDto);
             }
         }
-        return dtos;
+        return success(dtos);
     }
 
     private String regularPath(String path) {

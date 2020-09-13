@@ -41,6 +41,12 @@ public class DtoScript extends AbstractPageDto {
     private String app;
 
     /**
+     * 资源展示字段
+     */
+    private Integer totalMemory;
+    private Integer totalCores;
+
+    /**
      * 模糊搜字段
      * @return
      */
@@ -58,7 +64,7 @@ public class DtoScript extends AbstractPageDto {
             return "类型不能为空";
         }
         //检查集群或代理参数
-        if (type != Constant.SCRIPT_TYPE_SHELL) {
+        if (type != Constant.SCRIPT_TYPE_SHELL_BATCH) {
             if (StringUtils.isBlank(clusterId)) {
                 return "集群不能为空";
             }
@@ -75,7 +81,7 @@ public class DtoScript extends AbstractPageDto {
         script = script.trim().replaceAll(" ", " ");
         //提取app的值
         app = null;
-        if (type != Constant.SCRIPT_TYPE_SHELL) {
+        if (type != Constant.SCRIPT_TYPE_SHELL_BATCH) {
             if (type == Constant.SCRIPT_TYPE_SPARK_STREAMING || type == Constant.SCRIPT_TYPE_SPARK_BATCH) {
                 Matcher matcher = SPARK_NAME_PATTERN.matcher(script);
                 if (matcher.find()) {
@@ -105,4 +111,9 @@ public class DtoScript extends AbstractPageDto {
         return null;
     }
 
+    public boolean isOffline() {
+        return type == Constant.SCRIPT_TYPE_SHELL_BATCH ||
+                type == Constant.SCRIPT_TYPE_SPARK_BATCH ||
+                type == Constant.SCRIPT_TYPE_FLINK_BATCH;
+    }
 }

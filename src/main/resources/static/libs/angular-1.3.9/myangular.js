@@ -279,65 +279,39 @@ function registerDateRangePicker(app) {
     });
 }
 
-function registerMultiBigSelector(app) {
-    if (app.RegisterMultiBigSelector) return;
-    app.RegisterMultiBigSelector = true;
-    var template = '<div><div style="margin-bottom:10px "><button type="button" class="btn btn-success" ng-click="onSelectAll(true)">全选</button> ' +
-        '<button type="button" class="btn btn-danger" ng-click="onSelectAll(false)">反选</button></div>' +
-        '<div style="overflow-y: auto;">' +
-        '<label ng-click="onSelect(m)" style="width: 190px;float: left;margin-right: 3px;display: block;cursor: pointer;" ng-class="model && model.indexOf(m.value) >= 0? \'label label-success\'' +
-        ': \'label label-default\'" ng-repeat="m in selector">{{m.name}}</label>' +
-        '</div></div>';
-    app.directive('mymultiBigselector', function () {
-        var directive = {};
-        directive.restrict = 'E';
-        directive.replace = false;
-        directive.transclude = false;
-        directive.template = template;
-        directive.scope = {
-            model: '=ngModel',
-            selector: '=ngSelector'
-        };
-        directive.controller = function ($scope) {
-            $scope.onSelectAll = function (tag) {
-                if (tag) {
-                    var all = [];
-                    for (var i in $scope.selector) {
-                        var item = $scope.selector[i];
-                        all.push(item.value);
-                    }
-                    $scope.model = all;
-                } else {
-                    $scope.model = [];
-                }
-            };
-            $scope.onSelect = function (m) {
-                $scope.model = $scope.model || [];
-                var i = $scope.model.indexOf(m.value);
-                if (i >= 0) {
-                    $scope.model.splice(i, 1);
-                } else {
-                    $scope.model.push(m.value);
-                }
-            };
-        };
-        return directive;
-    });
-}
-
-function registerAuth(app) {
+function registerHttpInterceptor(app) {
     app.factory('httpInterceptor', ['$q', '$injector', function ($q, $injector) {
         return {
             response: function (response) {
-                if (response.status === 200 && typeof response.data === 'string' && response.data.indexOf('<title>登录 - Big Whale</title>') !== -1) {
+                if (typeof response.data === 'string' && response.data.indexOf('<title>登录 - Big Whale</title>') !== -1) {
                     swal({
-                        title: "登录超时",
-                        text: "请重新登录",
-                        type: "error",
+                        title: '登录超时',
+                        text: '请重新登录',
+                        type: 'error',
                         showConfirmButton: true
                     }).then(function () {
                         window.location.href = '/login.html'
                     });
+                    return response;
+                } else if (typeof response.data === 'object') {
+                    if (response.data.code === 0) {
+                        response.data = response.data.content;
+                        return response;
+                    } else if (response.data.code === -999) {
+                        swal({
+                            title: '后台接口异常，请联系管理员',
+                            type: 'error',
+                            showConfirmButton: true
+                        });
+                        return $q.reject(response);
+                    } else {
+                        swal({
+                            title: response.data.msg || '操作失败',
+                            type: 'warning',
+                            showConfirmButton: true
+                        });
+                        return $q.reject(response);
+                    }
                 }
                 return response;
             }
@@ -346,21 +320,4 @@ function registerAuth(app) {
     app.config(['$httpProvider', function ($httpProvider) {
         $httpProvider.interceptors.push('httpInterceptor');
     }]);
-
-}
-
-function registerSort($scope) {
-    //排序
-    $scope.sort = function(title, asc) {
-        if (title !== $scope.title) {
-            asc = undefined;
-        }
-        if (asc === false) {
-            $scope.title = null;
-            $scope.asc = null;
-        } else {
-            $scope.title = title;
-            $scope.asc = !asc;
-        }
-    };
 }

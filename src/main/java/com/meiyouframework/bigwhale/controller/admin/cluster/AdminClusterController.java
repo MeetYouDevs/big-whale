@@ -29,8 +29,13 @@ public class AdminClusterController extends BaseController {
     private ScriptService scriptService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
-    public Page<Cluster> getPage(@RequestBody DtoCluster req) {
-        return clusterService.findAll(PageRequest.of(req.pageNo - 1, req.pageSize));
+    public Msg getPage(@RequestBody DtoCluster req) {
+        Page<DtoCluster> dtoClusterPage = clusterService.findAll(PageRequest.of(req.pageNo - 1, req.pageSize)).map((item) -> {
+            DtoCluster dtoCluster = new DtoCluster();
+            BeanUtils.copyProperties(item, dtoCluster);
+            return dtoCluster;
+        });
+        return success(dtoClusterPage);
     }
 
     @RequestMapping(value = "/save.api", method = RequestMethod.POST)
@@ -53,7 +58,10 @@ public class AdminClusterController extends BaseController {
         Cluster cluster = new Cluster();
         BeanUtils.copyProperties(req, cluster);
         cluster = clusterService.save(cluster);
-        return success(cluster);
+        if (req.getId() == null) {
+            req.setId(cluster.getId());
+        }
+        return success(req);
     }
 
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)

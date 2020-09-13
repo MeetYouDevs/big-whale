@@ -32,7 +32,7 @@ public class AdminClusterUserController extends BaseController {
     private ScriptService scriptService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
-    public Page<ClusterUser> getPage(@RequestBody DtoClusterUser req) {
+    public Msg getPage(@RequestBody DtoClusterUser req) {
         List<String> tokens = new ArrayList<>();
         if (StringUtils.isNotBlank(req.getQueue())) {
             tokens.add("queue?" + req.getQueue());
@@ -43,7 +43,12 @@ public class AdminClusterUserController extends BaseController {
         if (StringUtils.isNotBlank(req.getClusterId())) {
             tokens.add("clusterId=" + req.getClusterId());
         }
-        return clusterUserService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";")));
+        Page<DtoClusterUser> dtoClusterUserPage = clusterUserService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";"))).map((item) -> {
+            DtoClusterUser dtoClusterUser = new DtoClusterUser();
+            BeanUtils.copyProperties(item, dtoClusterUser);
+            return dtoClusterUser;
+        });
+        return success(dtoClusterUserPage);
     }
 
     @RequestMapping(value = "/save.api", method = RequestMethod.POST)
@@ -69,8 +74,13 @@ public class AdminClusterUserController extends BaseController {
                 }
             }
             if (errors.isEmpty()) {
-                Iterable<ClusterUser> clusterUserIterator = clusterUserService.saveAll(clusterUsers);
-                return success(clusterUserIterator);
+                List<DtoClusterUser> dtoClusterUsers = new ArrayList<>();
+                clusterUserService.saveAll(clusterUsers).forEach((item) -> {
+                    DtoClusterUser dtoClusterUser = new DtoClusterUser();
+                    BeanUtils.copyProperties(item, dtoClusterUser);
+                    dtoClusterUsers.add(dtoClusterUser);
+                });
+                return success(dtoClusterUsers);
             } else {
                 return failed("集群" + JSON.toJSON(errors) + "用户重复");
             }
@@ -84,8 +94,8 @@ public class AdminClusterUserController extends BaseController {
                 return failed("集群用户重复");
             }
             BeanUtils.copyProperties(req, dbClusterUser);
-            dbClusterUser = clusterUserService.save(dbClusterUser);
-            return success(dbClusterUser);
+            clusterUserService.save(dbClusterUser);
+            return success(req);
         }
     }
 

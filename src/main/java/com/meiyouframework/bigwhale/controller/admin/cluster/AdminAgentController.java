@@ -33,7 +33,7 @@ public class AdminAgentController extends BaseController {
     private ScriptService scriptService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
-    public Page<DtoAgent> getPage(@RequestBody DtoAgent req) {
+    public Msg getPage(@RequestBody DtoAgent req) {
         List<String> tokens = new ArrayList<>();
         if (StringUtils.isNotBlank(req.getName())) {
             tokens.add("name?" + req.getName());
@@ -41,8 +41,8 @@ public class AdminAgentController extends BaseController {
         if (StringUtils.isNotBlank(req.getClusterId())) {
             tokens.add("clusterId=" + req.getClusterId());
         }
-        Page<Agent> pages = agentService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";")));
-        return pages.map((agent) -> {
+        Page<Agent> agentPage = agentService.pageByQuery(new PageRequest(req.pageNo - 1, req.pageSize, StringUtils.join(tokens, ";")));
+        Page<DtoAgent> dtoAgentPage = agentPage.map((agent) -> {
             DtoAgent dtoAgent = new DtoAgent();
             BeanUtils.copyProperties(agent, dtoAgent);
             List<String> instances = new ArrayList<>();
@@ -50,6 +50,7 @@ public class AdminAgentController extends BaseController {
             dtoAgent.setInstances(instances);
             return dtoAgent;
         });
+        return success(dtoAgentPage);
     }
 
     @RequestMapping(value = "/save.api", method = RequestMethod.POST)
@@ -83,7 +84,10 @@ public class AdminAgentController extends BaseController {
         BeanUtils.copyProperties(req, agent);
         agent.setInstances(StringUtils.join(req.getInstances(), ","));
         agent = agentService.save(agent);
-        return success(agent);
+        if (req.getId() == null) {
+            req.setId(agent.getId());
+        }
+        return success(req);
     }
 
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)

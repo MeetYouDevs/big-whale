@@ -17,6 +17,9 @@ import java.util.*;
 public class DtoScheduling extends AbstractPageDto {
 
     private String id;
+    private String uid;
+    private Integer type;
+    private List<String> scriptIds;
     /**
      * 周期
      */
@@ -29,18 +32,22 @@ public class DtoScheduling extends AbstractPageDto {
      * cron表达式
      */
     private String cron;
-    private Date createTime;
-    private Date updateTime;
     private Date startTime;
     private Date endTime;
-    private Date lastExecuteTime;
-    private Integer status;
-    private String uid;
+
     private String topology;
-    private List<String> scriptIds;
     private Boolean repeatSubmit;
-    private Boolean sendMail;
+    private Date lastExecuteTime;
+
+    private Boolean exRestart;
+    private Integer waitingBatches;
+    private Boolean blockingRestart;
+
+    private Boolean sendEmail;
     private List<String> dingdingHooks;
+    private Date createTime;
+    private Date updateTime;
+    private Boolean enabled;
 
     /**
      * 搜索字段
@@ -56,14 +63,11 @@ public class DtoScheduling extends AbstractPageDto {
 
     @Override
     public String validate() {
-        if (StringUtils.isBlank(topology)) {
-            return "拓扑不能为空";
-        }
         if (CollectionUtils.isEmpty(scriptIds)) {
             return "脚本不能为空";
         }
-        if (repeatSubmit == null) {
-            return "可重复提交必须选择";
+        if (type == Constant.SCHEDULING_TYPE_BATCH && StringUtils.isBlank(topology)) {
+            return "拓扑不能为空";
         }
         if (startTime == null || endTime == null) {
             return "请选择时间范围";

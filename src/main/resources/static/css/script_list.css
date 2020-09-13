@@ -3,13 +3,6 @@
     word-wrap: break-word;
 }
 
-.script-name {
-    display: inline-block;
-    max-width: 150px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
 .script-desc {
     display: inline-block;
     max-width: 150px;

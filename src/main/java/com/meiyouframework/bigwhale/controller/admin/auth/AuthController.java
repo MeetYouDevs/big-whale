@@ -4,7 +4,6 @@ package com.meiyouframework.bigwhale.controller.admin.auth;
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.Msg;
 import com.meiyouframework.bigwhale.entity.auth.*;
-import com.meiyouframework.bigwhale.service.MonitorService;
 import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.controller.BaseController;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
@@ -39,15 +38,14 @@ public class AuthController extends BaseController {
     @Autowired
     private UserRoleService userRoleService;
     @Autowired
-    private MonitorService monitorService;
-    @Autowired
     private SchedulingService schedulingService;
 
     private PasswordEncoder passwordEncoder = new StandardPasswordEncoder();
 
     @RequestMapping(value = "/resource/list.api", method = RequestMethod.GET)
-    public Iterable<Resource> getResources() {
-        return resourceService.findAll();
+    public Msg getResources() {
+        Iterable<Resource> resources = resourceService.findAll();
+        return success(resources);
     }
 
     @RequestMapping(value = "/resource/save.api", method = RequestMethod.POST)
@@ -60,7 +58,6 @@ public class AuthController extends BaseController {
             if (dbResource != null) {
                 return failed("资源已存在");
             }
-            req.setCreated(new Date());
         }
         req = resourceService.save(req);
         return success(req);
@@ -76,7 +73,7 @@ public class AuthController extends BaseController {
     }
 
     @RequestMapping(value = "/role/list.api", method = RequestMethod.GET)
-    public Iterable<Role> getRoles() {
+    public Msg getRoles() {
         Iterable<Role> roles = roleService.findAll();
         roles.forEach(role -> {
             List<RoleResource> roleResources = roleResourceService.findByQuery("role=" + role.getCode());
@@ -86,7 +83,7 @@ public class AuthController extends BaseController {
             }
             role.setResources(resources);
         });
-        return roles;
+        return success(roles);
     }
 
     @RequestMapping(value = "/role/save.api", method = RequestMethod.POST)
@@ -96,7 +93,6 @@ public class AuthController extends BaseController {
             if (dbRole != null) {
                 return failed("角色已存在");
             }
-            req.setCreated(new Date());
         }
         req = roleService.save(req);
         return success(req);
@@ -112,7 +108,7 @@ public class AuthController extends BaseController {
     }
 
     @RequestMapping(value = "/user/list.api", method = RequestMethod.GET)
-    public Iterable<User> getUsers() {
+    public Msg getUsers() {
         Iterable<User> users = userService.findAll();
         users.forEach(user -> {
             List<UserRole> userRoles = userRoleService.findByQuery("username=" + user.getUsername());
@@ -122,24 +118,25 @@ public class AuthController extends BaseController {
             }
             user.setRoles(roles);
         });
-        return users;
+        return success(users);
     }
 
     @RequestMapping(value = "/user/getall.api", method = RequestMethod.GET)
-    public Iterable<User> getAll() {
+    public Msg getAll() {
         Iterable<User> users = userService.findAll();
         users.forEach(user -> user.setPassword(null));
-        return users;
+        return success(users);
     }
 
     @RequestMapping(value = "/user/save.api", method = RequestMethod.POST)
     public Msg saveUser(@RequestBody User req) {
+        Date now = new Date();
         if (req.getId() == null) {
             User dbUser = userService.findOneByQuery("username=" + req.getUsername());
             if (dbUser != null) {
                 return failed("用户已存在");
             }
-            req.setCreated(new Date());
+            req.setCreateTime(now);
             req.setPassword(passwordEncoder.encode(req.getPassword()));
         } else {
             User dbUser = userService.findById(req.getId());
@@ -151,6 +148,7 @@ public class AuthController extends BaseController {
                 req.setPassword(passwordEncoder.encode(req.getPassword()));
             }
         }
+        req.setUpdateTime(now);
         req = userService.save(req);
         req.setPassword(null);
         return success(req);
@@ -160,16 +158,13 @@ public class AuthController extends BaseController {
     public Msg removeUser(String id) {
         User user = userService.findById(id);
         if (user != null) {
-            monitorService.findByQuery("uid=" + user.getId()).forEach(item -> {
-                try {
-                    SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.MONITOR);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
             schedulingService.findByQuery("uid=" + user.getId()).forEach(item -> {
                 try {
-                    SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.TIMED);
+                    if (item.getType() == Constant.SCHEDULING_TYPE_BATCH) {
+                        SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.TIMED);
+                    } else {
+                        SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.MONITOR);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

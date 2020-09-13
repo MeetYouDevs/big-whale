@@ -6,28 +6,13 @@ package com.meiyouframework.bigwhale.common;
 public interface Constant {
 
     /**
-     * 状态关闭
-     */
-    int STATUS_OFF = 0;
-    /**
-     * 状态开启
-     */
-    int STATUS_ON = 1;
-
-    /**
      * 脚本类型
      */
-    int SCRIPT_TYPE_SHELL = 0;
+    int SCRIPT_TYPE_SHELL_BATCH = 0;
     int SCRIPT_TYPE_SPARK_STREAMING = 1;
     int SCRIPT_TYPE_SPARK_BATCH = 2;
     int SCRIPT_TYPE_FLINK_STREAMING = 3;
     int SCRIPT_TYPE_FLINK_BATCH = 4;
-
-    /**
-     * 监控类型
-     */
-    int MONITOR_TYPE_SPARK_STREAMING = 0;
-    int MONITOR_TYPE_FLINK_STREAMING = 1;
 
     /**
      * 执行状态
@@ -39,7 +24,12 @@ public interface Constant {
     int EXEC_STATUS_FAIL = 5;
 
     /**
-     * 定时任务类型
+     * 任务调度类型
+     */
+    int SCHEDULING_TYPE_BATCH = 0;
+    int SCHEDULING_TYPE_STREAMING = 1;
+    /**
+     * 调度任务可视化时间维度
      */
     int TIMER_CYCLE_MINUTE = 1;
     int TIMER_CYCLE_HOUR = 2;
@@ -85,9 +75,9 @@ public interface Constant {
     interface JobGroup {
         String COMMON = "common";
         String MONITOR = "monitor";
-        String CMD = "cmd";
         String TIMED = "timed";
         String TIMED_FOR_API = "timedForApi";
+        String CMD = "cmd";
     }
 
     String APP_APPEND_SYMBOL = "$";

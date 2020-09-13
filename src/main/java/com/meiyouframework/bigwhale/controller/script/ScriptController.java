@@ -11,7 +11,6 @@ import com.meiyouframework.bigwhale.service.*;
 import com.meiyouframework.bigwhale.controller.BaseController;
 import com.meiyouframework.bigwhale.security.LoginUser;
 import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
-import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.SchedulerException;
 import org.springframework.beans.BeanUtils;
@@ -20,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.meiyouframework.bigwhale.common.Constant.APP_APPEND_SYMBOL;
 
@@ -29,8 +29,6 @@ public class ScriptController extends BaseController {
 
     @Autowired
     private ScriptService scriptService;
-    @Autowired
-    private MonitorService monitorService;
     @Autowired
     private SchedulingService schedulingService;
     @Autowired
@@ -47,32 +45,42 @@ public class ScriptController extends BaseController {
     private CmdRecordService cmdRecordService;
 
     @RequestMapping(value = "/getpage.api", method = RequestMethod.POST)
-    public Page<Script> getPage(@RequestBody DtoScript req) {
+    public Msg getPage(@RequestBody DtoScript req) {
         LoginUser user = getCurrentUser();
         if (!user.isRoot()) {
             req.setUid(user.getId());
         }
-        Page<Script> page = scriptService.fuzzyPage(req);
-        page.getContent().forEach(script -> {
-            if (script.getType() != Constant.SCRIPT_TYPE_SHELL) {
-                Map<String, Integer> result = calResource(script.getType(), script.getScript());
-                script.setTotalMemory(result.get("totalMemory"));
-                script.setTotalCores(result.get("totalCores"));
+        Page<DtoScript> dtoScriptPage = scriptService.fuzzyPage(req).map((item) -> {
+            DtoScript dtoScript = new DtoScript();
+            BeanUtils.copyProperties(item, dtoScript);
+            if (item.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
+                Map<String, Integer> result = calResource(item.getType(), item.getScript());
+                dtoScript.setTotalMemory(result.get("totalMemory"));
+                dtoScript.setTotalCores(result.get("totalCores"));
             } else {
-                script.setTotalMemory(-1);
-                script.setTotalCores(-1);
+                dtoScript.setTotalMemory(-1);
+                dtoScript.setTotalCores(-1);
             }
+            return dtoScript;
         });
-        return page;
+        return success(dtoScriptPage);
     }
 
     @RequestMapping(value = "/getall.api", method = RequestMethod.GET)
-    public Iterable<Script> getAll() {
+    public Msg getAll() {
         LoginUser user = getCurrentUser();
+        List<Script> scripts;
         if (!user.isRoot()) {
-            return scriptService.findByQuery("uid=" + user.getId());
+            scripts = scriptService.findByQuery("uid=" + user.getId());
+        } else {
+            scripts = scriptService.findByQuery(null);
         }
-        return scriptService.findAll();
+        List<DtoScript> dtoScripts = scripts.stream().map((item) -> {
+            DtoScript dtoScript = new DtoScript();
+            BeanUtils.copyProperties(item, dtoScript);
+            return dtoScript;
+        }).collect(Collectors.toList());
+        return success(dtoScripts);
     }
 
     @RequestMapping(value = "/save.api", method = RequestMethod.POST)
@@ -92,7 +100,7 @@ public class ScriptController extends BaseController {
         }
         //应用内存资源参数检查和补充必要参数
         int type = req.getType();
-        if (type != Constant.SCRIPT_TYPE_SHELL) {
+        if (type != Constant.SCRIPT_TYPE_SHELL_BATCH) {
             if (yarnConfig.getAppMemoryThreshold() > 0 && !yarnConfig.getAppWhiteList().contains(req.getApp())) {
                 try {
                     int totalMemory = calResource(req.getType(), req.getScript()).get("totalMemory");
@@ -106,22 +114,36 @@ public class ScriptController extends BaseController {
             }
             appendNecessaryArgs(req);
         }
-        if (req.getId() != null && req.getType() != Constant.SCRIPT_TYPE_SHELL) {
-            //更新集群或队列检查应用是否正在运行
-            if (checkYarnAppAliveIfChangeClusterOrQueue(req)) {
-                return failed( "更换集群或队列前请先关闭正在运行的应用");
-            }
-            //检查程序包是否变更
-            Script dbScript = scriptService.findById(req.getId());
-            String dbJarPath = scriptService.extractJarPath(dbScript.getScript());
-            String reqJarPath = scriptService.extractJarPath(req.getScript());
-            if (dbJarPath != null && !dbJarPath.equals(reqJarPath)) {
-                scriptService.deleteJar(dbScript);
-            }
-        }
         Date now = new Date();
         if (req.getId() == null) {
             req.setCreateTime(now);
+        } else {
+            Script dbScript = scriptService.findById(req.getId());
+            if (dbScript == null) {
+                return failed();
+            }
+            if (req.isOffline() != dbScript.isOffline()) {
+                Scheduling scheduling = schedulingService.findOneByQuery("scriptIds?" + req.getId());
+                if (scheduling != null) {
+                    return failed("变更处理类型前请先移除相关任务调度");
+                }
+            }
+            if (dbScript.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
+                //更换脚本类型、集群或队列时检查应用是否正在运行
+                if (checkYarnAppAliveIfChangeClusterOrQueue(dbScript, req)) {
+                    return failed( "更换脚本类型、集群或队列前请先关闭正在运行的应用");
+                }
+                //检查程序包是否变更
+                if (req.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
+                    String dbJarPath = scriptService.extractJarPath(dbScript.getScript());
+                    String reqJarPath = scriptService.extractJarPath(req.getScript());
+                    if (dbJarPath != null && !dbJarPath.equals(reqJarPath)) {
+                        scriptService.deleteJar(dbScript);
+                    }
+                } else {
+                    scriptService.deleteJar(dbScript);
+                }
+            }
         }
         req.setUpdateTime(now);
         Script script = new Script();
@@ -130,44 +152,37 @@ public class ScriptController extends BaseController {
             script.setUser(sshConfig.getUser());
         }
         script = scriptService.save(script);
-        return success(script);
+        if (req.getId() == null) {
+            req.setId(script.getId());
+        }
+        return success(req);
     }
 
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)
     public Msg delete(@RequestParam String id) {
         Script script = scriptService.findById(id);
         if (script != null) {
-            monitorService.findByQuery("scriptId=" + script.getId()).forEach(item -> {
-                try {
-                    SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.MONITOR);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-            schedulingService.findByQuery("scriptIds?" + script.getId()).forEach(item -> {
-                try {
-                    SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.TIMED);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
+            List<Scheduling> schedulings = schedulingService.findByQuery("scriptIds?" + script.getId());
+            if (!schedulings.isEmpty()) {
+                return failed("删除脚本前请先移除相关任务调度");
+            }
             scriptService.delete(script);
         }
         return success();
     }
 
     @RequestMapping(value = "/execute.api", method = RequestMethod.POST)
-    public Msg execute(@RequestBody DtoScript scriptInfo) throws SchedulerException {
+    public Msg execute(@RequestBody DtoScript req) throws SchedulerException {
         LoginUser user = getCurrentUser();
         CmdRecord cmdRecord = CmdRecord.builder()
                 .uid(user.getId())
-                .scriptId(scriptInfo.getId())
-                .createTime(new Date())
-                .content(scriptInfo.getScript())
-                .timeout(scriptInfo.getTimeout())
+                .scriptId(req.getId())
                 .status(Constant.EXEC_STATUS_UNSTART)
-                .agentId(scriptInfo.getAgentId())
-                .clusterId(scriptInfo.getClusterId())
+                .agentId(req.getAgentId())
+                .clusterId(req.getClusterId())
+                .content(req.getScript())
+                .timeout(req.getTimeout())
+                .createTime(new Date())
                 .build();
         cmdRecord = cmdRecordService.save(cmdRecord);
         CmdRecordRunner.build(cmdRecord);
@@ -186,7 +201,7 @@ public class ScriptController extends BaseController {
             if (script != null) {
                 return "名称重复";
             }
-            if (req.getType() != Constant.SCRIPT_TYPE_SHELL) {
+            if (req.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
                 try {
                     agentService.getInstanceByClusterId(req.getClusterId(), false);
                 } catch (IllegalStateException e) {
@@ -224,7 +239,7 @@ public class ScriptController extends BaseController {
                     }
                 }
             }
-            if (req.getType() != Constant.SCRIPT_TYPE_SHELL) {
+            if (req.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
                 try {
                     agentService.getInstanceByClusterId(req.getClusterId(), false);
                 } catch (IllegalStateException e) {
@@ -497,18 +512,23 @@ public class ScriptController extends BaseController {
 
     /**
      * 更新集群或队列检查应用是否正在运行
+     * @param dbScript
      * @param req
      * @return
      */
-    private boolean checkYarnAppAliveIfChangeClusterOrQueue(DtoScript req) {
-        Script scriptOld = scriptService.findById(req.getId());
-        String queueOld = scriptOld.getQueue();
-        String queueReq = req.getQueue();
-        if (!scriptOld.getClusterId().equals(req.getClusterId()) || !queueOld.equals(queueReq)) {
-            Cluster clusterOld = clusterService.findById(scriptOld.getClusterId());
-            return YarnApiUtils.getActiveApp(clusterOld.getYarnUrl(), scriptOld.getUser(), queueOld, scriptOld.getApp(), 3) != null;
+    private boolean checkYarnAppAliveIfChangeClusterOrQueue(Script dbScript, DtoScript req) {
+        String queueOld = dbScript.getQueue();
+        if (req.getType() != Constant.SCRIPT_TYPE_SHELL_BATCH) {
+            String queueReq = req.getQueue();
+            if (!dbScript.getClusterId().equals(req.getClusterId()) || !queueOld.equals(queueReq)) {
+                Cluster clusterOld = clusterService.findById(dbScript.getClusterId());
+                return YarnApiUtils.getActiveApp(clusterOld.getYarnUrl(), dbScript.getUser(), queueOld, dbScript.getApp(), 3) != null;
+            }
+            return false;
+        } else {
+            Cluster clusterOld = clusterService.findById(dbScript.getClusterId());
+            return YarnApiUtils.getActiveApp(clusterOld.getYarnUrl(), dbScript.getUser(), queueOld, dbScript.getApp(), 3) != null;
         }
-        return false;
     }
 
 }

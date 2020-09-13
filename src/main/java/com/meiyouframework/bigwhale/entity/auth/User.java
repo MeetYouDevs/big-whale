@@ -29,13 +29,13 @@ public class User {
     private String id;
     private String username;
     private String nickname;
-    private String password;
     private String email;
     private String phone;
-    private Date created;
-    private Integer level;
-    private boolean enabled;
-    private boolean root;
+    private String password;
+    private Boolean enabled;
+    private Boolean root;
+    private Date createTime;
+    private Date updateTime;
     @Transient
     private List<String> roles;
 

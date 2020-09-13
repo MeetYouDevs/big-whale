@@ -36,14 +36,13 @@ public class CmdRecord {
      */
     private String schedulingId;
     /**
-     *  离线调度示例ID
+     * 离线调度实例ID
      */
     private String schedulingInstanceId;
     /**
      * 离线调度节点ID
      */
     private String schedulingNodeId;
-    private String monitorId;
     private String content;
     private Integer timeout;
     private String outputs;

@@ -1,19 +1,19 @@
 package com.meiyouframework.bigwhale.task.common;
 
 import com.meiyouframework.bigwhale.common.Constant;
+import com.meiyouframework.bigwhale.entity.Scheduling;
 import com.meiyouframework.bigwhale.util.MsgTools;
 import com.meiyouframework.bigwhale.util.YarnApiUtils;
 import com.meiyouframework.bigwhale.entity.Cluster;
-import com.meiyouframework.bigwhale.entity.Monitor;
 import com.meiyouframework.bigwhale.entity.Script;
 import com.meiyouframework.bigwhale.entity.YarnApp;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
-import com.meiyouframework.bigwhale.util.SpringContextUtils;
 import com.meiyouframework.bigwhale.service.*;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Date;
 import java.util.List;
@@ -28,6 +28,17 @@ public class PlatformTimeoutJob implements Job {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PlatformTimeoutJob.class);
 
+    @Autowired
+    private NoticeService noticeService;
+    @Autowired
+    private SchedulingService schedulingService;
+    @Autowired
+    private YarnAppService yarnAppService;
+    @Autowired
+    private ClusterService clusterService;
+    @Autowired
+    private ScriptService scriptService;
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         List<JobExecutionContext> executionContexts;
@@ -39,25 +50,20 @@ public class PlatformTimeoutJob implements Job {
         }
         Date current = new Date();
         Date tenMinBefore = DateUtils.addMinutes(current, -10);
-        NoticeService noticeService = SpringContextUtils.getBean(NoticeService.class);
         executionContexts.forEach(executionContext -> {
             if (executionContext.getFireTime().before(tenMinBefore)) {
                 JobKey jobKey = executionContext.getJobDetail().getKey();
                 //监控任务
                 if (Constant.JobGroup.MONITOR.equals(jobKey.getGroup())) {
                     //杀掉应用
-                    MonitorService monitorService = SpringContextUtils.getBean(MonitorService.class);
-                    Monitor monitor = monitorService.findById(jobKey.getName());
-                    YarnAppService yarnAppService = SpringContextUtils.getBean(YarnAppService.class);
-                    YarnApp appInfo = yarnAppService.findOneByQuery("scriptId=" + monitor.getScriptId());
+                    Scheduling scheduling = schedulingService.findById(jobKey.getName());
+                    YarnApp appInfo = yarnAppService.findOneByQuery("scriptId=" + scheduling.getScriptIds());
                     if (appInfo != null) {
-                        ClusterService clusterService = SpringContextUtils.getBean(ClusterService.class);
                         Cluster cluster = clusterService.findById(appInfo.getClusterId());
                         YarnApiUtils.killApp(cluster.getYarnUrl(), appInfo.getAppId());
                         yarnAppService.deleteById(appInfo.getId());
                     }
-                    ScriptService scriptService = SpringContextUtils.getBean(ScriptService.class);
-                    Script script = scriptService.findById(monitor.getScriptId());
+                    Script script = scriptService.findById(scheduling.getScriptIds());
                     String msg = MsgTools.getPlainErrorMsg(null, null, null, "调度平台-监控任务（" + script.getName() + "）", "任务运行超时");
                     noticeService.sendDingding(new String[0], msg);
                     try {

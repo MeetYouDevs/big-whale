@@ -21,7 +21,7 @@
                             名称&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_name" class="form-control" ng-model="editItem.name" required />
+                            <input id="modal_input_name" class="form-control" ng-model="editItem.name" required autocomplete="off"/>
                         </div>
                     </div>
                     <div class="form-group">
@@ -98,11 +98,11 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_streamBlackNodeList" class="col-sm-4 control-label">
-                            流式任务黑名单
+                        <label for="modal_input_streamingBlackNodeList" class="col-sm-4 control-label">
+                            流处理任务黑名单
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_streamBlackNodeList" class="form-control" ng-model="editItem.streamBlackNodeList" />
+                            <input id="modal_input_streamingBlackNodeList" class="form-control" ng-model="editItem.streamingBlackNodeList" autocomplete="off" />
                         </div>
                     </div>
                     <div class="form-group">
@@ -110,7 +110,7 @@
                             批处理任务黑名单
                         </label>
                         <div class="col-sm-5">
-                            <input id="modal_input_batchBlackNodeList" class="form-control" ng-model="editItem.batchBlackNodeList" />
+                            <input id="modal_input_batchBlackNodeList" class="form-control" ng-model="editItem.batchBlackNodeList" autocomplete="off" />
                         </div>
                     </div>
                 </div>
@@ -203,13 +203,15 @@
 <script src="../../js/common.js" type="text/javascript"></script>
 <script type="text/javascript">
     var app = angular.module('content-app', []);
-    registerAuth(app);
+    registerHttpInterceptor(app);
     registerPage(app);
     app.controller('content-controller', function ($scope, $http) {
         appendBooleanType($scope);
 
         $scope.onNewItem = function () {
             $scope.editItem = {
+                defaultFileCluster: false,
+                flinkProxyUserEnabled: false,
                 fsUser: 'hdfs',
                 fsDir: "/data/big-whale/storage"
             };
@@ -225,14 +227,19 @@
             $('#btn_submit').attr('disabled', 'true');
             $http.post('./save.api', $scope.editItem)
                 .success(function(data) {
-                    $('#editDlg').modal('hide');
-                    if (data.code === 0) {
-                        swal('操作成功', data.msg, 'success');
-                        $scope.reload();
-                    } else {
-                        swal('操作失败', data.msg, 'error');
-                    }
                     $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
+                    $scope.reload();
+                    swal({
+                        title: '保存成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                })
+                .error(function (data) {
+                    $('#btn_submit').removeAttr('disabled');
+                    $('#editDlg').modal('hide');
                 });
         };
 
