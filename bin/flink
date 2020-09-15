@@ -32,7 +32,7 @@ if [ ! -z "$remoteRunFile" ]; then
         #缓存基础目录
         path="/tmp/hdfs_pkg/`date '+%Y%m%d%H'`"
         mkdir -p $path
-	    chmod -R 777 $path
+        chmod -R 777 $path
 
         localRunFile="$path/${runFile}.`date '+%M%S'`"
 
