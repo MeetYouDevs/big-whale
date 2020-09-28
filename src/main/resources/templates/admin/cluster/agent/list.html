@@ -39,7 +39,7 @@
                         </label>
                         <div class="col-sm-5">
                             <div ng-repeat="tip in editItem.instances track by $index">
-                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.instances[$index]" placeholder="机器IP或主机名" required autocomplete="off"/><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.instances, $index)"></span>
+                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.instances[$index]" placeholder="机器IP" required autocomplete="off"/><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.instances, $index)"></span>
                             </div>
                             <div ng-click="!editItem.instances ? editItem.instances = []: '';onAddTip(editItem.instances);">
                                 <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>

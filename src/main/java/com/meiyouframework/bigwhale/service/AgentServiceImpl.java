@@ -61,7 +61,12 @@ public class AgentServiceImpl extends AbstractMysqlPagingAndSortingQueryService<
     private boolean isAccessible(String instance) {
         Connection conn = null;
         try {
-            conn = new Connection(instance);
+            if (instance.contains(":")) {
+                String [] arr = instance.split(":");
+                conn = new Connection(arr[0], Integer.parseInt(arr[1]));
+            } else {
+                conn = new Connection(instance);
+            }
             conn.connect(null, sshConfig.getConnectTimeout(), 30000);
             boolean isAuthenticated = conn.authenticateWithPassword(sshConfig.getUser(), sshConfig.getPassword());
             if (!isAuthenticated) {
