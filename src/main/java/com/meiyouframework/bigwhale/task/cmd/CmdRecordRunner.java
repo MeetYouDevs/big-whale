@@ -108,7 +108,12 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                 instance = agentService.getInstanceByAgentId(cmdRecord.getAgentId(), true);
                 cmdRecord.setAgentInstance(instance);
             }
-            conn = new Connection(instance);
+            if (instance.contains(":")) {
+                String [] arr = instance.split(":");
+                conn = new Connection(arr[0], Integer.parseInt(arr[1]));
+            } else {
+                conn = new Connection(instance);
+            }
             conn.connect(null, sshConfig.getConnectTimeout(), 30000);
             conn.authenticateWithPassword(sshConfig.getUser(), sshConfig.getPassword());
             int ret;
