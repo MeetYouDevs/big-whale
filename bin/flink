@@ -34,7 +34,9 @@ if [ ! -z "$remoteRunFile" ]; then
         mkdir -p $path
         chmod -R 777 $path
 
+        #拼接本地文件路径
         localRunFile="$path/`date '+%M%S'`-${runFile}"
+
         echo "开始下载 $remoteRunFile ..."
         rm -rf $localRunFile
 
