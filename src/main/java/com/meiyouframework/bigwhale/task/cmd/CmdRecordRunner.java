@@ -149,20 +149,17 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FINISH);
                     if (script.getType() == Constant.SCRIPT_TYPE_SHELL_BATCH) {
                         //Shell脚本提交子任务(定时任务)
-                        submitNextCmdRecord(cmdRecord, scheduling, scriptService);
+                        submitNextNode(cmdRecord, scheduling, scriptService);
                     } else {
                         //设置yarn任务状态
-                        if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH || script.getType() == Constant.SCRIPT_TYPE_FLINK_BATCH) {
-                            cmdRecord.setJobFinalStatus("UNDEFINED");
-                        }
-                        if (cmdRecord.getJobId() == null) {
-                            LOGGER.warn("脚本：" + script.getName() + "，未能读取到Yarn应用ID！为确保告警的准确性，请将提交Yarn任务的日志级别设置为: INFO");
-                        }
+                        cmdRecord.setJobFinalStatus("UNDEFINED");
                     }
                 } else {
                     cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
                     //处理失败(定时任务)
                     notice(cmdRecord, scheduling, null, Constant.ERROR_TYPE_FAILED);
+                    //重试
+                    retryCurrentNode(cmdRecord, scheduling);
                 }
                 cmdRecord.setFinishTime(new Date());
             } else {
@@ -175,6 +172,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             if (!interrupted) {
                 cmdRecord.setStatus(Constant.EXEC_STATUS_FAIL);
                 notice(cmdRecord, scheduling, null, Constant.ERROR_TYPE_FAILED);
+                retryCurrentNode(cmdRecord, scheduling);
             } else {
                 CmdRecord recordForTimeout = cmdRecordService.findById(cmdRecordId);
                 cmdRecord.setStatus(recordForTimeout.getStatus());
@@ -269,7 +267,7 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
             if (matcher.find()) {
                 String id = matcher.group();
                 cmdRecord.setJobId(id);
-                cmdRecord.setUrl(yarnUrl + "/proxy/" + id + "/");
+                cmdRecord.setJobUrl(yarnUrl + "/proxy/" + id + "/");
             }
         }
     }
@@ -323,6 +321,10 @@ public class CmdRecordRunner extends AbstractCmdRecordTask implements Interrupta
 
     public static void build(CmdRecord cmdRecord) throws SchedulerException {
         SchedulerUtils.scheduleSimpleJob(CmdRecordRunner.class, cmdRecord.getId(), Constant.JobGroup.CMD, 0, 0);
+    }
+
+    public static void build(CmdRecord cmdRecord, Date startDate) throws SchedulerException {
+        SchedulerUtils.scheduleSimpleJob(CmdRecordRunner.class, cmdRecord.getId(), Constant.JobGroup.CMD, 0, 0, null, startDate, null);
     }
 
 }

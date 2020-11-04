@@ -113,7 +113,7 @@
                                     </td>
                                     <td>
                                         <span class="script-name">{{scriptMap[item.scriptId].name}}</span><br/>
-                                        <label ng-if="item.schedulingId != null" class="label label-info">任务调度{{item.schedulingInstanceId != null ? '(批处理) - ' + item.schedulingInstanceId : '(流处理)'}}</label>
+                                        <label ng-if="item.schedulingId != null" class="label label-info">任务调度{{item.schedulingInstanceId != null ? '(批处理) - ' + item.schedulingInstanceId : '(流处理)'}}{{item.retryNum != null ? '-retry' + item.retryNum : ''}}</label>
                                     </td>
                                     <td>
                                         <span ng-if="agentMap[item.agentId]">{{agentMap[item.agentId].name}}</span>
@@ -129,7 +129,7 @@
                                         <textarea class="textarea" style="color:red;" readonly>{{item.errors}}</textarea>
                                     </td>
                                     <td>
-                                        <a ng-if="item.url != null" href="{{item.url}}" target="_blank">Applicaion Url</a>
+                                        <a ng-if="item.jobUrl != null" href="{{item.jobUrl}}" target="_blank">Applicaion Url</a>
                                     </td>
                                     <td>
                                         <label ng-if="cmdStatusMap[item.status]" class="label label-{{cmdStatusMap[item.status].style}}">
@@ -205,7 +205,7 @@
                         $scope.options.items[0]['outputs'] = items[0]['outputs'];
                         $scope.options.items[0]['errors'] = items[0]['errors'];
                         $scope.options.items[0]['status'] = items[0]['status'];
-                        $scope.options.items[0]['url'] = items[0]['url'];
+                        $scope.options.items[0]['jobUrl'] = items[0]['jobUrl'];
                         $scope.options.items[0]['startTime'] = items[0]['startTime'];
                         $scope.options.items[0]['finishTime'] = items[0]['finishTime'];
                     } else {

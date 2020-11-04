@@ -39,6 +39,17 @@ public abstract class AbstractMysqlPagingAndSortingQueryService<T, ID extends Se
     }
 
     @Override
+    public T findOneByQuery(String filters, Sort sort) {
+        T t;
+        try {
+            t = entityManager.createQuery(buildQuery(filters, sort)).setMaxResults(1).getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        }
+        return t;
+    }
+
+    @Override
     public List<T> findByQuery(String filters) {
         return entityManager.createQuery(buildQuery(filters)).getResultList();
     }

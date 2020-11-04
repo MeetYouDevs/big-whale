@@ -76,13 +76,13 @@ public class Scheduling {
 
     /* ---------------- 实时监控 end ---------------- */
 
-    private Date lastExecuteTime;
-
     private Boolean sendEmail;
     /**
      * 多条数据用,分割
      */
     private String dingdingHooks;
+
+    private Date lastExecuteTime;
     private Date createTime;
     private Date updateTime;
     private Boolean enabled;
@@ -108,39 +108,74 @@ public class Scheduling {
         }
     }
 
-    public Map<String, String> analyzeNextNode(String currentNodeId) {
-        Map<String, String> nodeIdToScriptId = new HashMap<>();
+    public NodeData analyzeCurrentNode(String currentNodeId) {
+        if (type == Constant.SCHEDULING_TYPE_STREAMING) {
+            return null;
+        }
+        JSONObject jsonObject = JSON.parseObject(topology);
+        JSONArray nodes = jsonObject.getJSONArray("nodes");
+        for (Object node : nodes) {
+            JSONObject nodeObj = (JSONObject) node;
+            String nodeId = nodeObj.getString("id");
+            NodeData data = JSON.parseObject(nodeObj.getString("data"), NodeData.class);
+            if (nodeId.equals(currentNodeId)) {
+                return data;
+            }
+        }
+        return null;
+    }
+
+    public Map<String, NodeData> analyzeNextNode(String currentNodeId) {
+        Map<String, NodeData> nodeIdToData = new HashMap<>();
         if (type == Constant.SCHEDULING_TYPE_STREAMING) {
             if (currentNodeId == null) {
-                nodeIdToScriptId.put(scriptIds, scriptIds);
+                nodeIdToData.put(scriptIds, new NodeData(scriptIds, 0, 0));
             }
-            return nodeIdToScriptId;
+            return nodeIdToData;
         }
         JSONObject jsonObject = JSON.parseObject(topology);
         JSONArray nodes = jsonObject.getJSONArray("nodes");
         JSONArray lines = jsonObject.getJSONArray("lines");
-        nodes.forEach(node -> nodeIdToScriptId.put(((JSONObject)node).getString("id"), ((JSONObject)node).getString("data")));
+        nodes.forEach(node -> {
+            JSONObject nodeObj = (JSONObject) node;
+            String nodeId = nodeObj.getString("id");
+            NodeData data = JSON.parseObject(nodeObj.getString("data"), NodeData.class);
+            nodeIdToData.put(nodeId, data);
+        });
         List<String> toIds = new ArrayList<>();
         lines.forEach(line -> toIds.add(((JSONObject)line).getJSONObject("to").getString("id")));
         String rootNodeId = null;
-        for (String id : nodeIdToScriptId.keySet()) {
+        for (String id : nodeIdToData.keySet()) {
             if (!toIds.contains(id)) {
                 rootNodeId = id;
                 break;
             }
         }
         if (currentNodeId == null) {
-            return Collections.singletonMap(rootNodeId, nodeIdToScriptId.get(rootNodeId));
+            return Collections.singletonMap(rootNodeId, nodeIdToData.get(rootNodeId));
         } else {
-            nodeIdToScriptId.remove(rootNodeId);
+            nodeIdToData.remove(rootNodeId);
             for (int i = 0; i < lines.size(); i ++) {
                 JSONObject line = lines.getJSONObject(i);
                 String fromId = line.getJSONObject("from").getString("id");
                 if (!fromId.equals(currentNodeId)) {
-                    nodeIdToScriptId.remove(line.getJSONObject("to").getString("id"));
+                    nodeIdToData.remove(line.getJSONObject("to").getString("id"));
                 }
             }
-            return nodeIdToScriptId;
+            return nodeIdToData;
         }
     }
+
+    public static class NodeData {
+        public String scriptId;
+        public int retries;
+        public int intervals;
+
+        public NodeData(String scriptId, int retries, int intervals) {
+            this.scriptId = scriptId;
+            this.retries = retries;
+            this.intervals = intervals;
+        }
+    }
+
 }
