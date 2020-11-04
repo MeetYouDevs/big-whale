@@ -477,9 +477,9 @@ ALTER TABLE `cmd_record` ADD COLUMN `scheduling_instance_id` varchar(255) NULL A
 -- v1.1
 ALTER TABLE `scheduling` ADD COLUMN `topology` text NOT NULL AFTER `uid`;
 ALTER TABLE `scheduling` ADD COLUMN `script_ids` varchar(255) NOT NULL AFTER `topology`;
--- 需要从v1.0升级上来的，请先注释以下两句SQL
-ALTER TABLE `scheduling` DROP COLUMN `script_id`; -- 1
-ALTER TABLE `scheduling` DROP COLUMN `sub_script_ids`; -- 2
+-- 需要从v1.0升级上来的，请先注释以下所有SQL
+ALTER TABLE `scheduling` DROP COLUMN `script_id`;
+ALTER TABLE `scheduling` DROP COLUMN `sub_script_ids`;
 
 ALTER TABLE `cmd_record` DROP COLUMN `sub_script_ids`;
 ALTER TABLE `cmd_record` ADD COLUMN `scheduling_node_id` varchar(255) NULL AFTER `scheduling_instance_id`;
@@ -499,7 +499,7 @@ ALTER TABLE `agent` DROP COLUMN `password`;
 ALTER TABLE `cmd_record` MODIFY COLUMN `agent_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `parent_id`;
 ALTER TABLE `cmd_record` ADD COLUMN `agent_instance` varchar(255) NULL AFTER `agent_id`;
 
--- 需要从v1.0升级上来的，请先注释以下所有SQL
+
 ALTER TABLE `auth_resource` DROP COLUMN `created`;
 
 ALTER TABLE `auth_role` DROP COLUMN `created`;
@@ -573,3 +573,7 @@ DROP TABLE monitor;
 ALTER TABLE `cmd_record` DROP COLUMN `monitor_id`;
 
 ALTER TABLE `cluster` CHANGE COLUMN `stream_black_node_list` `streaming_black_node_list` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `fs_dir`;
+
+-- v1.2
+ALTER TABLE `cmd_record` CHANGE COLUMN `url` `job_url` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `job_final_status`;
+ALTER TABLE `cmd_record` ADD COLUMN `retry_num` INT(11) NULL DEFAULT NULL AFTER `scheduling_node_id`;

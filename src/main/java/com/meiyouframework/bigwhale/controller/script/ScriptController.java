@@ -122,7 +122,7 @@ public class ScriptController extends BaseController {
             if (dbScript == null) {
                 return failed();
             }
-            if (req.isOffline() != dbScript.isOffline()) {
+            if (req.isBatch() != dbScript.isBatch()) {
                 Scheduling scheduling = schedulingService.findOneByQuery("scriptIds?" + req.getId());
                 if (scheduling != null) {
                     return failed("变更处理类型前请先移除相关任务调度");

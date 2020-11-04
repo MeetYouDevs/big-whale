@@ -32,17 +32,22 @@ public class CmdRecord {
     private String agentInstance;
     private String uid;
     /**
-     * 离线调度ID
+     * 任务调度ID
      */
     private String schedulingId;
     /**
-     * 离线调度实例ID
+     * 任务调度实例ID（批处理）
      */
     private String schedulingInstanceId;
     /**
-     * 离线调度节点ID
+     * 任务调度节点ID（批处理）
      */
     private String schedulingNodeId;
+    /**
+     * 任务调度重试序号（批处理）
+     */
+    private Integer retryNum;
+
     private String content;
     private Integer timeout;
     private String outputs;
@@ -56,10 +61,7 @@ public class CmdRecord {
      * for spark or flink job
      */
     private String jobId;
-    /**
-     * for batch job
-     */
+    private String jobUrl;
     private String jobFinalStatus;
-    private String url;
 
 }

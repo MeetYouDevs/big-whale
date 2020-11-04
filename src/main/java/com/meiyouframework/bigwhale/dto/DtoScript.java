@@ -111,7 +111,7 @@ public class DtoScript extends AbstractPageDto {
         return null;
     }
 
-    public boolean isOffline() {
+    public boolean isBatch() {
         return type == Constant.SCRIPT_TYPE_SHELL_BATCH ||
                 type == Constant.SCRIPT_TYPE_SPARK_BATCH ||
                 type == Constant.SCRIPT_TYPE_FLINK_BATCH;

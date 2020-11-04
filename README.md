@@ -2,6 +2,17 @@
 巨鲸任务调度平台为美柚大数据研发的分布式计算任务调度系统，提供Spark、Flink等批处理任务的DAG执行调度和流处理任务的状态监测调度，并具有重复应用检测、大内存应用检测等功能。
 服务基于Spring Boot 2.0开发，打包后即可运行。[[Github]](https://github.com/MeetYouDevs/big-whale)[[Gitee]](https://gitee.com/meetyoucrop/big-whale)
 
+# 概述
+## 1.架构图
+![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/architecture.png)
+## 2.特性
+* 基于SSH的脚本执行机制，部署简单快捷，仅需单个服务
+* 基于Yarn Rest Api的任务状态同步机制，对Spark、Flink无版本限制
+* 支持分布式
+* 支持失败重试
+* 支持任务依赖
+* 支持复杂任务编排（DAG）
+* 支持流处理任务运行状态监测
 # 部署
 ## 1.准备
 * Java 1.8+
@@ -76,6 +87,7 @@
 * 说明：为防止平台线程被大量占用，平台提交Saprk或Flink任务的时候都会强制以“后台”的方式执行，对应spark配置：--conf spark.yarn.submit.waitAppCompletion=false，flink配置：-d，但是基于后台“批处理应用状态更新任务”的回调，在实现DAG执行引擎时可以确保当前节点脚本所提交的批处理任务运行完成后再执行下一个节点的脚本  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step11-scheduling_batch_add.png)  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step12-scheduling_batch_list.png)
+* DAG节点支持失败重试(v1.2开始支持，需要从v1.0或v1.1升级的，请查阅[SchedulingFieldGenerateForV1_2Test.java](https://gitee.com/meetyoucrop/big-whale/blob/master/src/test/java/com/meiyouframework/bigwhale/test/SchedulingFieldGenerateForV1_2Test.java))  
 ### 3.2 流处理
 * 任务调度->新增->流处理
 * 对于类型为“spark流处理”和“flink流处理”的脚本，可通过添加此功能实现状态监测调度  

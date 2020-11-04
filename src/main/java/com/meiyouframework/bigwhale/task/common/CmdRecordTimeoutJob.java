@@ -38,22 +38,9 @@ public class CmdRecordTimeoutJob extends AbstractCmdRecordTask implements Job {
             }
             int timeout = cmdRecord.getTimeout();
             long ago = DateUtils.addMinutes(now, -timeout).getTime();
-            boolean timeoutFlag = false;
             //执行超时
-            if (cmdRecord.getStatus() == Constant.EXEC_STATUS_DOING
-                    && cmdRecord.getStartTime().getTime() <= ago) {
+            if (cmdRecord.getCreateTime().getTime() <= ago) {
                 cmdRecord.setStatus(Constant.EXEC_STATUS_TIMEOUT);
-                timeoutFlag = true;
-            } else {
-                if (cmdRecord.getCreateTime().getTime() <= ago) {
-                    cmdRecord.setStatus(Constant.EXEC_STATUS_TIMEOUT);
-                    timeoutFlag = true;
-                }
-            }
-            if (timeoutFlag) {
-                Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
-                notice(cmdRecord, scheduling, null, Constant.ERROR_TYPE_TIMEOUT);
-                cmdRecordService.save(cmdRecord);
                 //处理调度
                 try {
                     JobKey jobKey = new JobKey(cmdRecord.getId(), Constant.JobGroup.CMD);
@@ -65,6 +52,11 @@ public class CmdRecordTimeoutJob extends AbstractCmdRecordTask implements Job {
                 } catch (SchedulerException e) {
                     LOGGER.error(e.getMessage(), e);
                 }
+                Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
+                notice(cmdRecord, scheduling, null, Constant.ERROR_TYPE_TIMEOUT);
+                cmdRecordService.save(cmdRecord);
+                //重试
+                retryCurrentNode(cmdRecord, scheduling);
             }
         }
     }

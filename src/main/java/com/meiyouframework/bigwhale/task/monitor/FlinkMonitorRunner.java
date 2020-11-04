@@ -84,28 +84,18 @@ public class FlinkMonitorRunner extends AbstractMonitorRunner {
             }
         } else {
             HttpYarnApp httpYarnApp = getLastNoActiveYarnApp();
+            String appId = httpYarnApp != null ? httpYarnApp.getId() : null;
+            String jobFinalStatus = httpYarnApp != null ? httpYarnApp.getFinalStatus() : "UNKNOWN";
             if (scheduling.getExRestart() != null && scheduling.getExRestart()) {
                 // 重启
                 boolean restart = restart();
                 if (restart) {
-                    if (httpYarnApp != null) {
-                        notice(null, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, httpYarnApp.getFinalStatus()));
-                    } else {
-                        notice(null, scheduling, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, "UNKNOWN"));
-                    }
+                    notice(null, scheduling, appId, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, jobFinalStatus));
                 } else {
-                    if (httpYarnApp != null) {
-                        notice(null, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART_FAILED, httpYarnApp.getFinalStatus()));
-                    } else {
-                        notice(null, scheduling, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART_FAILED, "UNKNOWN"));
-                    }
+                    notice(null, scheduling, appId, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART_FAILED, jobFinalStatus));
                 }
             } else {
-                if (httpYarnApp != null) {
-                    notice(null, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL, httpYarnApp.getFinalStatus()));
-                } else {
-                    notice(null, scheduling, null, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL, "UNKNOWN"));
-                }
+                notice(null, scheduling, appId, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL, jobFinalStatus));
             }
         }
     }

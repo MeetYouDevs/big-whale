@@ -29,13 +29,18 @@ public class DtoCmdRecord extends AbstractPageDto {
      */
     private String schedulingId;
     /**
-     * 离线调度实例ID
+     * 任务调度实例ID（批处理）
      */
     private String schedulingInstanceId;
     /**
-     * 离线调度节点ID
+     * 任务调度节点ID（批处理）
      */
     private String schedulingNodeId;
+    /**
+     * 任务调度重试序号（批处理）
+     */
+    private Integer retryNum;
+
     private String content;
     private Integer timeout;
     private String outputs;
@@ -49,11 +54,11 @@ public class DtoCmdRecord extends AbstractPageDto {
      * for spark or flink job
      */
     private String jobId;
+    private String jobUrl;
     /**
      * for batch job
      */
     private String jobFinalStatus;
-    private String url;
 
     /**
      * 查询属性

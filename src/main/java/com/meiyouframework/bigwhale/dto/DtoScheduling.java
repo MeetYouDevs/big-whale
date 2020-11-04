@@ -37,7 +37,6 @@ public class DtoScheduling extends AbstractPageDto {
 
     private String topology;
     private Boolean repeatSubmit;
-    private Date lastExecuteTime;
 
     private Boolean exRestart;
     private Integer waitingBatches;
@@ -45,6 +44,8 @@ public class DtoScheduling extends AbstractPageDto {
 
     private Boolean sendEmail;
     private List<String> dingdingHooks;
+
+    private Date lastExecuteTime;
     private Date createTime;
     private Date updateTime;
     private Boolean enabled;

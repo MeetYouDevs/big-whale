@@ -57,13 +57,13 @@ public class PlatformTimeoutJob implements Job {
                 if (Constant.JobGroup.MONITOR.equals(jobKey.getGroup())) {
                     //杀掉应用
                     Scheduling scheduling = schedulingService.findById(jobKey.getName());
-                    YarnApp appInfo = yarnAppService.findOneByQuery("scriptId=" + scheduling.getScriptIds());
+                    Script script = scriptService.findById(scheduling.getScriptIds());
+                    YarnApp appInfo = yarnAppService.findOneByQuery("scriptId=" + scheduling.getScriptIds() + ";name=" + script.getApp());
                     if (appInfo != null) {
                         Cluster cluster = clusterService.findById(appInfo.getClusterId());
                         YarnApiUtils.killApp(cluster.getYarnUrl(), appInfo.getAppId());
                         yarnAppService.deleteById(appInfo.getId());
                     }
-                    Script script = scriptService.findById(scheduling.getScriptIds());
                     String msg = MsgTools.getPlainErrorMsg(null, null, null, "调度平台-监控任务（" + script.getName() + "）", "任务运行超时");
                     noticeService.sendDingding(new String[0], msg);
                     try {
