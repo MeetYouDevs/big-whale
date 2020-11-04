@@ -577,3 +577,7 @@ ALTER TABLE `cluster` CHANGE COLUMN `stream_black_node_list` `streaming_black_no
 -- v1.2
 ALTER TABLE `cmd_record` CHANGE COLUMN `url` `job_url` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `job_final_status`;
 ALTER TABLE `cmd_record` ADD COLUMN `retry_num` INT(11) NULL DEFAULT NULL AFTER `scheduling_node_id`;
+ALTER TABLE `cmd_record` ADD INDEX `script_id_index` (`script_id`);
+ALTER TABLE `cmd_record` ADD INDEX `scheduling_id_index` (`scheduling_id`);
+ALTER TABLE `cmd_record` ADD INDEX `scheduling_instance_id_index` (`scheduling_instance_id`);
+ALTER TABLE `cmd_record` ADD INDEX `scheduling_node_id_index` (`scheduling_node_id`);
