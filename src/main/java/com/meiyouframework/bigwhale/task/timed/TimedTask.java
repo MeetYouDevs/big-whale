@@ -6,6 +6,7 @@ import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
+import com.sun.org.apache.bcel.internal.generic.IF_ACMPEQ;
 import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,9 @@ public class TimedTask implements Job {
     public void execute(JobExecutionContext jobExecutionContext) {
         String schedulingId = jobExecutionContext.getJobDetail().getKey().getName();
         Scheduling scheduling = schedulingService.findById(schedulingId);
-        if (scheduling.getLastExecuteTime() != null && !scheduling.getRepeatSubmit()) {
+        if (scheduling.getLastExecuteTime() != null &&
+                scheduling.getLastExecuteTime().after(scheduling.getUpdateTime()) &&
+                !scheduling.getRepeatSubmit()) {
             if (!isLastTimeCompleted(scheduling)) {
                 return;
             }
@@ -54,12 +57,12 @@ public class TimedTask implements Job {
             throw new RuntimeException(e);
         }
         schedulingService.save(scheduling);
-        Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(null);
-        nodeIdToScriptId.forEach((nodeId, scriptId) -> {
-            Script script = scriptService.findById(scriptId);
+        Map<String, Scheduling.NodeData> nodeIdToData = scheduling.analyzeNextNode(null);
+        nodeIdToData.forEach((nodeId, nodeData) -> {
+            Script script = scriptService.findById(nodeData.scriptId);
             CmdRecord cmdRecord = CmdRecord.builder()
                     .uid(scheduling.getUid())
-                    .scriptId(scriptId)
+                    .scriptId(nodeData.scriptId)
                     .status(Constant.EXEC_STATUS_UNSTART)
                     .agentId(script.getAgentId())
                     .clusterId(script.getClusterId())
@@ -86,7 +89,7 @@ public class TimedTask implements Job {
     private boolean isLastTimeCompleted(Scheduling scheduling) {
         List<CmdRecord> cmdRecords = cmdRecordService.findByQuery(
                 ";schedulingId=" + scheduling.getId() +
-                        ";schedulingInstanceId=" +  dateFormat.format(scheduling.getLastExecuteTime()),
+                        ";schedulingInstanceId=" + dateFormat.format(scheduling.getLastExecuteTime()),
                 Sort.by(Sort.Direction.ASC, "createTime"));
         //非程序意外退出的情况下，相关执行记录不会为空
         if (cmdRecords.isEmpty()) {
@@ -97,38 +100,49 @@ public class TimedTask implements Job {
                 return false;
             }
         }
-        if (cmdRecords.size() == scheduling.getScriptIds().split(",").length) {
-            for (CmdRecord cmdRecord : cmdRecords) {
-                Script script = scriptService.findById(cmdRecord.getScriptId());
-                if (isYarnBatch(script)) {
-                    if ("UNDEFINED".equals(cmdRecord.getJobFinalStatus())) {
-                        return false;
-                    }
+        List<CmdRecord> lastCmdRecords = new ArrayList<>();
+        filterNodeTreeLast(scheduling, cmdRecords, lastCmdRecords, null);
+        for (CmdRecord lastCmdRecord : lastCmdRecords) {
+            Scheduling.NodeData nodeData = scheduling.analyzeCurrentNode(lastCmdRecord.getSchedulingNodeId());
+            Map<String, Scheduling.NodeData> nodeIdToData = scheduling.analyzeNextNode(null);
+            Script script = scriptService.findById(lastCmdRecord.getScriptId());
+            if (script.isYarnBatch()) {
+                if ("UNDEFINED".equals(lastCmdRecord.getJobFinalStatus())) {
+                    return false;
                 }
-            }
-            return true;
-        } else {
-            List<CmdRecord> lastCmdRecords = new ArrayList<>();
-            filterNodeTreeLast(scheduling, cmdRecords, lastCmdRecords, null);
-            for (CmdRecord lastCmdRecord : lastCmdRecords) {
-                Script script = scriptService.findById(lastCmdRecord.getScriptId());
-                if (isYarnBatch(script)) {
-                    if ("UNDEFINED".equals(lastCmdRecord.getJobFinalStatus()) || "SUCCEEDED".equals(lastCmdRecord.getJobFinalStatus())) {
+                if ("SUCCEEDED".equals(lastCmdRecord.getJobFinalStatus())) {
+                    if (!nodeIdToData.isEmpty()) {
                         return false;
                     }
                 } else {
-                    if (Constant.EXEC_STATUS_FINISH == lastCmdRecord.getStatus())  {
+                    if (nodeData.retries > 0) {
+                        long count = cmdRecords.stream().filter(cmdRecord -> cmdRecord.getSchedulingNodeId().equals(lastCmdRecord.getSchedulingNodeId())).count();
+                        if (count < nodeData.retries) {
+                            return false;
+                        }
+                    }
+                }
+            } else {
+                if (Constant.EXEC_STATUS_FINISH == lastCmdRecord.getStatus())  {
+                    if (!nodeIdToData.isEmpty()) {
                         return false;
+                    }
+                } else {
+                    if (nodeData.retries > 0) {
+                        long count = cmdRecords.stream().filter(cmdRecord -> cmdRecord.getSchedulingNodeId().equals(lastCmdRecord.getSchedulingNodeId())).count();
+                        if (count < nodeData.retries) {
+                            return false;
+                        }
                     }
                 }
             }
-            return true;
         }
+        return true;
     }
 
     private void filterNodeTreeLast(Scheduling scheduling, List<CmdRecord> cmdRecords, List<CmdRecord> lastCmdRecords, String currentNodeId) {
-        Map<String, String> nodeIdToScriptId = scheduling.analyzeNextNode(currentNodeId);
-        for (Map.Entry<String, String> entry : nodeIdToScriptId.entrySet()) {
+        Map<String, Scheduling.NodeData> nodeIdToData = scheduling.analyzeNextNode(currentNodeId);
+        for (Map.Entry<String, Scheduling.NodeData> entry : nodeIdToData.entrySet()) {
             CmdRecord currentCmdRecord = null;
             boolean match = false;
             for (CmdRecord cmdRecord : cmdRecords) {
@@ -147,10 +161,6 @@ public class TimedTask implements Job {
                 }
             }
         }
-    }
-
-    private boolean isYarnBatch(Script script) {
-        return script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH || script.getType() == Constant.SCRIPT_TYPE_FLINK_BATCH;
     }
 
     public static void build(Scheduling scheduling) throws SchedulerException {

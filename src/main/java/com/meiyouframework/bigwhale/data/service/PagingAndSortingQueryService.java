@@ -16,6 +16,8 @@ public interface PagingAndSortingQueryService<T, ID extends Serializable> extend
 
     T findOneByQuery(String filters);
 
+    T findOneByQuery(String filters, Sort sort);
+
     List<T> findByQuery(String filters);
 
     List<T> findByQuery(String filters, Sort sort);

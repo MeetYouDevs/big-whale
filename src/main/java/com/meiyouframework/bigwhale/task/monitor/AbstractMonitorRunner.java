@@ -75,11 +75,7 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
     public abstract void executeJob();
 
     protected YarnApp getYarnAppFromDatabase() {
-        List<YarnApp> yarnApps = yarnAppService.findByQuery("scriptId=" + scheduling.getScriptIds());
-        if (!CollectionUtils.isEmpty(yarnApps)) {
-            return yarnApps.get(0);
-        }
-        return null;
+        return yarnAppService.findOneByQuery("scriptId=" + scheduling.getScriptIds() + ";name=" + script.getApp());
     }
 
     protected YarnApp getYarnAppFromYarnServer() {

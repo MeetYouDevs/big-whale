@@ -64,15 +64,21 @@ public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implement
                 }
                 updateStatus(cmdRecord, script, httpYarnApp);
             } else {
-                YarnApp yarnApp = yarnAppService.findOneByQuery("scriptId=" + cmdRecord.getScriptId() + ";name=" + script.getApp() + "_instance" + dateFormat.format(cmdRecord.getStartTime()));
+                String appName;
+                if (script.isYarnBatch()) {
+                    appName = script.getApp() + "_instance" + dateFormat.format(cmdRecord.getStartTime());
+                } else {
+                    appName = script.getApp();
+                }
+                YarnApp yarnApp = yarnAppService.findOneByQuery("scriptId=" + cmdRecord.getScriptId() + ";name=" + appName);
                 if (yarnApp != null) {
                     continue;
                 }
-                httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), script.getUser(), script.getQueue(), script.getApp() + "_instance" + dateFormat.format(cmdRecord.getStartTime()), 3);
+                httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), script.getUser(), script.getQueue(), appName, 3);
                 if (httpYarnApp != null) {
                     continue;
                 }
-                httpYarnApp = YarnApiUtils.getLastNoActiveApp(cluster.getYarnUrl(), script.getUser(), script.getQueue(), script.getApp(), 3);
+                httpYarnApp = YarnApiUtils.getLastNoActiveApp(cluster.getYarnUrl(), script.getUser(), script.getQueue(), appName, 3);
                 updateStatus(cmdRecord, script, httpYarnApp);
             }
         }
@@ -80,17 +86,21 @@ public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implement
 
     private void updateStatus(CmdRecord cmdRecord, Script script, HttpYarnApp httpYarnApp) {
         if (httpYarnApp != null) {
-            Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
             String finalStatus = httpYarnApp.getFinalStatus();
             cmdRecord.setJobFinalStatus(finalStatus);
-            if ("SUCCEEDED".equals(finalStatus)) {
-                //提交子任务
-                submitNextCmdRecord(cmdRecord, scheduling, scriptService);
-            } else {
-                if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
-                    notice(cmdRecord, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_BATCH_UNUSUAL, finalStatus));
+            if (script.isYarnBatch()) {
+                Scheduling scheduling = StringUtils.isNotBlank(cmdRecord.getSchedulingId()) ? schedulingService.findById(cmdRecord.getSchedulingId()) : null;
+                if ("SUCCEEDED".equals(finalStatus)) {
+                    //提交子任务
+                    submitNextNode(cmdRecord, scheduling, scriptService);
                 } else {
-                    notice(cmdRecord, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_BATCH_UNUSUAL, finalStatus));
+                    if (script.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
+                        notice(cmdRecord, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_SPARK_BATCH_UNUSUAL, finalStatus));
+                    } else {
+                        notice(cmdRecord, scheduling, httpYarnApp.getId(), String.format(Constant.ERROR_TYPE_FLINK_BATCH_UNUSUAL, finalStatus));
+                    }
+                    //重试
+                    retryCurrentNode(cmdRecord, scheduling);
                 }
             }
         } else {

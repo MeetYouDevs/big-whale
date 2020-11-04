@@ -65,6 +65,41 @@
                                 <div id="flex_canvas">
                                     <div class="canvas" id="topo_canvas"></div>
                                 </div>
+                                <div id="flex_props">
+                                    <div id="flex_props_home">
+                                        <div class="form-group">
+                                            <label>
+                                                小提示
+                                            </label>
+                                            <ul>
+                                                <li>须满足：节点数 = 分支数 + 1</li>
+                                                <li>分支的起点和终点必须指向不同节点</li>
+                                                <li>不同分支的终点必须指向不同节点</li>
+                                                <li>不能存在回环</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div id="flex_props_node" class="hidden">
+                                        <div class="form-group">
+                                            <label>
+                                                节点脚本
+                                            </label>
+                                            <input id="_nodeName" class="form-control" disabled />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>
+                                                失败重试次数
+                                            </label>
+                                            <input id="_retries" type="number" class="form-control" onchange="onChangeProp()" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>
+                                                失败重试间隔(min)
+                                            </label>
+                                            <input id="_intervals" type="number" class="form-control" onchange="onChangeProp()" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="form-group">
@@ -435,6 +470,8 @@
                         };
                         break;
                     case 'space':
+                        $("#flex_props_home").removeClass("hidden");
+                        $("#flex_props_node").addClass("hidden");
                         setTimeout(function () {
                             selected = null;
                             selNodes = null;
@@ -458,6 +495,8 @@
                         self.initLine();
                         break;
                     case 'delete':
+                        $("#flex_props_home").removeClass("hidden");
+                        $("#flex_props_node").addClass("hidden");
                         break;
                 }
             }
@@ -470,13 +509,24 @@
         },
         // 初始化node
         initNode: function () {
+            $("#flex_props_home").addClass("hidden");
+            $("#flex_props_node").removeClass("hidden");
+            $("#_nodeName").val(selected.data.text);
+            $("#_retries").val(selected.data.data.retries);
+            $("#_intervals").val(selected.data.data.intervals);
             canvas.render();
             canvas.overflow();
         },
         // 初始化line
         initLine: function () {
+            $("#flex_props_home").removeClass("hidden");
+            $("#flex_props_node").addClass("hidden");
             canvas.render();
             canvas.overflow();
+        },
+        onChangeProp: function () {
+            selected.data.data.retries = parseInt($("#_retries").val());
+            selected.data.data.intervals = parseInt($("#_intervals").val());
         },
         onLoadTools: function (tools) {
             var _html = "";
@@ -554,12 +604,22 @@
     window.cut = Topology.cut;
     window.copy = Topology.copy;
     window.parse = Topology.parse;
+    window.onChangeProp = Topology.onChangeProp;
 
     function validateTopology() {
         var nodes = canvas.data.nodes;
         var lines = canvas.data.lines;
         if (nodes.length === 0) {
             return '节点不能为空';
+        }
+        for (var i = 0; i < nodes.length; i ++) {
+            var node = nodes[i];
+            if (isNaN(node.data.retries)) {
+                return '节点【' + node.text + '】失败重试次数为空';
+            }
+            if (isNaN(node.data.intervals)) {
+                return '节点【' + node.text + '】失败重试间隔为空';
+            }
         }
         if (nodes.length !== lines.length  + 1) {
             return '须满足：节点数 = 分支数 + 1';
@@ -595,22 +655,22 @@
     };
     var scriptRect = {
         0: {
-            width: 80,
-            height: 100
+            width: 60,
+            height: 80
         },
         2: {
-            width: 180,
+            width: 160,
             height: 60
         },
         4: {
-            width: 100,
-            height: 100
+            width: 80,
+            height: 80
         }
     };
     var scriptBox = {
         0: 'file',
         2: 'rectangle',
-        4: 'rectangle'
+        4: 'circle'
     };
     var user = [[${session.user}]];
     var app = angular.module("content-app", []);
@@ -857,7 +917,11 @@
                             iconFamily: 'iconfont',
                             iconColor: '#2f54eb',
                             textMaxLine: 1,
-                            data: item.id
+                            data: {
+                                scriptId: item.id,
+                                retries: 0,
+                                intervals: 1
+                            }
                         }
                     });
                 }
@@ -894,7 +958,7 @@
                     textMaxLine: node.textMaxLine,
                     data: node.data
                 });
-                scriptIds.push(node.data);
+                scriptIds.push(node.data.scriptId);
             });
             lines.forEach(function (line) {
                 simpleLines.push({

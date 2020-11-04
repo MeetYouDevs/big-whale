@@ -75,6 +75,8 @@
     height: 45vh;
     border: 1px solid #e5e5e5;
     overflow: auto;
+    width: 75%;
+    display: inline-block;
 }
 
 #topo_canvas {
@@ -83,6 +85,28 @@
     text-align: justify;
     text-justify: newspaper;
     word-break: break-all;
+}
+
+/*右侧属性样式*/
+#flex_props {
+    width: 22%;
+    height: 45vh;
+    display: inline-block;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #e5e5e5;
+    border-left: none;
+    padding: 30px;
+    margin-left: -4px;
+    font-size: 12px;
+}
+
+#flex_props ul {
+    padding-left: 28px;
+}
+
+#flex_props input {
+    height: 28px;
 }
 
 /*右键菜单样式*/
