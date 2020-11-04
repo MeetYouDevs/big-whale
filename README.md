@@ -7,7 +7,7 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
 * Java 1.8+
 * Mysql 5.1.0+
 * 下载项目或git clone项目
-* 为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/1.0/doc/hosts)
+* 为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/master/doc/hosts)
 ## 2.安装
 * 创建数据库：big-whale
 * 运行数据库脚本：[big-whale.sql](https://github.com/MeetYouDevs/big-whale/blob/1.0/script/big-whale.sql)
@@ -97,4 +97,4 @@ Big Whale（巨鲸），为美柚大数据研发的大数据任务调度平台�
  }
  ```
 # License
-The project is licensed under the [Apache 2 license](https://github.com/MeetYouDevs/big-whale/blob/1.0/LICENSE).
+The project is licensed under the [Apache 2 license](https://github.com/MeetYouDevs/big-whale/blob/master/LICENSE).
