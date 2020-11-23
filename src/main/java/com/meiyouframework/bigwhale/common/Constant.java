@@ -74,10 +74,10 @@ public interface Constant {
      */
     interface JobGroup {
         String COMMON = "common";
-        String MONITOR = "monitor";
-        String TIMED = "timed";
-        String TIMED_FOR_API = "timedForApi";
         String CMD = "cmd";
+        String BATCH = "batch";
+        String BATCH_FOR_API = "batchForApi";
+        String STREAMING = "streaming";
     }
 
     String APP_APPEND_SYMBOL = "$";

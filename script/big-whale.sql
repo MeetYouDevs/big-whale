@@ -581,3 +581,17 @@ ALTER TABLE `cmd_record` ADD INDEX `script_id_index` (`script_id`);
 ALTER TABLE `cmd_record` ADD INDEX `scheduling_id_index` (`scheduling_id`);
 ALTER TABLE `cmd_record` ADD INDEX `scheduling_instance_id_index` (`scheduling_instance_id`);
 ALTER TABLE `cmd_record` ADD INDEX `scheduling_node_id_index` (`scheduling_node_id`);
+
+UPDATE qrtz_job_details SET JOB_CLASS_NAME = REPLACE(JOB_CLASS_NAME, '.common.CmdRecordAppStatusUpdateJob', '.batch.DagTaskAppStatusUpdateJob') WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE qrtz_job_details SET JOB_CLASS_NAME = REPLACE(JOB_CLASS_NAME, '.timed.TimedTask', '.batch.DagTask') WHERE JOB_GROUP = 'timed';
+UPDATE qrtz_job_details SET JOB_CLASS_NAME = REPLACE(JOB_CLASS_NAME, '.monitor.', '.streaming.') WHERE JOB_GROUP = 'monitor';
+ALTER TABLE `qrtz_triggers` DROP FOREIGN KEY `qrtz_triggers_ibfk_1`;
+UPDATE qrtz_job_details SET JOB_NAME = 'DagTaskAppStatusUpdateJob' WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE `qrtz_triggers` SET JOB_GROUP = 'batch' WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE `qrtz_triggers` SET JOB_NAME = 'DagTaskAppStatusUpdateJob' WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE `qrtz_job_details` SET JOB_GROUP = 'batch' WHERE JOB_NAME = 'DagTaskAppStatusUpdateJob';
+UPDATE `qrtz_triggers` SET JOB_GROUP = 'batch' WHERE JOB_GROUP = 'timed';
+UPDATE `qrtz_job_details` SET JOB_GROUP = 'batch' WHERE JOB_GROUP = 'timed';
+UPDATE `qrtz_triggers` SET JOB_GROUP = 'streaming' WHERE JOB_GROUP = 'monitor';
+UPDATE `qrtz_job_details` SET JOB_GROUP = 'streaming' WHERE JOB_GROUP = 'monitor';
+ALTER TABLE `qrtz_triggers` ADD CONSTRAINT `qrtz_triggers_ibfk_1` FOREIGN KEY (`SCHED_NAME`, `JOB_NAME`, `JOB_GROUP`) REFERENCES `qrtz_job_details` (`SCHED_NAME`, `JOB_NAME`, `JOB_GROUP`) ON DELETE RESTRICT ON UPDATE RESTRICT;

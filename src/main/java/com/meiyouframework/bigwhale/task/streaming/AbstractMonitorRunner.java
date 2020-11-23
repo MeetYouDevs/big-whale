@@ -1,4 +1,4 @@
-package com.meiyouframework.bigwhale.task.monitor;
+package com.meiyouframework.bigwhale.task.streaming;
 
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.HttpYarnApp;
@@ -16,10 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.CollectionUtils;
+import org.springframework.data.domain.Sort;
 
 import java.util.Date;
-import java.util.List;
 
 /**
  * @author meiyou big data group
@@ -103,12 +102,20 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
      * 重启
      * @return
      */
-    protected boolean restart() {
+    protected boolean restart(String currentJobFinalStatus) {
         Script script = scriptService.findById(scheduling.getScriptIds());
         //检查是否存在当前脚本未执行或正在执行的任务
         CmdRecord cmdRecord = cmdRecordService.findOneByQuery("scriptId=" + scheduling.getScriptIds() + ";status=" + Constant.EXEC_STATUS_UNSTART + "," + Constant.EXEC_STATUS_DOING);
         if (cmdRecord != null) {
             return true;
+        }
+        //更新应用状态
+        cmdRecord = cmdRecordService.findOneByQuery(
+                ";scriptId=" + scheduling.getScriptIds() + ";jobFinalStatus=UNDEFINED",
+                Sort.by(Sort.Direction.DESC, "createTime"));
+        if (cmdRecord != null) {
+            cmdRecord.setJobFinalStatus(currentJobFinalStatus);
+            cmdRecordService.save(cmdRecord);
         }
         CmdRecord record = CmdRecord.builder()
                 .uid(scheduling.getUid())
@@ -136,7 +143,7 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
         if (script.getType() == Constant.SCRIPT_TYPE_SPARK_STREAMING) {
             SchedulerUtils.scheduleCornJob(SparkMonitorRunner.class,
                     scheduling.getId(),
-                    Constant.JobGroup.MONITOR,
+                    Constant.JobGroup.STREAMING,
                     scheduling.generateCron(),
                     null,
                     scheduling.getStartTime(),
@@ -144,7 +151,7 @@ public abstract class AbstractMonitorRunner extends AbstractNoticeableTask imple
         } else if (script.getType() == Constant.SCRIPT_TYPE_FLINK_STREAMING) {
             SchedulerUtils.scheduleCornJob(FlinkMonitorRunner.class,
                     scheduling.getId(),
-                    Constant.JobGroup.MONITOR,
+                    Constant.JobGroup.STREAMING,
                     scheduling.generateCron(),
                     null,
                     scheduling.getStartTime(),

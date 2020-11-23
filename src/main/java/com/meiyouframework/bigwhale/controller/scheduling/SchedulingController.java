@@ -12,8 +12,8 @@ import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.controller.BaseController;
 import com.meiyouframework.bigwhale.security.LoginUser;
 import com.meiyouframework.bigwhale.service.ScriptService;
-import com.meiyouframework.bigwhale.task.monitor.AbstractMonitorRunner;
-import com.meiyouframework.bigwhale.task.timed.TimedTask;
+import com.meiyouframework.bigwhale.task.streaming.AbstractMonitorRunner;
+import com.meiyouframework.bigwhale.task.batch.DagTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.SchedulerException;
@@ -112,9 +112,9 @@ public class SchedulingController extends BaseController {
                 return failed();
             }
             if (dbScheduling.getType() == Constant.SCHEDULING_TYPE_BATCH) {
-                SchedulerUtils.deleteJob(dbScheduling.getId(), Constant.JobGroup.TIMED);
+                SchedulerUtils.deleteJob(dbScheduling.getId(), Constant.JobGroup.BATCH);
             } else {
-                SchedulerUtils.deleteJob(dbScheduling.getId(), Constant.JobGroup.MONITOR);
+                SchedulerUtils.deleteJob(dbScheduling.getId(), Constant.JobGroup.STREAMING);
             }
         }
         req.setUpdateTime(now);
@@ -130,7 +130,7 @@ public class SchedulingController extends BaseController {
         scheduling = schedulingService.save(scheduling);
         if (scheduling.getEnabled()) {
             if (scheduling.getType() == Constant.SCHEDULING_TYPE_BATCH) {
-                TimedTask.build(scheduling);
+                DagTask.build(scheduling);
             } else {
                 AbstractMonitorRunner.build(scheduling);
             }
@@ -146,9 +146,9 @@ public class SchedulingController extends BaseController {
         Scheduling scheduling = schedulingService.findById(id);
         if (scheduling != null) {
             if (scheduling.getType() == Constant.SCHEDULING_TYPE_BATCH) {
-                SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.TIMED);
+                SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.BATCH);
             } else {
-                SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.MONITOR);
+                SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.STREAMING);
             }
             schedulingService.deleteById(id);
         }
@@ -198,7 +198,7 @@ public class SchedulingController extends BaseController {
 
         } else {
             CmdRecord cmdRecord = cmdRecordService.findOneByQuery(
-                    ";schedulingId=" + scheduling.getId(),
+                    ";scriptId=" + scheduling.getScriptIds(),
                     Sort.by(Sort.Direction.DESC, "createTime"));
             if (cmdRecord != null) {
                 cmdRecords = Collections.singletonList(cmdRecord);

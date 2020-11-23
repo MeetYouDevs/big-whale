@@ -13,7 +13,7 @@ import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.service.ScriptService;
 import com.meiyouframework.bigwhale.service.auth.UserService;
 import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
-import com.meiyouframework.bigwhale.task.timed.TimedTask;
+import com.meiyouframework.bigwhale.task.batch.DagTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -105,9 +105,9 @@ public class OpenApiController extends BaseController {
         }
         if (args.args != null && !args.args.isEmpty()) {
             JobDataMap jobDataMap = new JobDataMap(args.args);
-            SchedulerUtils.scheduleSimpleJob(TimedTask.class, scheduling.getId(), Constant.JobGroup.TIMED_FOR_API, 0, 0, jobDataMap);
+            SchedulerUtils.scheduleSimpleJob(DagTask.class, scheduling.getId(), Constant.JobGroup.BATCH_FOR_API, 0, 0, jobDataMap);
         } else {
-            SchedulerUtils.scheduleSimpleJob(TimedTask.class, scheduling.getId(), Constant.JobGroup.TIMED_FOR_API, 0, 0);
+            SchedulerUtils.scheduleSimpleJob(DagTask.class, scheduling.getId(), Constant.JobGroup.BATCH_FOR_API, 0, 0);
         }
         return success();
     }
