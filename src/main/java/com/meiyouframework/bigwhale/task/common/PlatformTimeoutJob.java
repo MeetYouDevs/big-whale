@@ -2,6 +2,7 @@ package com.meiyouframework.bigwhale.task.common;
 
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.entity.Scheduling;
+import com.meiyouframework.bigwhale.task.batch.DagTaskAppStatusUpdateJob;
 import com.meiyouframework.bigwhale.util.MsgTools;
 import com.meiyouframework.bigwhale.util.YarnApiUtils;
 import com.meiyouframework.bigwhale.entity.Cluster;
@@ -53,8 +54,32 @@ public class PlatformTimeoutJob implements Job {
         executionContexts.forEach(executionContext -> {
             if (executionContext.getFireTime().before(tenMinBefore)) {
                 JobKey jobKey = executionContext.getJobDetail().getKey();
+                //yarn应用列表更新
+                if (Constant.JobGroup.COMMON.equals(jobKey.getGroup())) {
+                    if (RefreshActiveStateAppsJob.class.getSimpleName().equals(jobKey.getName())) {
+                        String msg = MsgTools.getPlainErrorMsg(null, null, null, "调度平台-Yarn应用列表更新任务", "任务运行超时");
+                        noticeService.sendDingding(new String[0], msg);
+                        try {
+                            SchedulerUtils.getScheduler().interrupt(jobKey);
+                        } catch (UnableToInterruptJobException e) {
+                            LOGGER.error(e.getMessage(), e);
+                        }
+                    }
+                }
+                //批处理应用状态更新
+                if (Constant.JobGroup.BATCH.equals(jobKey.getGroup())) {
+                    if (DagTaskAppStatusUpdateJob.class.getSimpleName().equals(jobKey.getName())) {
+                        String msg = MsgTools.getPlainErrorMsg(null, null, null, "调度平台-批处理应用状态更新任务", "任务运行超时");
+                        noticeService.sendDingding(new String[0], msg);
+                        try {
+                            SchedulerUtils.getScheduler().interrupt(jobKey);
+                        } catch (UnableToInterruptJobException e) {
+                            LOGGER.error(e.getMessage(), e);
+                        }
+                    }
+                }
                 //监控任务
-                if (Constant.JobGroup.MONITOR.equals(jobKey.getGroup())) {
+                if (Constant.JobGroup.STREAMING.equals(jobKey.getGroup())) {
                     //杀掉应用
                     Scheduling scheduling = schedulingService.findById(jobKey.getName());
                     Script script = scriptService.findById(scheduling.getScriptIds());
@@ -66,22 +91,6 @@ public class PlatformTimeoutJob implements Job {
                     }
                     String msg = MsgTools.getPlainErrorMsg(null, null, null, "调度平台-监控任务（" + script.getName() + "）", "任务运行超时");
                     noticeService.sendDingding(new String[0], msg);
-                    try {
-                        SchedulerUtils.getScheduler().interrupt(jobKey);
-                    } catch (UnableToInterruptJobException e) {
-                        LOGGER.error(e.getMessage(), e);
-                    }
-                }
-                //yarn应用列表更新和离线应用状态更新
-                if (Constant.JobGroup.COMMON.equals(jobKey.getGroup())) {
-                    if (RefreshActiveStateAppsJob.class.getSimpleName().equals(jobKey.getName())) {
-                        String msg = MsgTools.getPlainErrorMsg(null, null, null, "调度平台-Yarn应用列表更新任务", "任务运行超时");
-                        noticeService.sendDingding(new String[0], msg);
-                    }
-                    if (CmdRecordAppStatusUpdateJob.class.getSimpleName().equals(jobKey.getName())) {
-                        String msg = MsgTools.getPlainErrorMsg(null, null, null, "调度平台-离线应用状态更新任务", "任务运行超时");
-                        noticeService.sendDingding(new String[0], msg);
-                    }
                     try {
                         SchedulerUtils.getScheduler().interrupt(jobKey);
                     } catch (UnableToInterruptJobException e) {

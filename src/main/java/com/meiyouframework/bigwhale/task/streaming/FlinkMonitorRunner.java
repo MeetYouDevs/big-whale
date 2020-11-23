@@ -1,4 +1,4 @@
-package com.meiyouframework.bigwhale.task.monitor;
+package com.meiyouframework.bigwhale.task.streaming;
 
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.BackpressureInfo;
@@ -35,7 +35,7 @@ public class FlinkMonitorRunner extends AbstractMonitorRunner {
 
                     }
                     // 重启
-                    boolean restart = restart();
+                    boolean restart = restart("KILLED");
                     if (restart) {
                         notice(null, scheduling, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_NO_RUNNING_JOB_RESTART);
                     } else {
@@ -72,7 +72,7 @@ public class FlinkMonitorRunner extends AbstractMonitorRunner {
 
                     }
                     // 重启
-                    boolean restart = restart();
+                    boolean restart = restart("KILLED");
                     if (restart) {
                         notice(null, scheduling, appInfo.getAppId(), Constant.ERROR_TYPE_FLINK_STREAMING_BACKPRESSURE_RESTART + "(trouble vertex: " + backpressure.nextVertex + ")");
                     } else {
@@ -88,7 +88,7 @@ public class FlinkMonitorRunner extends AbstractMonitorRunner {
             String jobFinalStatus = httpYarnApp != null ? httpYarnApp.getFinalStatus() : "UNKNOWN";
             if (scheduling.getExRestart() != null && scheduling.getExRestart()) {
                 // 重启
-                boolean restart = restart();
+                boolean restart = restart(jobFinalStatus);
                 if (restart) {
                     notice(null, scheduling, appId, String.format(Constant.ERROR_TYPE_FLINK_STREAMING_UNUSUAL_RESTART, jobFinalStatus));
                 } else {

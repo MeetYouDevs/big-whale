@@ -1,4 +1,4 @@
-package com.meiyouframework.bigwhale.task.timed;
+package com.meiyouframework.bigwhale.task.batch;
 
 import com.alibaba.fastjson.JSON;
 import com.meiyouframework.bigwhale.common.Constant;
@@ -6,7 +6,6 @@ import com.meiyouframework.bigwhale.task.cmd.CmdRecordRunner;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import com.meiyouframework.bigwhale.entity.*;
 import com.meiyouframework.bigwhale.service.*;
-import com.sun.org.apache.bcel.internal.generic.IF_ACMPEQ;
 import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +25,9 @@ import java.util.Map;
  * @description file description
  */
 @DisallowConcurrentExecution
-public class TimedTask implements Job {
+public class DagTask implements Job {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TimedTask.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DagTask.class);
 
     private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 
@@ -164,9 +163,9 @@ public class TimedTask implements Job {
     }
 
     public static void build(Scheduling scheduling) throws SchedulerException {
-        SchedulerUtils.scheduleCornJob(TimedTask.class,
+        SchedulerUtils.scheduleCornJob(DagTask.class,
                 scheduling.getId(),
-                Constant.JobGroup.TIMED,
+                Constant.JobGroup.BATCH,
                 scheduling.generateCron(),
                 null,
                 scheduling.getStartTime(),
