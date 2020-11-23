@@ -4,8 +4,9 @@ import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.entity.Scheduling;
 import com.meiyouframework.bigwhale.service.SchedulingService;
 import com.meiyouframework.bigwhale.task.common.*;
-import com.meiyouframework.bigwhale.task.monitor.AbstractMonitorRunner;
-import com.meiyouframework.bigwhale.task.timed.TimedTask;
+import com.meiyouframework.bigwhale.task.streaming.AbstractMonitorRunner;
+import com.meiyouframework.bigwhale.task.batch.DagTaskAppStatusUpdateJob;
+import com.meiyouframework.bigwhale.task.batch.DagTask;
 import com.meiyouframework.bigwhale.util.SchedulerUtils;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
@@ -48,8 +49,6 @@ public class ApplicationReadyListener implements ApplicationListener<Application
             SchedulerUtils.scheduleCornJob(RefreshActiveStateAppsJob.class, "*/10 * * * * ?");
             //启动脚本执行超时处理任务
             SchedulerUtils.scheduleCornJob(CmdRecordTimeoutJob.class, "*/1 * * * * ?");
-            //启动批处理应用状态更新任务（包含提交子脚本）
-            SchedulerUtils.scheduleCornJob(CmdRecordAppStatusUpdateJob.class, "*/10 * * * * ?");
             //启动执行记录清理任务
             SchedulerUtils.scheduleCornJob(CmdRecordClearJob.class, "0 0 0 */1 * ?");
             //平台执行超时处理任务
@@ -60,24 +59,30 @@ public class ApplicationReadyListener implements ApplicationListener<Application
     }
 
     private void startScheduling() {
-        List<Scheduling> schedulings = schedulingService.findByQuery("enabled=" + true);
-        schedulings.forEach(scheduling -> {
-            try {
+        try {
+            //启动批处理应用状态更新任务（包含提交子脚本）
+            SchedulerUtils.scheduleCornJob(DagTaskAppStatusUpdateJob.class, DagTaskAppStatusUpdateJob.class.getSimpleName(),  Constant.JobGroup.BATCH, "*/10 * * * * ?");
+            List<Scheduling> schedulings = schedulingService.findByQuery("enabled=" + true);
+            for (Scheduling scheduling : schedulings) {
                 if (new Date().after(scheduling.getEndTime())) {
-                    SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.TIMED);
+                    if (scheduling.getType() == Constant.SCHEDULING_TYPE_BATCH) {
+                        SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.BATCH);
+                    } else {
+                        SchedulerUtils.deleteJob(scheduling.getId(), Constant.JobGroup.STREAMING);
+                    }
                     scheduling.setEnabled(false);
                     schedulingService.save(scheduling);
                 } else {
                     if (scheduling.getType() == Constant.SCHEDULING_TYPE_BATCH) {
-                        TimedTask.build(scheduling);
+                        DagTask.build(scheduling);
                     } else {
                         AbstractMonitorRunner.build(scheduling);
                     }
                 }
-            } catch (SchedulerException e) {
-                logger.error("schedule submit error", e);
             }
-        });
+        } catch (SchedulerException e) {
+            logger.error("schedule submit error", e);
+        }
     }
 
 }

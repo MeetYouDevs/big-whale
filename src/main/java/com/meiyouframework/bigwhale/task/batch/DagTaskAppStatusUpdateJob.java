@@ -1,4 +1,4 @@
-package com.meiyouframework.bigwhale.task.common;
+package com.meiyouframework.bigwhale.task.batch;
 
 import com.meiyouframework.bigwhale.common.Constant;
 import com.meiyouframework.bigwhale.common.pojo.HttpYarnApp;
@@ -21,7 +21,7 @@ import java.util.Collection;
  * @description file description
  */
 @DisallowConcurrentExecution
-public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implements InterruptableJob {
+public class DagTaskAppStatusUpdateJob extends AbstractCmdRecordTask implements InterruptableJob {
 
     private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
     private Thread thread;
@@ -45,7 +45,7 @@ public class CmdRecordAppStatusUpdateJob extends AbstractCmdRecordTask implement
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         thread = Thread.currentThread();
-        Collection<CmdRecord> records = cmdRecordService.findByQuery("jobFinalStatus=UNDEFINED");
+        Collection<CmdRecord> records = cmdRecordService.findByQuery("jobFinalStatus=UNDEFINED;schedulingInstanceId+");
         if (CollectionUtils.isEmpty(records)) {
             return;
         }

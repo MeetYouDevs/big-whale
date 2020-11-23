@@ -577,3 +577,21 @@ ALTER TABLE `cluster` CHANGE COLUMN `stream_black_node_list` `streaming_black_no
 -- v1.2
 ALTER TABLE `cmd_record` CHANGE COLUMN `url` `job_url` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `job_final_status`;
 ALTER TABLE `cmd_record` ADD COLUMN `retry_num` INT(11) NULL DEFAULT NULL AFTER `scheduling_node_id`;
+ALTER TABLE `cmd_record` ADD INDEX `script_id_index` (`script_id`);
+ALTER TABLE `cmd_record` ADD INDEX `scheduling_id_index` (`scheduling_id`);
+ALTER TABLE `cmd_record` ADD INDEX `scheduling_instance_id_index` (`scheduling_instance_id`);
+ALTER TABLE `cmd_record` ADD INDEX `scheduling_node_id_index` (`scheduling_node_id`);
+
+UPDATE qrtz_job_details SET JOB_CLASS_NAME = REPLACE(JOB_CLASS_NAME, '.common.CmdRecordAppStatusUpdateJob', '.batch.DagTaskAppStatusUpdateJob') WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE qrtz_job_details SET JOB_CLASS_NAME = REPLACE(JOB_CLASS_NAME, '.timed.TimedTask', '.batch.DagTask') WHERE JOB_GROUP = 'timed';
+UPDATE qrtz_job_details SET JOB_CLASS_NAME = REPLACE(JOB_CLASS_NAME, '.monitor.', '.streaming.') WHERE JOB_GROUP = 'monitor';
+ALTER TABLE `qrtz_triggers` DROP FOREIGN KEY `qrtz_triggers_ibfk_1`;
+UPDATE qrtz_job_details SET JOB_NAME = 'DagTaskAppStatusUpdateJob' WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE `qrtz_triggers` SET JOB_GROUP = 'batch' WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE `qrtz_triggers` SET JOB_NAME = 'DagTaskAppStatusUpdateJob' WHERE JOB_NAME = 'CmdRecordAppStatusUpdateJob';
+UPDATE `qrtz_job_details` SET JOB_GROUP = 'batch' WHERE JOB_NAME = 'DagTaskAppStatusUpdateJob';
+UPDATE `qrtz_triggers` SET JOB_GROUP = 'batch' WHERE JOB_GROUP = 'timed';
+UPDATE `qrtz_job_details` SET JOB_GROUP = 'batch' WHERE JOB_GROUP = 'timed';
+UPDATE `qrtz_triggers` SET JOB_GROUP = 'streaming' WHERE JOB_GROUP = 'monitor';
+UPDATE `qrtz_job_details` SET JOB_GROUP = 'streaming' WHERE JOB_GROUP = 'monitor';
+ALTER TABLE `qrtz_triggers` ADD CONSTRAINT `qrtz_triggers_ibfk_1` FOREIGN KEY (`SCHED_NAME`, `JOB_NAME`, `JOB_GROUP`) REFERENCES `qrtz_job_details` (`SCHED_NAME`, `JOB_NAME`, `JOB_GROUP`) ON DELETE RESTRICT ON UPDATE RESTRICT;

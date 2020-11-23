@@ -161,9 +161,9 @@ public class AuthController extends BaseController {
             schedulingService.findByQuery("uid=" + user.getId()).forEach(item -> {
                 try {
                     if (item.getType() == Constant.SCHEDULING_TYPE_BATCH) {
-                        SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.TIMED);
+                        SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.BATCH);
                     } else {
-                        SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.MONITOR);
+                        SchedulerUtils.deleteJob(item.getId(), Constant.JobGroup.STREAMING);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
