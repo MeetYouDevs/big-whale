@@ -39,6 +39,9 @@ public abstract class AbstractCmdRecordTask extends AbstractNoticeableTask {
                 return;
             }
             Scheduling.NodeData nodeData = scheduling.analyzeCurrentNode(cmdRecord.getSchedulingNodeId());
+            if (nodeData.retries == 0) {
+                return;
+            }
             if (cmdRecord.getRetryNum() != null && cmdRecord.getRetryNum() >= nodeData.retries) {
                 return;
             }
