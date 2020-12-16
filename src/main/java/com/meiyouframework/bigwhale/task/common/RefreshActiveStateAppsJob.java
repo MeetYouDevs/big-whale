@@ -94,11 +94,11 @@ public class RefreshActiveStateAppsJob extends AbstractNoticeableTask implements
                     yarnApp.setScriptId(script.getId());
                 } else {
                     String queue = app.getQueue();
-                    List<ClusterUser> clusterUsers = clusterUserService.findByQuery("clusterId=" + clusterId + ";queue=" + queue);
+                    List<ClusterUser> clusterUsers = clusterUserService.findByClusterIdAndQueue(clusterId, queue);
                     if (clusterUsers.isEmpty()) {
                         if (queue.startsWith("root.")) {
                             queue = queue.substring(5);
-                            clusterUsers = clusterUserService.findByQuery("clusterId=" + clusterId + ";queue=" + queue);
+                            clusterUsers = clusterUserService.findByClusterIdAndQueue(clusterId, queue);
                         }
                     }
                     if (!clusterUsers.isEmpty()) {

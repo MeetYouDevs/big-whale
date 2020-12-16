@@ -5,6 +5,4 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 
 public interface ClusterUserDao extends PagingAndSortingRepository<ClusterUser, String> {
 
-    ClusterUser findByUidAndClusterId(String uid, String clusterId);
-
 }
