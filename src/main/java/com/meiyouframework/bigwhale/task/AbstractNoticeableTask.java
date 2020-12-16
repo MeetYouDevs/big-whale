@@ -109,11 +109,11 @@ public abstract class AbstractNoticeableTask {
             msg = MsgTools.getPlainErrorMsg(cluster.getName(), trackingUrls, userName, script.getName(), errorType);
         } else {
             String queue = httpYarnApp.getQueue();
-            List<ClusterUser> clusterUsers = clusterUserService.findByQuery("clusterId=" + cluster.getId() + ";queue=" + queue);
+            List<ClusterUser> clusterUsers = clusterUserService.findByClusterIdAndQueue(cluster.getId(), queue);
             if (clusterUsers.isEmpty()) {
                 if (queue.startsWith("root.")) {
                     queue = queue.substring(5);
-                    clusterUsers = clusterUserService.findByQuery("clusterId=" + cluster.getId() + ";queue=" + queue);
+                    clusterUsers = clusterUserService.findByClusterIdAndQueue(cluster.getId(), queue);
                 }
             }
             if (!clusterUsers.isEmpty()) {
