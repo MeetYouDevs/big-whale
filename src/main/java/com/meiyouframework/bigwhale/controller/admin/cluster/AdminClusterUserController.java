@@ -62,7 +62,7 @@ public class AdminClusterUserController extends BaseController {
             List<String> errors = new ArrayList<>();
             String [] clusterIdArr = req.getClusterId().split(",");
             for (String item : clusterIdArr) {
-                ClusterUser dbClusterUser = clusterUserService.findByUidAndClusterId(req.getUid(), item);
+                ClusterUser dbClusterUser = clusterUserService.findOneByQuery("uid=" + req.getUid() + ";clusterId=" + item);
                 if (dbClusterUser != null) {
                     Cluster cluster = clusterService.findById(item);
                     errors.add(cluster.getName());
@@ -89,7 +89,7 @@ public class AdminClusterUserController extends BaseController {
             if (dbClusterUser == null)  {
                 return failed();
             }
-            dbClusterUser = clusterUserService.findByUidAndClusterId(req.getUid(), req.getClusterId());
+            dbClusterUser = clusterUserService.findOneByQuery("uid=" + req.getUid() + ";clusterId=" + req.getClusterId());
             if (!dbClusterUser.getId().equals(req.getId())) {
                 return failed("集群用户重复");
             }

@@ -281,7 +281,7 @@ public class ScriptController extends BaseController {
     private void dealUserAndQueue(Set<String> queueAndApps, DtoScript req) {
         req.setUser(null);
         String script = req.getScript();
-        ClusterUser user = clusterUserService.findByUidAndClusterId(req.getUid(), req.getClusterId());
+        ClusterUser user = clusterUserService.findOneByQuery("uid=" + req.getUid() + ";clusterId=" + req.getClusterId());
         String queue = user.getQueue();
         String argQueue = req.getQueue();
         if (req.getType() == Constant.SCRIPT_TYPE_SPARK_STREAMING || req.getType() == Constant.SCRIPT_TYPE_SPARK_BATCH) {
