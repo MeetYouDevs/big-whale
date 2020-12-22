@@ -595,3 +595,5 @@ UPDATE `qrtz_job_details` SET JOB_GROUP = 'batch' WHERE JOB_GROUP = 'timed';
 UPDATE `qrtz_triggers` SET JOB_GROUP = 'streaming' WHERE JOB_GROUP = 'monitor';
 UPDATE `qrtz_job_details` SET JOB_GROUP = 'streaming' WHERE JOB_GROUP = 'monitor';
 ALTER TABLE `qrtz_triggers` ADD CONSTRAINT `qrtz_triggers_ibfk_1` FOREIGN KEY (`SCHED_NAME`, `JOB_NAME`, `JOB_GROUP`) REFERENCES `qrtz_job_details` (`SCHED_NAME`, `JOB_NAME`, `JOB_GROUP`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+UPDATE qrtz_job_details SET JOB_CLASS_NAME = REPLACE(JOB_CLASS_NAME, 'com.meiyouframework.bigwhale', 'com.meiyou.bigwhale');

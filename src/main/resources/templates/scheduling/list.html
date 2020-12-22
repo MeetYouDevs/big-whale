@@ -67,6 +67,13 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="query_select_enabled">启用</label>
+                            <select id="query_select_enabled" class="selectpicker show-tick"
+                                    ng-model="options.query.enabled" ng-options="item.value as item.name for item in booleanTypeList">
+                                <option value="">不限</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <button type="submit" class="btn btn-success">搜索</button>
                             <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
                         </div>
@@ -210,6 +217,7 @@
         getScript($scope, $http);
         appendBooleanType($scope);
         appendWeek($scope);
+        appendBooleanType($scope);
         defineSort($scope);
 
         $scope.scriptIconClass = {
