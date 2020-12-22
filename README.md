@@ -83,11 +83,11 @@
 ## 3.任务调度
 ### 3.1 批处理
 * 任务调度->新增->批处理
-* 对于类型为“shell批处理”、“spark批处理”和“flink批处理”的脚本，可通过添加此功能实现DAG执行调度 (v1.1开始支持，需要从v1.0升级的，请查阅[SchedulingFieldGenerateForV1_1Test.java](https://github.com/MeetYouDevs/big-whale/blob/master/src/test/java/com/meiyouframework/bigwhale/test/SchedulingFieldGenerateForV1_1Test.java))
+* 对于类型为“shell批处理”、“spark批处理”和“flink批处理”的脚本，可通过添加此功能实现DAG执行调度 (v1.1开始支持，需要从v1.0升级的，请查阅[SchedulingFieldGenerateForV1_1Test.java](https://github.com/MeetYouDevs/big-whale/blob/master/src/test/java/com/meiyou/bigwhale/test/SchedulingFieldGenerateForV1_1Test.java))
 * 说明：为防止平台线程被大量占用，平台提交Saprk或Flink任务的时候都会强制以“后台”的方式执行，对应spark配置：--conf spark.yarn.submit.waitAppCompletion=false，flink配置：-d，但是基于后台“批处理应用状态更新任务”的回调，在实现DAG执行引擎时可以确保当前节点脚本所提交的批处理任务运行完成后再执行下一个节点的脚本  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step11-scheduling_batch_add.png)  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step12-scheduling_batch_list.png)
-* DAG节点支持失败重试(v1.2开始支持，需要从v1.0或v1.1升级的，请查阅[SchedulingFieldGenerateForV1_2Test.java](https://github.com/MeetYouDevs/big-whale/blob/master/src/test/java/com/meiyouframework/bigwhale/test/SchedulingFieldGenerateForV1_2Test.java))
+* DAG节点支持失败重试(v1.2开始支持，需要从v1.0或v1.1升级的，请查阅[SchedulingFieldGenerateForV1_2Test.java](https://github.com/MeetYouDevs/big-whale/blob/master/src/test/java/com/meiyou/bigwhale/test/SchedulingFieldGenerateForV1_2Test.java))
 ### 3.2 流处理
 * 任务调度->新增->流处理
 * 对于类型为“spark流处理”和“flink流处理”的脚本，可通过添加此功能实现状态监测调度  

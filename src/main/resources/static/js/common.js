@@ -52,7 +52,7 @@ function appendYarnJobState($scope) {
 }
 
 function appendBooleanType($scope) {
-    $scope.booleanTypeList = [{name: '否', value: false, style: 'danger'}, {name: '是', value: true, style: 'success'}];
+    $scope.booleanTypeList = [{name: '是', value: true, style: 'success'}, {name: '否', value: false, style: 'danger'}];
     $scope.booleanTypeMap = {};
     $scope.booleanTypeList.forEach(function (item) {
         $scope.booleanTypeMap[item.value] = item;
