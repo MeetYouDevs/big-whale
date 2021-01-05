@@ -107,7 +107,7 @@ public class DagTask implements Job {
         filterNodeTreeLast(scheduling, cmdRecords, lastCmdRecords, null);
         for (CmdRecord lastCmdRecord : lastCmdRecords) {
             Scheduling.NodeData nodeData = scheduling.analyzeCurrentNode(lastCmdRecord.getSchedulingNodeId());
-            Map<String, Scheduling.NodeData> nodeIdToData = scheduling.analyzeNextNode(null);
+            Map<String, Scheduling.NodeData> nodeIdToData = scheduling.analyzeNextNode(lastCmdRecord.getSchedulingNodeId());
             Script script = scriptService.findById(lastCmdRecord.getScriptId());
             if (script.isYarnBatch()) {
                 if ("UNDEFINED".equals(lastCmdRecord.getJobFinalStatus())) {
@@ -144,24 +144,27 @@ public class DagTask implements Job {
     }
 
     private void filterNodeTreeLast(Scheduling scheduling, List<CmdRecord> cmdRecords, List<CmdRecord> lastCmdRecords, String currentNodeId) {
-        Map<String, Scheduling.NodeData> nodeIdToData = scheduling.analyzeNextNode(currentNodeId);
-        for (Map.Entry<String, Scheduling.NodeData> entry : nodeIdToData.entrySet()) {
-            CmdRecord currentCmdRecord = null;
-            boolean match = false;
+        CmdRecord currentCmdRecord = null;
+        if (currentNodeId != null) {
             for (CmdRecord cmdRecord : cmdRecords) {
                 if (cmdRecord.getSchedulingNodeId().equals(currentNodeId)) {
                     currentCmdRecord = cmdRecord;
                 }
+            }
+        }
+        Map<String, Scheduling.NodeData> nodeIdToData = scheduling.analyzeNextNode(currentNodeId);
+        int count = 0;
+        for (Map.Entry<String, Scheduling.NodeData> entry : nodeIdToData.entrySet()) {
+            for (CmdRecord cmdRecord : cmdRecords) {
                 if (cmdRecord.getSchedulingNodeId().equals(entry.getKey())) {
-                    match = true;
+                    count ++;
+                    filterNodeTreeLast(scheduling, cmdRecords, lastCmdRecords, entry.getKey());
                 }
             }
-            if (match) {
-                filterNodeTreeLast(scheduling, cmdRecords, lastCmdRecords, entry.getKey());
-            } else {
-                if (currentCmdRecord != null) {
-                    lastCmdRecords.add(currentCmdRecord);
-                }
+        }
+        if (count == 0) {
+            if (currentCmdRecord != null) {
+                lastCmdRecords.add(currentCmdRecord);
             }
         }
     }
