@@ -68,7 +68,7 @@
 * 通过拖拽左侧工具栏相应的批处理任务图标，可添加相应的DAG节点  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step6-schedule_shell_node_setting.png)  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step7-schedule_sparkbatch_node_setting.png)
-  * 支持时间参数：${now}、${now - 1d}、${now - 1h@yyyyMMddHHmmss}（d天、h时、m分、s秒、@yyyyMMddHHmmss为格式化参数）
+  * 支持时间参数```${now} ${now - 1d} ${now - 1h@yyyyMMddHHmmss}```等（d天、h时、m分、s秒、@yyyyMMddHHmmss为格式化参数）
   * 非“Shell”和“Python”类型的批处理任务应上传与之处理类型相对应的程序包，此处为Spark批处理任务打成的jar包
   * “资源选项”可不填
   * 代码有两种编辑模式，“可视化视图”和“代码视图”，可互相切换
@@ -79,7 +79,8 @@
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step8-schedule_dag.png)
 * DAG构建完成后，点击“保存”，完成调度设置  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step9-schedule_add.png)
-### 1.2 列表
+### 1.2 操作
+* 打开离线调度列表
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step10-schedule_lsit.png)
 * 点击左侧操作栏“调度实例”可查看调度实例列表、运行状态和节点启动日志  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step11-schedule_instance.png)
@@ -91,7 +92,8 @@
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step12-stream_node_setting.png)
 * 启用监控可以对任务进行状态监控，包括异常重启、批次积压告警等  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step13-stream_monitor_setting.png)
-### 2.2 列表
+### 2.2 操作
+* 打开实时任务列表
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step14-stream_list.png)
 * 点击左侧操作栏“日志”可查看任务启动日志
 * 点击左侧操作栏“执行”可触发任务启动
