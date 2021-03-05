@@ -19,12 +19,12 @@
 * Java 1.8+
 * Mysql 5.1.0+
 * 下载项目或git clone项目
-* 为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://gitee.com/meetyoucrop/big-whale/blob/master/doc/hosts)
+* 为解决 github README.md 图片无法正常加载的问题，请在hosts文件中加入相关域名解析规则，参考：[hosts](https://github.com/MeetYouDevs/big-whale/blob/master/doc/hosts)
 ## 2.安装
 * 创建数据库：big-whale
-* 运行数据库脚本：[big-whale.sql](https://gitee.com/meetyoucrop/big-whale/blob/master/script/big-whale.sql)
+* 运行数据库脚本：[big-whale.sql](https://github.com/MeetYouDevs/big-whale/blob/master/script/big-whale.sql)
 * 根据Spring Boot环境，配置相关数据库账号密码，以及SMTP信息
-* 配置：[big-whale.properties](https://gitee.com/meetyoucrop/big-whale/blob/master/src/main/resources/big-whale.properties)
+* 配置：[big-whale.properties](https://github.com/MeetYouDevs/big-whale/blob/master/src/main/resources/big-whale.properties)
   * 配置项说明
     * ssh.user: 拥有脚本执行权限的ssh远程登录用户名（平台会将该用户作为统一的脚本执行用户）
     * ssh.password: ssh远程登录用户密码
@@ -32,7 +32,7 @@
     * dingding.watcher-token: 钉钉公共群机器人Token
     * yarn.app-memory-threshold: Yarn应用内存上限（单位：MB），-1禁用检测
     * yarn.app-white-list: Yarn应用白名单列表（列表中的应用申请的内存超过上限，不会进行告警）
-* 修改：$FLINK_HOME/bin/flink，参考：[flink](https://gitee.com/meetyoucrop/big-whale/blob/master/bin/flink)（因flink提交任务时只能读取本地jar包，故需要在执行提交命令时从hdfs上下载jar包并替换脚本中的jar包路径参数）
+* 修改：$FLINK_HOME/bin/flink，参考：[flink](https://github.com/MeetYouDevs/big-whale/blob/master/bin/flink)（因flink提交任务时只能读取本地jar包，故需要在执行提交命令时从hdfs上下载jar包并替换脚本中的jar包路径参数）
 * 打包：mvn clean package
 ## 3.启动
 * 检查端口17070是否被占用，被占用的话，关闭占用的进程或修改项目端口号配置重新打包
