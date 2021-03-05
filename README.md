@@ -137,4 +137,4 @@
 * v1.2开始支持DAG节点失败重试
 * v1.3调度引擎进行重构升级，不支持从旧版本升级上来，原有旧版本的任务请手动进行迁移
 # License
-The project is licensed under the [Apache 2 license](https://gitee.com/meetyoucrop/big-whale/blob/master/LICENSE).
+The project is licensed under the [Apache 2 license](https://github.com/MeetYouDevs/big-whale/blob/master/LICENSE).
