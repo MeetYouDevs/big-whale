@@ -20,133 +20,127 @@
     </div>
     <div class="bw-body">
         <div class="row">
-            <div class="col-md-12">
-                <div class="col-md-12 search-form">
-                    <form class="form-inline" ng-submit="options.mypage.toFirst()">
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="名称包含" ng-model="options.query.name">
-                        </div>
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="app id" ng-model="options.query.appId">
-                        </div>
-                        <div class="form-group" th:if="${session.user.root}">
-                            <label for="query_select_uid">用户</label>
-                            <select id="query_select_uid" class="selectpicker show-tick" data-live-search="true"
-                                    ng-model="options.query.uid" ng-options="item.id as item.username for item in userList">
-                                <option value="">不限</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="query_select_clusterId">集群</label>
-                            <select id="query_select_clusterId" class="selectpicker show-tick"
-                                    ng-model="options.query.clusterId" ng-options="item.id as item.name for item in clusterList">
-                                <option value="">不限</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-success">搜索</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        操作
-                                    </th>
-                                    <th th:if="${session.user.root}">
-                                        用户
-                                    </th>
-                                    <th class="order" ng-click="sort('name', asc)">
-                                        <div>名称</div>
-                                        <div>
-                                            <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'name' && asc === true) ? 'active' : ''"></i>
-                                            <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'name' && asc === false) ? 'active' : ''"></i>
-                                        </div>
-                                    </th>
-                                    <th class="order" ng-click="sort('applicationType', asc)">
-                                        <div>类型</div>
-                                        <div>
-                                            <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'applicationType' && asc === true) ? 'active' : ''"></i>
-                                            <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'applicationType' && asc === false) ? 'active' : ''"></i>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        集群
-                                    </th>
-                                    <th>
-                                        脚本
-                                    </th>
-                                    <th>
-                                        URL
-                                    </th>
-                                    <th>
-                                        状态
-                                    </th>
-                                    <th class="order" ng-click="sort('startedTime', asc)">
-                                        <div>开始时间</div>
-                                        <div>
-                                            <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'startedTime' && asc === true) ? 'active' : ''"></i>
-                                            <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'startedTime' && asc === false) ? 'active' : ''"></i>
-                                        </div>
-                                    </th>
-                                    <th class="order" ng-click="sort('updateTime', asc)">
-                                        <div>更新时间</div>
-                                        <div>
-                                            <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'updateTime' && asc === true) ? 'active' : ''"></i>
-                                            <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'updateTime' && asc === false) ? 'active' : ''"></i>
-                                        </div>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="item in options.items | orderBy : title : !asc">
-                                    <td>
-                                        <p class="operate">
-                                            <span ng-click="onKillItem(item)">
-                                                <i class="glyphicon glyphicon-stop" aria-hidden="true" title="停止"></i>
-                                            </span>
-                                        </p>
-                                    </td>
-                                    <td th:if="${session.user.root}">
-                                        {{userMap[item.uid].username}}
-                                    </td>
-                                    <td>
-                                        <span class="script-name">{{item.name}}</span>
-                                    </td>
-                                    <td>
-                                        {{item.applicationType}}
-                                    </td>
-                                    <td>
-                                        {{clusterMap[item.clusterId].name}}
-                                    </td>
-                                    <td>
-                                        <span class="script-name">{{scriptMap[item.scriptId].name}}</span>
-                                    </td>
-                                    <td>
-                                        <a href="{{item.trackingUrl}}" target="_blank">{{item.appId}}</a>
-                                    </td>
-                                    <td>
-                                        <label ng-if="yarnJobStateMap[item.state]" class="label label-{{yarnJobStateMap[item.state].style}}">
-                                            {{yarnJobStateMap[item.state].name}}
-                                        </label>
-                                    </td>
-                                    <td>
-                                        {{item.startedTime}}
-                                    </td>
-                                    <td>
-                                        {{item.updateTime}}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="col-md-12 search-form">
+                <form class="form-inline" ng-submit="options.mypage.toFirst()">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="名称包含" ng-model="options.query.name">
                     </div>
-                </div>
-                <mypage ng-model="options"></mypage>
-                <div class="clearfix"></div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="app id" ng-model="options.query.appId">
+                    </div>
+                    <div class="form-group">
+                        <label for="query_select_clusterId">集群</label>
+                        <select id="query_select_clusterId" class="selectpicker show-tick"
+                                ng-model="options.query.clusterId" ng-options="item.id as item.name for item in clusterList">
+                            <option value="">不限</option>
+                        </select>
+                    </div>
+                    <div class="form-group" th:if="${session.user.root}">
+                        <label for="query_select_uid">用户</label>
+                        <select id="query_select_uid" class="selectpicker show-tick" data-live-search="true"
+                                ng-model="options.query.userId" ng-options="item.id as item.username for item in userList">
+                            <option value="">不限</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">搜索</button>
+                    </div>
+                </form>
             </div>
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th th:if="${session.user.root}">
+                                    用户
+                                </th>
+                                <th class="order" ng-click="sort('name', asc)">
+                                    <div>名称</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'name' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'name' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                                <th class="order" ng-click="sort('applicationType', asc)">
+                                    <div>类型</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'applicationType' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'applicationType' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                                <th>
+                                    集群
+                                </th>
+                                <th>
+                                    URL
+                                </th>
+                                <th>
+                                    状态
+                                </th>
+                                <th class="order" ng-click="sort('startedTime', asc)">
+                                    <div>开始时间</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'startedTime' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'startedTime' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                                <th class="order" ng-click="sort('refreshTime', asc)">
+                                    <div>刷新时间</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'refreshTime' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'refreshTime' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in options.items | orderBy : title : !asc">
+                                <td>
+                                    <p class="operate">
+                                        <span class="kill" ng-click="onKillItem(item)">
+                                            <i class="glyphicon glyphicon-stop" aria-hidden="true" title="停止"></i>
+                                        </span>
+                                    </p>
+                                </td>
+                                <td th:if="${session.user.root}">
+                                    {{userMap[item.userId].username}}
+                                </td>
+                                <td>
+                                    <span class="name">{{item.name}}</span>
+                                </td>
+                                <td>
+                                    {{item.applicationType}}
+                                </td>
+                                <td>
+                                    {{clusterMap[item.clusterId].name}}
+                                </td>
+                                <td>
+                                    <a href="{{item.trackingUrl}}" target="_blank">{{item.appId}}</a>
+                                </td>
+                                <td>
+                                    <label ng-if="yarnJobStateMap[item.state]" class="label label-{{yarnJobStateMap[item.state].style}}">
+                                        {{yarnJobStateMap[item.state].name}}
+                                    </label>
+                                </td>
+                                <td>
+                                    {{item.startedTime}}
+                                </td>
+                                <td>
+                                    {{item.refreshTime}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <mypage ng-model="options"></mypage>
+            </div>
+            <div class="clearfix"></div>
         </div>
     </div>
 </div>
@@ -162,7 +156,6 @@
     registerPage(app);
     app.controller('content-controller', function ($scope, $http) {
         var appId = [[${appId}]];
-        getScript($scope, $http, false);
         getCluster($scope, $http);
         if (user.root) {
             getAuthUser($scope, $http);
@@ -179,16 +172,17 @@
                 showCancelButton: true
             }).then(function (result) {
                 if (result.value) {
-                    $http.post('./kill.api?appId=' + item.appId)
-                        .success(function (data) {
-                            $scope.reload();
-                            swal({
-                                title: '停止成功',
-                                type: 'success',
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
+                    $http.post('./kill.api', {
+                        appId: item.appId
+                    }).success(function () {
+                        $scope.reload();
+                        swal({
+                            title: '停止成功',
+                            type: 'success',
+                            showConfirmButton: false,
+                            timer: 1500
                         });
+                    });
                 }
             });
         };
@@ -203,7 +197,7 @@
             query: {
                 appId: appId
             },
-            listUrl: './getpage.api'
+            listUrl: './page.api'
         };
 
     });

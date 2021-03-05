@@ -6,25 +6,32 @@
   "description": "",
   "glyphs": [
     {
-      "icon_id": "12502496",
-      "name": "apacheflink",
-      "font_class": "apacheflink",
-      "unicode": "e61d",
-      "unicode_decimal": 58909
+      "icon_id": "8141123",
+      "name": "python",
+      "font_class": "icon--",
+      "unicode": "e611",
+      "unicode_decimal": 58897
     },
     {
-      "icon_id": "13072858",
+      "icon_id": "9858262",
       "name": "shell",
       "font_class": "shell",
-      "unicode": "e73e",
-      "unicode_decimal": 59198
+      "unicode": "e6a8",
+      "unicode_decimal": 59048
     },
     {
-      "icon_id": "13219654",
-      "name": "spark",
-      "font_class": "spark",
-      "unicode": "e603",
-      "unicode_decimal": 58883
+      "icon_id": "14341656",
+      "name": "flink",
+      "font_class": "flink",
+      "unicode": "e504",
+      "unicode_decimal": 58628
+    },
+    {
+      "icon_id": "19325293",
+      "name": "spark (1)",
+      "font_class": "spark1",
+      "unicode": "e737",
+      "unicode_decimal": 59191
     }
   ]
 }

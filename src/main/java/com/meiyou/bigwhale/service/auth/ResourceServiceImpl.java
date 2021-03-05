@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @description file description
  */
 @Service
-public class ResourceServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Resource, String> implements ResourceService {
+public class ResourceServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Resource, Integer> implements ResourceService {
 
     @Autowired
     private RoleResourceService roleResourceService;

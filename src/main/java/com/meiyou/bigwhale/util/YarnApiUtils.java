@@ -26,7 +26,7 @@ public class YarnApiUtils {
 
     }
 
-    public static List<HttpYarnApp> getActiveStateApps(String yarnUrl) {
+    public static List<HttpYarnApp> getActiveApps(String yarnUrl) {
         Map<String, Object> params = new HashMap<>();
         params.put("states", "new,new_saving,submitted,accepted,running");
         OkHttpUtils.Result result = OkHttpUtils.doGet(getAppsUrl(yarnUrl), params, HEADERS);

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>实时任务编辑 - Big Whale</title>
+    <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
+    <link href="../libs/bootstrap-switch/bootstrap-switch.min.css" rel="stylesheet"/>
+    <link href="../libs/dropzone/dropzone.min.css" rel="stylesheet">
+    <link href="../libs/fonts/script-type/script-type.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet"/>
+    <link href="../css/stream_edit.css" rel="stylesheet">
+</head>
+<body ng-app="content-app" ng-controller="content-controller">
+
+<div class="container-fluid animated fadeInDown">
+    <div class="bw-nav">
+        <div class="row">
+            <ol class="breadcrumb">
+                <li><a href="javascript:" ng-click="onOpenList()">实时任务</a></li>
+                <li class="active">{{editItem.id ? "编辑" : "新增"}}</li>
+            </ol>
+            <a class="bw-refresh" onclick="location.reload()" title="刷新">
+                <i class="fa fa-refresh" style="font-size: 18px"></i>
+            </a>
+        </div>
+    </div>
+    <div class="bw-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="container">
+                    <form id="streamForm" class="form-horizontal" ng-submit="onSaveItem()">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">脚本设置</div>
+                            <div class="panel-body">
+                                <!-- 基本配置 -->
+                                <div class="shadow">
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            名称&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input class="form-control" ng-model="editItem.name" autocomplete="off" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            描述
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <textarea class="form-control" ng-model="editItem.description" rows="3" maxlength="255"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            类型
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control selectpicker show-tick" ng-model="editItem.type" ng-change="onTypeChange()" required ng-disabled="editItem.id">
+                                                <option value="sparkstream">Spark Stream</option>
+                                                <option value="flinkstream">Flink Stream</option>
+                                            </select>
+                                        </div>
+                                        <div ng-if="editItem.type == 'sparkstream'">
+                                            <label class="col-sm-2 control-label">
+                                                版本
+                                            </label>
+                                            <div class="col-sm-4">
+                                                <select class="form-control selectpicker show-tick" ng-model="editItem.spark.$command" ng-change="onSparkVersionChange()"
+                                                        ng-options="item.command as item.version for item in sparkVersionList" required>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div ng-if="editItem.type == 'flinkstream'">
+                                            <label class="col-sm-2 control-label">
+                                                版本
+                                            </label>
+                                            <div class="col-sm-4">
+                                                <select class="form-control selectpicker show-tick" ng-model="editItem.flink.$command" ng-change="onFlinkVersionChange()"
+                                                        ng-options="item.command as item.version for item in flinkVersionList" required>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            运行集群&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control selectpicker show-tick" ng-model="editItem.clusterId" ng-change="onClusterIdChange()"
+                                                    ng-options="item.id as item.name for item in clusterList" required>
+                                                <option value="">请选择</option>
+                                            </select>
+                                        </div>
+                                        <label class="col-sm-2 control-label">
+                                            运行队列&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control selectpicker show-tick" ng-model="editItem.queue_" ng-change="onQueueChange()"
+                                                    ng-options="item for item in queueList" required>
+                                                <option value="">无队列</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            程序包<B class="help" data-toggle="tooltip" data-placement="top" title="程序包地址（注：编辑或上传完成功后如果URL与脚本代码中的URL不符，请手动更新一下脚本代码中的URL），请勿包含空格">?</B>&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-5">
+                                            <input class="form-control-plaintext" ng-model="editItem.jarPath_" placeholder="请输入程序包URL或点击上传" ng-blur="onJarPathVerify()" required>
+                                            <button type="button" id="advancedDropzone" class="btn btn-link" style="padding: 6px 6px;">上传</button>
+                                        </div>
+                                        <div id="dropzone_filetable" class="col-sm-5" style="padding-top: 7px;"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            超时(分)<B class="help" data-toggle="tooltip" data-placement="top" title="只与当前节点的提交时间相关，与Spark或Flink任务的运行时间无关，不能超过5分钟">?</B>&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input class="form-control" type="number" min="1" max="5" autocomplete="off" ng-model="editItem.timeout" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            输入<B class="help" data-toggle="tooltip" data-placement="top" title="程序输入，多个数据源用“,”分隔，如：kafka:topic1">?</B>&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input class="form-control" ng-model="editItem.input" autocomplete="off" required>
+                                        </div>
+                                        <label class="col-sm-2 control-label">
+                                            输出<B class="help" data-toggle="tooltip" data-placement="top" title="程序输出，多个数据源用“,”分隔，如：hbase:table1">?</B>&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input class="form-control" ng-model="editItem.output" autocomplete="off" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 资源配置 -->
+                                <div class="shadow">
+                                    <ul class="nav nav-tabs" style="margin-bottom: 20px;">
+                                        <li role="presentation" class="active"><a href="#resource" aria-controls="resource" role="tab" data-toggle="tab">资源选项<B class="help" data-toggle="tooltip" data-placement="top" title="该部分参数会体现在入口函数的最后，如果对业务有影响，请自行处理">?</B></a></li>
+                                    </ul>
+                                    <div class="tab-content">
+                                        <div id="resource" class="tab-pane fade in active"  role="tabpanel">
+                                            <div class="form-group">
+                                                <label class="col-sm-2 control-label">
+                                                    屏蔽策略<B class="help" data-toggle="tooltip" data-placement="top" title="选中的屏蔽节点，在分配任务时将被忽略">?</B>
+                                                </label>
+                                                <div class="col-sm-4">
+                                                    <select class="form-control selectpicker show-tick" ng-model="editItem.nodeBlackListType_" ng-change="onNodeBlackListTypeChange()" title="请选择">
+                                                        <option value="" selected>无</option>
+                                                        <option value="stream">非流式节点</option>
+                                                    </select>
+                                                </div>
+                                                <label class="col-sm-2 control-label">
+                                                    分配策略<B class="help" data-toggle="tooltip" data-placement="top" title="容器分配策略：(1) 根据总资源（根据节点总cores做判断，即使cores已被耗光也与其他节点拥有同样的权重，影响权重的因素只有代理实例的规格）、(2) 根据剩余可用资源（根据当前剩余可用的cores作为权重判断，剩余可用的cores越多则权重越高）">?</B>
+                                                </label>
+                                                <div class="col-sm-4">
+                                                    <select class="form-control selectpicker show-tick" ng-model="editItem.allocateBalancerType_" ng-change="onAllocateBalancerTypeChange()" title="请选择">
+                                                        <option value="" selected>无</option>
+                                                        <option value="total">根据总资源</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 脚本 -->
+                                <div class="shadow">
+                                    <ul class="nav nav-tabs" style="margin-bottom: 20px;">
+                                        <li role="presentation" class="active"><a href="#visual" aria-controls="visual" role="tab" data-toggle="tab">可视化视图</a></li>
+                                        <li role="presentation"><a href="#text" aria-controls="text" role="tab" data-toggle="tab">代码视图</a></li>
+                                    </ul>
+                                    <div class="tab-content">
+                                        <div id="visual" class="tab-pane fade in active" role="tabpanel">
+                                            <div ng-if="editItem.editMode_ == 'visual'">
+                                                <!-- Spark -->
+                                                <div ng-if="editItem.type == 'sparkstream'">
+                                                    <div class="form-group" >
+                                                        <label class="col-sm-2 control-label">
+                                                            Driver<B class="help" data-toggle="tooltip" data-placement="top" title="Driver一般不会参与计算，默认设置为512MB，1Cores即可">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">内存</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.spark.driver_memory" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">cores</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.spark.driver_cores" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            Excutor
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">内存</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.spark.executor_memory" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">数量</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.spark.num_executors" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">cores</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.spark.executor_cores" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            资源占用<B class="help" data-toggle="tooltip" data-placement="top" title="运行时最大总资源分配情况">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">内存</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-value="editItem.spark.$total_memory()" autocomplete="off" readonly="readonly">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">cores</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-value="editItem.spark.$total_cores()" autocomplete="off" readonly="readonly">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            Name<B class="help" data-toggle="tooltip" data-placement="top" title="参数--name，此字段应该是个唯一值，切勿与其他程序同名">?</B>&nbsp;<B>*</B>
+                                                        </label>
+                                                        <div class="col-sm-4">
+                                                            <input class="form-control" ng-model="editItem.spark.name" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            Class<B class="help" data-toggle="tooltip" data-placement="top" title="参数--class，程序入口类，pyspark无需此项">?</B>
+                                                        </label>
+                                                        <div class="col-sm-4">
+                                                            <input class="form-control" ng-model="editItem.spark.class" autocomplete="off">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            入口参数<B class="help" data-toggle="tooltip" data-placement="top" title="入口函数的参数">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <input class="form-control" ng-model="editItem.spark.args" autocomplete="off">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            Spark参数<B class="help" data-toggle="tooltip" data-placement="top" title="spark参数，例如：--conf spark.eventLog.enabled=true">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <textarea class="form-control" rows="3" ng-model="editItem.spark.spark_other_args"></textarea>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- Flink -->
+                                                <div ng-if="editItem.type == 'flinkstream'">
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            JobManager<B class="help" data-toggle="tooltip" data-placement="top" title="相当于spark的Driver">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">内存</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.flink.yjm" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            TaskManager<B class="help" data-toggle="tooltip" data-placement="top" title="相当于spark的executor">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">内存</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.flink.ytm" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">数量</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.flink.yn" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">slots</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-model="editItem.flink.ys" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            资源占用<B class="help" data-toggle="tooltip" data-placement="top" title="运行时最大总资源分配情况">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">内存</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-value="editItem.flink.$total_memory()" autocomplete="off" readonly="readonly">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-4 col-control">
+                                                                <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                                    <label class="control-label">cores</label>
+                                                                </div>
+                                                                <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                                    <input class="form-control input-control" ng-value="editItem.flink.$total_cores()" autocomplete="off" readonly="readonly">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            Name<B class="help" data-toggle="tooltip" data-placement="top" title="参数-ynm，此字段应该是个唯一值，切莫与其他程序同名">?</B>&nbsp;<B>*</B>
+                                                        </label>
+                                                        <div class="col-sm-4">
+                                                            <input class="form-control" ng-model="editItem.flink.ynm" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            Class<B class="help" data-toggle="tooltip" data-placement="top" title="参数-c，程序入口类">?</B>
+                                                        </label>
+                                                        <div class="col-sm-4">
+                                                            <input class="form-control" ng-model="editItem.flink.c" autocomplete="off">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            入口参数<B class="help" data-toggle="tooltip" data-placement="top" title="入口函数的参数">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <input class="form-control" ng-model="editItem.flink.args" autocomplete="off">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="col-sm-2 control-label">
+                                                            Flink参数<B class="help" data-toggle="tooltip" data-placement="top" title="fink参数，例如：-d -yst">?</B>
+                                                        </label>
+                                                        <div class="col-sm-10">
+                                                            <textarea class="form-control" rows="3" ng-model="editItem.flink.flink_other_args"></textarea>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="text" class="tab-pane fade in" role="tabpanel">
+                                            <div ng-if="editItem.editMode_ == 'text'">
+                                                <div class="form-group row">
+                                                    <label class="col-sm-2 control-label">代码&nbsp;<B>*</B></label>
+                                                    <div class="col-sm-10">
+                                                        <textarea class="form-control" rows="10" ng-model="editItem.content" required></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">运行监控</div>
+                            <div class="panel-body">
+                                <div class="shadow">
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            频率&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <div ng-if="editItem.monitor.showVisual_">
+                                                <h4 style="margin: 0 0; padding: 5px 0;">
+                                                    <label class="label label-info">
+                                                        每
+                                                    </label>
+                                                </h4>
+                                                <input ng-if="editItem.monitor.cycle == 1" class="form-control" type="number" min="1" ng-model="editItem.monitor.intervals" placeholder="间隔" required>
+                                                <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.cycle" ng-change="onCycleChange()"
+                                                        ng-options="item.value as item.name for item in cycleList">
+                                                </select>
+                                                <div ng-if="editItem.monitor.cycle == 4">
+                                                    <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.week"
+                                                            ng-options="item.value as item.name for item in weekList"  multiple required>
+                                                    </select>
+                                                </div>
+                                                <div ng-if="editItem.monitor.cycle >= 3">
+                                                    <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.hour"
+                                                            ng-options="item.value as item.name for item in hourList">
+                                                    </select>
+                                                </div>
+                                                <div ng-if="editItem.monitor.cycle >=2">
+                                                    <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.minute"
+                                                            ng-options="item.value as item.name for item in minuteList" >
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <input ng-if="!editItem.monitor.showVisual_" class="form-control" ng-model="editItem.monitor.cron" placeholder="cron表达式" required>
+                                        </div>
+                                        <div class="col-sm-5" style="padding: 0.5% 15px; line-height: 14px;">
+                                            <label class="label label-info">可视化模式</label>&nbsp;<input type="checkbox" name="visual-checkbox" checked>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            异常重启
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.exRestart"
+                                                    ng-options="item.value as item.name for item in booleanTypeList" required>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            {{editItem.type == 'sparkstream' ? '批次积压告警阈值' : '任务阻塞告警阈值(%)'}}<B class="help" data-toggle="tooltip" data-placement="top" data-original-title="{{editItem.type == 'sparkstream' ? '批次积压大于等于该值的时候将进行告警，为0禁用' : '单位时间内，任务阻塞比(阻塞任务数 / 消费任务数)大于等于该值的时候将进行告警，为0禁用，最大100'}}">?</B>&nbsp;<B>*</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input class="form-control" type="number" ng-model="editItem.monitor.waitingBatches" min="0" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            {{editItem.type == 'sparkstream' ? '批次积压重启' : '任务阻塞重启'}}<B class="help" data-toggle="tooltip" data-placement="top" data-original-title="{{editItem.type == 'sparkstream' ? '批次积压达到阈值后，自动进行任务重启' : '任务阻塞达到阈值后，自动进行任务重启'}}">?</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.blockingRestart"
+                                                    ng-options="item.value as item.name for item in booleanTypeList" required>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            发送邮件
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.sendEmail"
+                                                    ng-options="item.value as item.name for item in booleanTypeList" required>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            钉钉通知<B class="help" data-toggle="tooltip" data-placement="top" title="需要指定@用户，可用“&”拼接，如：token&@phone1@phone2">?</B>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <div ng-repeat="tip in editItem.monitor.dingdingHooks track by $index">
+                                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.monitor.dingdingHooks[$index]" placeholder="钉钉token" required><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.monitor.dingdingHooks, $index)"></span>
+                                            </div>
+                                            <div ng-click="!editItem.monitor.dingdingHooks ? editItem.monitor.dingdingHooks = []: '';onAddTip(editItem.monitor.dingdingHooks);">
+                                                <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">
+                                            启用
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.enabled"
+                                                    ng-options="item.value as item.name for item in booleanTypeList" required>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="reset" class="btn btn-secondary">重置</button>
+                            <button type="button" class="btn btn-info" id="btn_test" ng-click="onTest()">测试</button>
+                            <button type="submit" class="btn btn-primary" id="btn_submit">提交</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-switch/bootstrap-switch.min.js" type="text/javascript"></script>
+<script src="../libs/dropzone/dropzone.min.js" type="application/javascript"></script>
+<script src="../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
+<script src="../js/common.js" type="text/javascript"></script>
+<script th:inline="javascript">
+    var scriptId = [[${scriptId}]];
+    var $visualCheckbox = $('[name="visual-checkbox"]');
+    var $btnTest = $('#btn_test');
+    var $btnSubmit = $('#btn_submit');
+    var app = angular.module("content-app", []);
+    registerHttpInterceptor(app);
+    app.controller("content-controller", function ($scope, $http, $timeout) {
+        $scope.user = [[${session.user}]];
+        appendCycle($scope);
+        appendMinute($scope);
+        appendHour($scope);
+        appendWeek($scope);
+        appendBooleanType($scope);
+        getCluster($scope, $http);
+        getClusterUser($scope, $http);
+        getComputeFrameworkVersionSync($scope);
+
+        initScriptEditProp($scope, $timeout);
+
+        $scope.onOpenList = function () {
+            if (parent.xadmin) {
+                parent.xadmin.add_tab('实时监控', 'stream/list.html');
+            } else {
+                window.open('./list.html', '实时监控');
+            }
+        };
+
+        $scope.init = function() {
+            var initDefault = function () {
+                $scope.editItem = {
+                    type: 'sparkstream',
+                    timeout: 2,
+                    spark: Object.assign($scope.Spark.createDefault(), {
+                        'args': '--allocate.balancer.type=total'
+                    }),
+                    flink: Object.assign($scope.Flink.createDefault(), {
+                        'args': '--allocate.balancer.type=total'
+                    }),
+                    nodeBlackListType_: 'stream',
+                    allocateBalancerType_: 'total',
+                    editMode_: 'visual',
+                    monitor: {
+                        cycle: 1,
+                        intervals: 2,
+                        minute: 0,
+                        hour: 0,
+                        week: ['6'],
+                        cron: '0 */2 * * * ?',
+                        exRestart: true,
+                        waitingBatches: 15,
+                        blockingRestart: true,
+                        sendEmail: true,
+                        enabled: true,
+                        showVisual_: true
+                    }
+                };
+            };
+            var initItem = function (item) {
+                if (item.monitor.intervals === null) {
+                    item.monitor.intervals = 2;
+                }
+                if (item.monitor.minute === null) {
+                    item.monitor.minute = 0;
+                }
+                if (item.monitor.hour === null) {
+                    item.monitor.hour = 0;
+                }
+                if (item.monitor.week === null) {
+                    item.monitor.week = ['6'];
+                }
+                if (item.monitor.cron) {
+                    item.monitor.showVisual_ = false;
+                } else {
+                    item.monitor.showVisual_ = true;
+                    item.monitor.cron = '0 */2 * * * ?';
+                }
+                if (item.type === 'sparkstream') {
+                    item.flink = Object.assign($scope.Flink.createDefault(), {
+                        'args': '--allocate.balancer.type=total'
+                    });
+                } else {
+                    item.spark = Object.assign($scope.Spark.createDefault(), {
+                        'args': '--allocate.balancer.type=total'
+                    });
+                }
+                item.editMode_ = 'visual';
+                $scope.editItem = item;
+                $timeout(function () {
+                    $scope.parseText($scope.editItem);
+                    $timeout(function() {
+                        $('[data-toggle="tooltip"]').tooltip();
+                    }, 100);
+                }, 50);
+            };
+            if (scriptId) {
+                $http.get('./one.api?id=' + scriptId)
+                    .success(function (item) {
+                        $http.get('../cluster/cluster_user/find_one.api?clusterId=' + item.clusterId +
+                            '&userId=' + item.createBy)
+                            .success(function (clusterUser) {
+                                $scope.queueList = clusterUser.queue.split(',');
+                                item.queue_ = item.queue;
+                                initItem(item);
+                                $visualCheckbox.bootstrapSwitch('state', $scope.editItem.monitor.showVisual_);
+                            });
+                    });
+            } else {
+                initDefault();
+                $visualCheckbox.bootstrapSwitch('state', $scope.editItem.monitor.showVisual_);
+            }
+        };
+
+        $scope.onCycleChange = function () {
+            $timeout(function () {
+                $('.selectpicker').selectpicker('render');
+            }, 50);
+        };
+
+        $scope.onAddTip = function (tips) {
+            if (!tips) {
+                tips = [''];
+            }
+            tips.push('');
+        };
+
+        $scope.onRemoveTip = function (tips, index) {
+            if (!tips) {
+                return;
+            }
+            tips.splice(index, 1);
+        };
+
+        $scope.onTest = function () {
+            var streamForm = $('#streamForm')[0];
+            if (!streamForm.checkValidity()) {
+                return streamForm.reportValidity();
+            }
+            if ($scope.editItem.editMode_ === 'visual') {
+                $scope.parseVisual($scope.editItem);
+            }
+            var req = angular.copy($scope.editItem);
+            $btnTest.attr('disabled', 'true');
+            $http.post('../script/execute.api', req)
+                .success(function (data) {
+                    $btnTest.removeAttr('disabled');
+                    swal({
+                        title: '脚本执行请求成功',
+                        text: '准备开始执行脚本',
+                        type: 'info',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        position: 'top-end'
+                    }).then(function () {
+                        if (parent.xadmin) {
+                            parent.xadmin.open('执行日志', 'script_history/list.html?id=' + data.id);
+                        } else {
+                            window.open('../script_history/list.html?id=' + data.id);
+                        }
+                    });
+                })
+                .error(function () {
+                    $btnTest.removeAttr('disabled');
+                });
+        };
+
+        //保存
+        $scope.onSaveItem = function () {
+            if ($scope.editItem.editMode_ === 'visual') {
+                $scope.parseVisual($scope.editItem);
+            }
+            var req = angular.copy($scope.editItem);
+            if (req.type === 'flinkstream') {
+                if (req.monitor.waitingBatches > 100) {
+                    req.monitor.waitingBatches = 100;
+                }
+            }
+            if (req.monitor.showVisual_) {
+                req.monitor.cron = null;
+            }
+            req.monitorEnabled = req.monitor.enabled;
+            $btnSubmit.attr('disabled', 'true');
+            $http.post('./save.api', req)
+                .success(function () {
+                    $btnSubmit.removeAttr('disabled');
+                    swal({
+                        title: '保存成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(function () {
+                        if (parent.xadmin) {
+                            $scope.closeTab();
+                        } else {
+                            location.href = "./list.html";
+                        }
+                    });
+                })
+                .error(function () {
+                    $btnSubmit.removeAttr('disabled');
+                });
+        };
+
+        $scope.closeTab = function () {
+            var el = parent.document.querySelector("li.layui-this").getElementsByClassName("layui-icon layui-unselect layui-tab-close")[0];
+            $timeout(function () {
+                parent.xadmin.reloadStream();
+                el.click();
+            }, 50);
+            parent.xadmin.add_tab('实时任务', 'stream/list.html');
+        };
+
+        //初始化切换开关
+        $('[name="visual-checkbox"]').bootstrapSwitch({
+            onColor: 'success',
+            offColor: 'default',
+            size: 'mini',
+            onSwitchChange: function(event, state){
+                $timeout(function () {
+                    $scope.editItem.monitor.showVisual_ = state;
+                    $timeout(function () {
+                        $('.selectpicker').selectpicker('render');
+                    }, 50);
+                }, 50);
+            }
+        });
+
+        $timeout(function () {
+            $('.selectpicker').selectpicker();
+        }, 50);
+
+        $timeout(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        }, 50);
+
+        $scope.init();
+    });
+</script>
+</body>
+</html>

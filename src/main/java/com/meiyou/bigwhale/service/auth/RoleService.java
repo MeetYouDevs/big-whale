@@ -8,6 +8,6 @@ import com.meiyou.bigwhale.entity.auth.Role;
  * @date 2019/10/24
  * @description file description
  */
-public interface RoleService extends PagingAndSortingQueryService<Role, String> {
+public interface RoleService extends PagingAndSortingQueryService<Role, Integer> {
 
 }

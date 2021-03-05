@@ -41,88 +41,86 @@
     </div>
     <div class="bw-body">
         <div class="row">
-            <div class="col-md-12">
-                <div class="col-md-12 search-form">
-                    <form class="form-inline" ng-submit="options.mypage.toFirst()">
-                        <div class="form-group">
-                            <label for="query_select_clusterId">集群</label>
-                            <select id="query_select_clusterId" class="selectpicker show-tick"
-                                    ng-model="query.clusterId" ng-options="item.id as item.name for item in clusterList" ng-change="reload()">
-                                <option value="">请选择</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="名称" ng-model="query.searchText">
-                        </div>
-                        <div class="form-group">
-                            <button id="advancedDropzone" type="button" class="btn btn-primary">上传</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-12 path-tree">
-                    <ol class="breadcrumb">
-                        <li ng-repeat="item in pathTree" ng-class="$last ? 'active' : ''"><a ng-if="!$last" href="javascript:" ng-click="onViewItem(true, true, item.path)">{{item.name}}</a><span ng-if="$last">{{item.name}}</span></li>
-                    </ol>
-                </div>
-                <div class="col-md-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-condensed">
-                            <thead>
-                            <tr>
-                                <th>
-                                    操作
-                                </th>
-                                <th>
-                                    名称
-                                </th>
-                                <th>
-                                    权限
-                                </th>
-                                <th>
-                                    用户
-                                </th>
-                                <th>
-                                    用户组
-                                </th>
-                                <th>
-                                    大小
-                                </th>
-                                <th>
-                                    修改时间
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr ng-repeat="item in items" ng-show="item.name.indexOf(query.searchText) != -1">
-                                <td>
-                                    <p class="operate">
-                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
-                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
-                                        </span>
-                                    </p>
-                                </td>
-                                <td>
-                                    <i ng-class="item.isdir ? 'glyphicon glyphicon-folder-open' : 'glyphicon glyphicon glyphicon-file'" aria-hidden="true" title=""></i>&nbsp;<a href="javascript:" title="{{item.isdir ? '': '点击下载'}}" ng-click="onViewItem(item.isdir, false, item.name)">{{item.name}}</a>
-                                </td>
-                                <td>
-                                    {{item.permission}}
-                                </td>
-                                <td>
-                                    {{item.owner}}
-                                </td>
-                                <td>
-                                    {{item.group}}
-                                </td>
-                                <td>
-                                    <span ng-if="item.length">{{item.length}}&nbsp;bytes</span>
-                                </td>
-                                <td>
-                                    {{item.modification_time}}
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
+            <div class="col-md-12 search-form">
+                <form class="form-inline" ng-submit="options.mypage.toFirst()">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="名称" ng-model="query.searchText">
                     </div>
+                    <div class="form-group">
+                        <label for="query_select_clusterId">集群</label>
+                        <select id="query_select_clusterId" class="selectpicker show-tick"
+                                ng-model="query.clusterId" ng-options="item.id as item.name for item in clusterList" ng-change="reload()">
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button id="advancedDropzone" type="button" class="btn btn-primary">上传</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-12 path-tree">
+                <ol class="breadcrumb">
+                    <li ng-repeat="item in pathTree" ng-class="$last ? 'active' : ''"><a ng-if="!$last" href="javascript:" ng-click="onViewItem(true, true, item.path)">{{item.name}}</a><span ng-if="$last">{{item.name}}</span></li>
+                </ol>
+            </div>
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover table-condensed">
+                        <thead>
+                        <tr>
+                            <th>
+                                操作
+                            </th>
+                            <th>
+                                名称
+                            </th>
+                            <th>
+                                权限
+                            </th>
+                            <th>
+                                用户
+                            </th>
+                            <th>
+                                用户组
+                            </th>
+                            <th>
+                                大小
+                            </th>
+                            <th>
+                                修改时间
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="item in items" ng-show="item.name.indexOf(query.searchText) != -1">
+                            <td>
+                                <p class="operate">
+                                    <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                        <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                    </span>
+                                </p>
+                            </td>
+                            <td>
+                                <i ng-class="item.isdir ? 'glyphicon glyphicon-folder-open' : 'glyphicon glyphicon glyphicon-file'" aria-hidden="true" title=""></i>&nbsp;<a href="javascript:" title="{{item.isdir ? '': '点击下载'}}" ng-click="onViewItem(item.isdir, false, item.name)">{{item.name}}</a>
+                            </td>
+                            <td>
+                                {{item.permission}}
+                            </td>
+                            <td>
+                                {{item.owner}}
+                            </td>
+                            <td>
+                                {{item.group}}
+                            </td>
+                            <td>
+                                <span ng-if="item.length">{{item.length}}&nbsp;bytes</span>
+                            </td>
+                            <td>
+                                {{item.modification_time}}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -179,7 +177,7 @@
                 if (result.value) {
                     var path = $scope.query.path === '/' ? '/' + item.name : $scope.query.path + '/' + item.name;
                     $http.post('./delete.api?clusterId=' + $scope.query.clusterId + '&path='+ path)
-                        .success(function (data) {
+                        .success(function () {
                             $scope.reload();
                             swal({
                                 title: '删除成功',

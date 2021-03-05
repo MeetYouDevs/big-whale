@@ -10,6 +10,6 @@ import org.springframework.stereotype.Service;
  * @description file description
  */
 @Service
-public class ComputeFrameworkServiceImpl extends AbstractMysqlPagingAndSortingQueryService<ComputeFramework, String> implements ComputeFrameworkService {
+public class ComputeFrameworkServiceImpl extends AbstractMysqlPagingAndSortingQueryService<ComputeFramework, Integer> implements ComputeFrameworkService {
 
 }

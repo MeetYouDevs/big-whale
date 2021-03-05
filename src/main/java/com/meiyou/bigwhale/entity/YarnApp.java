@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -18,13 +17,10 @@ import java.util.Date;
 public class YarnApp {
 
     @Id
-    @GenericGenerator(name="idGenerator", strategy="uuid")
-    @GeneratedValue(generator="idGenerator")
-    private String id;
-    private String uid;
-    private String scriptId;
-    private String clusterId;
-    private Date updateTime;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+    private Integer clusterId;
+    private Integer userId;
     private String appId;
     private String user;
     private String name;
@@ -34,4 +30,8 @@ public class YarnApp {
     private String trackingUrl;
     private String applicationType;
     private Date startedTime;
+    @Transient
+    private Integer allocatedMB;
+    private Date refreshTime;
+
 }

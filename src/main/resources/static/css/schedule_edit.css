@@ -1,0 +1,247 @@
+.container {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.shadow {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    margin: 20px;
+    padding: 20px;
+}
+
+.help {
+    -webkit-transform: scale(0.7) !important;
+    display: inline-block;
+    position: relative;
+    cursor: help;
+    top: -3px;
+    color: #333 !important;
+}
+
+.main {
+    margin: 10px 0;
+    padding: 15px 15px;
+}
+
+.bar {
+    border: 1px solid #e5e5e5;
+    border-bottom: none;
+    display: flex;
+    display: -webkit-flex;
+    justify-content: flex-end;
+    padding: 5px;
+    position: relative;
+}
+
+.bar button {
+    margin-left: 5px;
+}
+
+.bar button:first-child {
+    position: absolute;
+    left: 0;
+    color: #333333;
+}
+
+.topology {
+    display: flex;
+    display: -webkit-flex;
+}
+
+#flex_tools {
+    width: 200px;
+    padding: 10px 10px;
+    border: 1px solid #e5e5e5;
+    border-right: none;
+}
+
+#flex_tools .tools a {
+    display: inline-block;
+    color: #6f787e;
+    width: 100%;
+    font-weight: 400;
+    font-size: 12px;
+    margin-bottom: 5px;
+    text-decoration: none !important;
+}
+
+#flex_tools .tools .iconfont {
+    margin-left: 4px;
+    font-size: 1.5rem;
+}
+
+#flex_tools .tools a:hover {
+    color: #66afe9;
+    cursor: pointer;
+}
+
+/*中间画布样式 */
+#flex_canvas {
+    width: 100%;
+    height: 76vh;
+    border: 1px solid #e5e5e5;
+}
+
+#flex_canvas #topo_canvas {
+    height: 100%;
+}
+
+/*右侧属性样式*/
+#flex_props {
+    width: 220px;
+    border: 1px solid #e5e5e5;
+    border-left: none;
+    padding: 10px 10px;
+    font-size: 12px;
+}
+
+#flex_props #flex_props_home label {
+    margin-left: 5px;
+}
+
+#flex_props #flex_props_home ul {
+    padding-left: 26px;
+}
+
+#flex_props #flex_props_node {
+    margin-left: 5px;
+}
+
+#flex_props #flex_props_node input {
+    height: 28px;
+}
+
+/*右键菜单样式*/
+.context-menus {
+    position: fixed;
+    z-index: 100;
+    color: #000;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    min-width: 16rem;
+    text-align: left;
+    font-size: 12px;
+    padding: 0.08rem 0;
+}
+
+.context-menus div {
+    line-height: 1.5rem;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.context-menus .line {
+    background-color: transparent !important;
+    padding: 0;
+    margin: 0.05rem 0;
+    border-top: 1px solid #eee;
+}
+
+.context-menus .menu-a {
+    color: #333333;
+    display: block;
+    padding: 0.5rem;
+    margin-bottom: 5px;
+    text-decoration: none;
+}
+
+.context-menus .menu-a:hover {
+    color: #66afe9;
+    display: block;
+    padding: 0.5rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.context-menus .menu-a-disabled {
+    color: #adadad;
+    display: block;
+    padding: 0.5rem;
+    margin-bottom: 5px;
+    text-decoration: none;
+}
+
+.context-menus .menu-a-disabled:hover {
+    color: #adadad;
+    display: block;
+    padding: 0.5rem;
+    text-decoration: none;
+}
+
+.context-menus .ml50 {
+    float: right;
+}
+
+.modal.left .modal-dialog, .modal.right .modal-dialog {
+    position: fixed;
+    margin: auto;
+    width: 60%;
+    height: 100%;
+    -webkit-transform: translate3d(0, 0, 0);
+    -ms-transform: translate3d(0, 0, 0);
+    -o-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0)
+}
+
+.modal.left .modal-content, .modal.right .modal-content {
+    height: 100%;
+    overflow-y: auto
+}
+
+.modal.left.fade .modal-dialog {
+    left: -320px;
+    -webkit-transition: opacity .3s linear, left .3s ease-out;
+    -moz-transition: opacity .3s linear, left .3s ease-out;
+    -o-transition: opacity .3s linear, left .3s ease-out;
+    transition: opacity .3s linear, left .3s ease-out
+}
+
+.modal.left.fade.in .modal-dialog {
+    left: 0
+}
+
+.modal.right.fade .modal-dialog {
+    right: -320px;
+    -webkit-transition: opacity .3s linear, right .3s ease-out;
+    -moz-transition: opacity .3s linear, right .3s ease-out;
+    -o-transition: opacity .3s linear, right .3s ease-out;
+    transition: opacity .3s linear, right .3s ease-out
+}
+
+.modal.right.fade.in .modal-dialog {
+    right: 0
+}
+
+.modal.right.fade .modal-content {
+    border-radius: 0;
+    border: none
+}
+
+#editScriptDlg .container {
+    width: unset;
+    margin-top: 0;
+}
+
+/*滚动条样式*/
+.topology ::-webkit-scrollbar {
+    /*滚动条整体样式*/
+    width: 8px;
+    height: 8px;
+    color: #e5e5e5;
+}
+
+.topology ::-webkit-scrollbar-thumb {
+    /*滚动条里面小方块*/
+    border-radius: 5px;
+    background-color: #c1c1c1;
+    -webkit-box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.2);
+}
+
+.topology ::-webkit-scrollbar-track {
+    /*滚动条里面轨道*/
+    border-radius: 0;
+    background: #ffffff;
+    -webkit-box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.2);
+}
+
+

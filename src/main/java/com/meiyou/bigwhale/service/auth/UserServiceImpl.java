@@ -4,8 +4,8 @@ import com.meiyou.bigwhale.data.service.AbstractMysqlPagingAndSortingQueryServic
 import com.meiyou.bigwhale.entity.auth.User;
 import com.meiyou.bigwhale.entity.auth.UserRole;
 import com.meiyou.bigwhale.service.ClusterUserService;
-import com.meiyou.bigwhale.service.SchedulingService;
-import com.meiyou.bigwhale.service.ScriptService;
+import com.meiyou.bigwhale.service.MonitorService;
+import com.meiyou.bigwhale.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,16 +19,16 @@ import java.util.List;
  * @description file description
  */
 @Service
-public class UserServiceImpl extends AbstractMysqlPagingAndSortingQueryService<User, String> implements UserService {
+public class UserServiceImpl extends AbstractMysqlPagingAndSortingQueryService<User, Integer> implements UserService {
 
     @Autowired
     private UserRoleService userRoleService;
     @Autowired
     private ClusterUserService clusterUserService;
     @Autowired
-    private ScriptService scriptService;
+    private ScheduleService scheduleService;
     @Autowired
-    private SchedulingService schedulingService;
+    private MonitorService monitorService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -52,9 +52,9 @@ public class UserServiceImpl extends AbstractMysqlPagingAndSortingQueryService<U
     @Override
     public void delete(User entity) {
         userRoleService.deleteByQuery("username=" + entity.getUsername());
-        clusterUserService.deleteByQuery("uid=" + entity.getId());
-        schedulingService.deleteByQuery("uid=" + entity.getId());
-        scriptService.findByQuery("uid=" + entity.getId()).forEach(scriptService::delete);
+        clusterUserService.deleteByQuery("userId=" + entity.getId());
+        scheduleService.findByQuery("createBy=" + entity.getId()).forEach(scheduleService::delete);
+        monitorService.findByQuery("createBy=" + entity.getId()).forEach(monitorService::delete);
         super.delete(entity);
     }
 }

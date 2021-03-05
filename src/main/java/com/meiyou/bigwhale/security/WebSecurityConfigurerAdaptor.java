@@ -157,7 +157,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
                 String username1 = rs.getString(1);
                 String password = rs.getString(2);
                 boolean enabled = rs.getBoolean(3);
-                String id = rs.getString(4);
+                Integer id = rs.getInt(4);
                 boolean root = rs.getBoolean(5);
                 return new LoginUser(id, root, username1, password, enabled, true, true, true, AuthorityUtils.NO_AUTHORITIES);
             });
@@ -178,7 +178,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
             if (!isUsernameBasedPrimaryKey()) {
                 returnUsername = username;
             }
-            String id = ((LoginUser) userFromUserQuery).getId();
+            Integer id = ((LoginUser) userFromUserQuery).getId();
             boolean root = ((LoginUser) userFromUserQuery).isRoot();
             return new LoginUser(id, root, returnUsername, userFromUserQuery.getPassword(), userFromUserQuery.isEnabled(), true, true, true, combinedAuthorities);
         }

@@ -8,6 +8,6 @@ import com.meiyou.bigwhale.entity.auth.User;
  * @date 2019/10/24
  * @description file description
  */
-public interface UserService extends PagingAndSortingQueryService<User, String> {
+public interface UserService extends PagingAndSortingQueryService<User, Integer> {
 
 }

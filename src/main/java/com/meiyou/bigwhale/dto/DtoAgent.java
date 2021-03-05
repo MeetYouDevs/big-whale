@@ -14,11 +14,11 @@ import java.util.List;
 @AllArgsConstructor
 public class DtoAgent extends AbstractPageDto {
 
-    private String id;
+    private Integer id;
     private String name;
     private String description;
     private List<String> instances;
-    private String clusterId;
+    private Integer clusterId;
 
     @Override
     public String validate() {
