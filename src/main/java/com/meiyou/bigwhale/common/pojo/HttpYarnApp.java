@@ -18,6 +18,7 @@ public class HttpYarnApp {
     private String state;
     private String finalStatus;
     private String trackingUrl;
+    private String diagnostics;
     private String applicationType;
     private Long startedTime;
     private Long finishedTime;

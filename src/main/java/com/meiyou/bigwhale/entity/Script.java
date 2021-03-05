@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -23,21 +22,31 @@ import java.util.Date;
 public class Script {
 
     @Id
-    @GenericGenerator(name = "idGenerator", strategy = "uuid")
-    @GeneratedValue(generator = "idGenerator")
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
     private String name;
     private String description;
-    private Integer type;
+    private String type;
+    private Integer scheduleId;
+    /**
+     * 拓扑节点ID
+     */
+    private String scheduleTopNodeId;
+    private Integer monitorId;
+    /**
+     * 列表查询字段
+     */
+    private Boolean monitorEnabled;
+    private Integer agentId;
+    private Integer clusterId;
     private Integer timeout;
-    private String script;
+    private String content;
     private String input;
     private String output;
-    private String agentId;
-    private String clusterId;
-    private String uid;
     private Date createTime;
+    private Integer createBy;
     private Date updateTime;
+    private Integer updateBy;
 
     /**
      * yarn应用属性
@@ -47,13 +56,15 @@ public class Script {
     private String app;
 
     public boolean isBatch() {
-        return type == Constant.SCRIPT_TYPE_SHELL_BATCH ||
-                type == Constant.SCRIPT_TYPE_SPARK_BATCH ||
-                type == Constant.SCRIPT_TYPE_FLINK_BATCH;
+        return !Constant.ScriptType.SPARK_STREAM.equals(type) &&
+                !Constant.ScriptType.FLINK_STREAM.equals(type);
     }
 
-    public boolean isYarnBatch() {
-        return type == Constant.SCRIPT_TYPE_SPARK_BATCH ||
-                type == Constant.SCRIPT_TYPE_FLINK_BATCH;
+    public boolean isYarn() {
+        return Constant.ScriptType.SPARK_BATCH.equals(type) ||
+                Constant.ScriptType.SPARK_STREAM.equals(type) ||
+                Constant.ScriptType.FLINK_BATCH.equals(type) ||
+                Constant.ScriptType.FLINK_STREAM.equals(type);
     }
+
 }

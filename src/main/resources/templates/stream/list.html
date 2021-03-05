@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>实时任务 - Big Whale</title>
+    <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
+    <link href="../libs/fonts/script-type/script-type.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet"/>
+</head>
+<body ng-app="content-app" ng-controller="content-controller">
+<div class="container-fluid animated fadeInDown">
+    <div class="bw-nav">
+        <div class="row">
+            <ol class="breadcrumb">
+                <li class="active">实时任务</li>
+            </ol>
+            <a class="bw-refresh" onclick="location.reload()" title="刷新">
+                <i class="fa fa-refresh" style="font-size: 18px"></i>
+            </a>
+        </div>
+    </div>
+    <div class="bw-body">
+        <div class="row">
+            <div class="col-md-12 search-form">
+                <form class="form-inline" ng-submit="options.mypage.toFirst()">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="名称/描述/代码" ng-model="options.query.text">
+                    </div>
+                    <div class="form-group">
+                        <label>监控启用</label>
+                        <select class="selectpicker show-tick" ng-model="options.query.monitorEnabled"
+                                ng-options="item.value as item.name for item in booleanTypeList">
+                            <option value="">不限</option>
+                        </select>
+                    </div>
+                    <div class="form-group" th:if="${session.user.root}">
+                        <label>用户</label>
+                        <select class="selectpicker show-tick" data-live-search="true" ng-model="options.query.createBy"
+                                ng-options="item.id as item.username for item in userList">
+                            <option value="">不限</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">搜索</button>
+                        <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th th:if="${session.user.root}">
+                                    用户
+                                </th>
+                                <th class="order" ng-click="sort('name', asc)">
+                                    <div>名称</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'name' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'name' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                                <th>
+                                    描述
+                                </th>
+                                <th>
+                                    监控频率
+                                </th>
+                                <th>
+                                    监控启用
+                                </th>
+                                <th class="order" ng-click="sort('realFireTime', asc)">
+                                    <div>上一次监控</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'realFireTime' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'realFireTime' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                                <th class="order" ng-click="sort('createTime', asc)">
+                                    <div>创建时间</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'createTime' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'createTime' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                                <th class="order" ng-click="sort('updateTime', asc)">
+                                    <div>修改时间</div>
+                                    <div>
+                                        <i class="glyphicon glyphicon-triangle-top" ng-class="(title === 'updateTime' && asc === true) ? 'active' : ''"></i>
+                                        <i class="glyphicon glyphicon-triangle-bottom" ng-class="(title === 'updateTime' && asc === false) ? 'active' : ''"></i>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in options.items | orderBy : title : !asc">
+                                <td>
+                                    <p class="operate">
+                                        <span ng-click="onEditItem(item)">
+                                            <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
+                                        </span><br/>
+                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                        </span><br/>
+                                        <span ng-click="onOpenLog(item)">
+                                            <i class="glyphicon glyphicon-time" aria-hidden="true" title="日志"></i>
+                                        </span><br/>
+                                        <span id="{{item.id}}_runBtn" ng-click="onRun(item)">
+                                            <i class="glyphicon glyphicon-play" aria-hidden="true" title="执行"></i>
+                                        </span>
+                                    </p>
+                                </td>
+                                <td th:if="${session.user.root}">
+                                    {{userMap[item.createBy].username}}
+                                </td>
+                                <td>
+                                    <p style="display: flex">
+                                        <span ng-class="item.icon_()"></span>&nbsp;<span class="name">{{item.name}}</span>
+                                    </p>
+                                </td>
+                                <td>
+                                    <span class="desc">{{item.description}}</span>
+                                </td>
+                                <td style="min-width: 80px;">
+                                    <p style="margin-bottom: 1px;" ng-if="item.monitor.cron != null">
+                                        <span class="badge" style="max-width: 200px; white-space: pre-wrap; word-wrap: break-word;">{{item.monitor.cron}}</span>
+                                    </p>
+                                    <p style="margin-bottom: 1px;" ng-if="item.monitor.cron == null">
+                                        <span class="badge" style="max-width: 200px;">
+                                            <span ng-if="item.monitor.cycle == 1">每{{item.monitor.intervals}}分钟</span>
+                                            <span ng-if="item.monitor.cycle == 2">每小时{{item.monitor.minute}}分</span>
+                                            <span ng-if="item.monitor.cycle == 3">每天{{item.monitor.hour}}点{{item.monitor.minute}}分</span>
+                                            <span ng-if="item.monitor.cycle == 4" style="white-space: pre-wrap; word-wrap: break-word;">每周{{item.monitor.weekName}}{{item.monitor.hour}}点{{item.monitor.minute}}分</span>
+                                        </span>
+                                    </p>
+                                </td>
+                                <td style="min-width: 80px;">
+                                    <label class="label label-{{booleanTypeMap[item.monitorEnabled].style}}">
+                                        {{booleanTypeMap[item.monitorEnabled].name}}
+                                    </label>
+                                </td>
+                                <td>
+                                    {{item.monitor.realFireTime}}
+                                </td>
+                                <td>
+                                    {{item.createTime}}
+                                </td>
+                                <td>
+                                    {{item.updateTime}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <mypage ng-model="options"></mypage>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+    </div>
+</div>
+<script src="../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
+<script src="../js/common.js" type="text/javascript"></script>
+<script th:inline="javascript">
+    var scriptIconClass = {
+        'sparkstream': 'icon-spark',
+        'flinkstream': 'icon-flink'
+    };
+    var user = [[${session.user}]];
+    var app = angular.module('content-app', []);
+    registerHttpInterceptor(app);
+    registerPage(app);
+    app.controller('content-controller', function ($scope, $http) {
+        if (user.root) {
+            getAuthUser($scope, $http);
+        }
+        appendWeek($scope);
+        appendBooleanType($scope);
+        defineSort($scope);
+
+        //新增
+        $scope.onNewItem = function () {
+            if (parent.xadmin) {
+                parent.xadmin.reloadStream = $scope.reload;
+                parent.xadmin.add_tab('实时任务新增', 'stream/edit.html');
+            } else {
+                window.open('./edit.html', '实时任务新增');
+            }
+        };
+
+        //编辑
+        $scope.onEditItem = function (item) {
+            if (parent.xadmin) {
+                parent.xadmin.reloadStream = $scope.reload;
+                parent.xadmin.add_tab('实时任务编辑', 'stream/edit.html?id=' + item.id);
+            } else {
+                window.open('./edit.html?id=' + item.id, '实时任务编辑');
+            }
+        };
+
+        //执行日志
+        $scope.onOpenLog = function (item) {
+            if (parent.xadmin) {
+                parent.xadmin.open('执行日志', 'script_history/list.html?scriptId=' + item.id);
+            } else {
+                window.open('../script_history/list.html?scriptId=' + item.id);
+            }
+        };
+
+        $scope.onRun = function(item) {
+            swal({
+                title: '确认执行？',
+                type: 'question',
+                showConfirmButton: true,
+                showCancelButton: true
+            }).then(function (result) {
+                if (result.value) {
+                    $('#' + item.id + '_runBtn').attr('disabled', 'true');
+                    $http.post('./run.api', {
+                        id: item.id
+                    }).success(function (data) {
+                        $('#' + item.id + '_runBtn').removeAttr('disabled');
+                        swal({
+                            title: '脚本执行请求成功',
+                            text: '准备开始执行脚本',
+                            type: 'info',
+                            showConfirmButton: false,
+                            timer: 1500,
+                            position: 'top-end'
+                        }).then(function () {
+                            if (parent.xadmin) {
+                                parent.xadmin.open('执行日志', 'script_history/list.html?id=' + data.id);
+                            } else {
+                                window.open('../script_history/list.html?id=' + data.id);
+                            }
+                        });
+                    }).error(function () {
+                        $('#' + item.id + '_runBtn').removeAttr('disabled');
+                    })
+                }
+            });
+        };
+
+        $scope.onRemoveItem = function (item) {
+            removeItem('./delete.api', item, $http, $scope.reload);
+        };
+
+        // 获取数据列表
+        $scope.options = {
+            query: {},
+            listUrl: './page.api',
+            reloadAfter : function (items) {
+                items.forEach(function (item) {
+                    var weekName = [];
+                    if (item.monitor.week !== null && item.monitor.week.length > 0) {
+                        item.monitor.week.forEach(function (value) {
+                            weekName.push($scope.weekMap[value].name);
+                        })
+                    }
+                    item.monitor.weekName = weekName;
+                    item.icon_ = function () {
+                        return 'iconfont ' + scriptIconClass[this.type]
+                    }
+                })
+            }
+        };
+
+        // 刷新
+        $scope.reload = function () {
+            $scope.options.mypage.reload();
+        };
+
+    });
+</script>
+</body>
+</html>

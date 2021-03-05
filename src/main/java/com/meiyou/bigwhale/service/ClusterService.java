@@ -4,6 +4,6 @@ import com.meiyou.bigwhale.data.service.PagingAndSortingQueryService;
 import com.meiyou.bigwhale.entity.Cluster;
 
 
-public interface ClusterService extends PagingAndSortingQueryService<Cluster, String> {
+public interface ClusterService extends PagingAndSortingQueryService<Cluster, Integer> {
 
 }

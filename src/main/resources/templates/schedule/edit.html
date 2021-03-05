@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="base/resource"/>
+    <title>离线调度编辑 - Big Whale</title>
+    <link href="../libs/bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
+    <link href="../libs/bootstrap-switch/bootstrap-switch.min.css" rel="stylesheet"/>
+    <link href="../libs/dropzone/dropzone.min.css" rel="stylesheet">
+    <link href="../libs/fonts/script-type/script-type.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet"/>
+    <link href="../css/schedule_edit.css" rel="stylesheet">
+</head>
+<body ng-app="content-app" ng-controller="content-controller">
+<div class="modal right fade" id="editScriptDlg" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myScriptModalLabel">节点设置</h4>
+            </div>
+            <form id="scriptForm" class="form-horizontal" ng-submit="onConfirmed()">
+                <div class="modal-body">
+                    <!-- 基本配置 -->
+                    <div class="shadow">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">
+                                名称&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input class="form-control" ng-model="editItem.script.name" ng-change="onScriptNameChange()" autocomplete="off" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">
+                                描述
+                            </label>
+                            <div class="col-sm-4">
+                                <textarea class="form-control" ng-model="editItem.script.description" rows="3" maxlength="255"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">
+                                类型
+                            </label>
+                            <div class="col-sm-4">
+                                <select class="form-control selectpicker show-tick" ng-model="editItem.script.type" required disabled>
+                                    <option value="shell">Shell</option>
+                                    <option value="python">Python</option>
+                                    <option value="sparkbatch">Spark Batch</option>
+                                    <option value="flinkbatch">Flink Batch</option>
+                                </select>
+                            </div>
+                            <div ng-if="editItem.script.type == 'sparkbatch'">
+                                <label class="col-sm-2 control-label">
+                                    版本
+                                </label>
+                                <div class="col-sm-4">
+                                    <select class="form-control selectpicker show-tick" ng-model="editItem.script.spark.$command" ng-change="onSparkVersionChange()"
+                                            ng-options="item.command as item.version for item in sparkVersionList" required>
+                                    </select>
+                                </div>
+                            </div>
+                            <div ng-if="editItem.script.type == 'flinkbatch'">
+                                <label class="col-sm-2 control-label">
+                                    版本
+                                </label>
+                                <div class="col-sm-4">
+                                    <select class="form-control selectpicker show-tick" ng-model="editItem.script.flink.$command" ng-change="onFlinkVersionChange()"
+                                            ng-options="item.command as item.version for item in flinkVersionList" required>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div ng-if="editItem.script.type == 'shell' || editItem.script.type == 'python'" class="form-group">
+                            <label class="col-sm-2 control-label">
+                                运行代理&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <select class="form-control selectpicker show-tick" ng-model="editItem.script.agentId"
+                                        ng-options="item.id as item.name for item in agentList" required>
+                                    <option value="">请选择</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div ng-if="editItem.script.type == 'sparkbatch' || editItem.script.type == 'flinkbatch'" class="form-group">
+                            <label class="col-sm-2 control-label">
+                                运行集群&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <select class="form-control selectpicker show-tick" ng-model="editItem.script.clusterId" ng-change="onClusterIdChange()"
+                                        ng-options="item.id as item.name for item in clusterList" required>
+                                    <option value="">请选择</option>
+                                </select>
+                            </div>
+                            <label class="col-sm-2 control-label">
+                                运行队列&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <select class="form-control selectpicker show-tick" ng-model="editItem.script.queue_" ng-change="onQueueChange()"
+                                        ng-options="item for item in queueList" required>
+                                    <option value="">无队列</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div ng-if="editItem.script.type == 'sparkbatch' || editItem.script.type == 'flinkbatch'" class="form-group">
+                            <label class="col-sm-2 control-label">
+                                程序包<B class="help" data-toggle="tooltip" data-placement="top" title="程序包地址（注：编辑或上传完成功后如果URL与脚本代码中的URL不符，请手动更新一下脚本代码中的URL），请勿包含空格">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-5">
+                                <input class="form-control-plaintext" ng-model="editItem.script.jarPath_" placeholder="请输入程序包URL或点击上传" ng-blur="onJarPathVerify()" required>
+                                <button type="button" id="advancedDropzone" class="btn btn-link" style="padding: 6px 6px;">上传</button>
+                            </div>
+                            <div id="dropzone_filetable" class="col-sm-5" style="padding-top: 7px;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">
+                                超时(分)<B class="help" data-toggle="tooltip" data-placement="top" title="只与当前节点的提交时间相关，与Spark或Flink任务的运行时间无关，不能超过5分钟">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input class="form-control" type="number" min="1" max="5" autocomplete="off" ng-model="editItem.script.timeout" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">
+                                输入<B class="help" data-toggle="tooltip" data-placement="top" title="程序输入，多个数据源用“,”分隔，如：kafka:topic1">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input class="form-control" ng-model="editItem.script.input" autocomplete="off" required>
+                            </div>
+                            <label class="col-sm-2 control-label">
+                                输出<B class="help" data-toggle="tooltip" data-placement="top" title="程序输出，多个数据源用“,”分隔，如：hbase:table1">?</B>&nbsp;<B>*</B>
+                            </label>
+                            <div class="col-sm-4">
+                                <input class="form-control" ng-model="editItem.script.output" autocomplete="off" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 资源配置 -->
+                    <div ng-show="editItem.script.type == 'sparkbatch' || editItem.script.type == 'flinkbatch'" class="shadow">
+                        <ul class="nav nav-tabs" style="margin-bottom: 20px;">
+                            <li role="presentation" class="active"><a href="#resource" aria-controls="visual" role="tab" data-toggle="tab">资源选项<B class="help" data-toggle="tooltip" data-placement="top" title="该部分参数会体现在入口函数的最后，如果对业务有影响，请自行处理">?</B></a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div id="resource" class="tab-pane fade in active"  role="tabpanel">
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">
+                                        屏蔽策略<B class="help" data-toggle="tooltip" data-placement="top" title="选中的屏蔽节点，在分配任务时将被忽略">?</B>
+                                    </label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick" ng-model="editItem.script.nodeBlackListType_" ng-change="onNodeBlackListTypeChange()" title="请选择">
+                                            <option value="" selected>无</option>
+                                            <option value="batch">非批处理节点</option>
+                                        </select>
+                                    </div>
+                                    <label class="col-sm-2 control-label">
+                                        分配策略<B class="help" data-toggle="tooltip" data-placement="top" title="容器分配策略：(1) 根据总资源（根据节点总cores做判断，即使cores已被耗光也与其他节点拥有同样的权重，影响权重的因素只有代理实例的规格）、(2) 根据剩余可用资源（根据当前剩余可用的cores作为权重判断，剩余可用的cores越多则权重越高）">?</B>
+                                    </label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control selectpicker show-tick" ng-model="editItem.script.allocateBalancerType_" ng-change="onAllocateBalancerTypeChange()" title="请选择">
+                                            <option value="" selected>无</option>
+                                            <option value="available">根据剩余可用资源</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 脚本 -->
+                    <div class="shadow">
+                        <ul class="nav nav-tabs" style="margin-bottom: 20px;">
+                            <li role="presentation" class="active" ng-class="{disabled: editItem.script.type == 'shell' || editItem.script.type == 'python'}"><a href="#visual" aria-controls="visual" role="tab" data-toggle="tab">可视化视图</a></li>
+                            <li role="presentation"><a href="#text" aria-controls="text" role="tab" data-toggle="tab">代码视图</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div id="visual" class="tab-pane fade in active" role="tabpanel">
+                                <div ng-if="editItem.script.editMode_ == 'visual'">
+                                    <!-- Spark -->
+                                    <div ng-if="editItem.script.type == 'sparkbatch'">
+                                        <div class="form-group" >
+                                            <label class="col-sm-2 control-label">
+                                                Driver<B class="help" data-toggle="tooltip" data-placement="top" title="Driver一般不会参与计算，默认设置为512MB，1Cores即可">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.spark.driver_memory" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.spark.driver_cores" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Excutor
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.spark.executor_memory" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">数量</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.spark.num_executors" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.spark.executor_cores" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                资源占用<B class="help" data-toggle="tooltip" data-placement="top" title="运行时最大总资源分配情况">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-value="editItem.script.spark.$total_memory()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-value="editItem.script.spark.$total_cores()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Name<B class="help" data-toggle="tooltip" data-placement="top" title="参数--name，此字段应该是个唯一值，切勿与其他程序同名">?</B>&nbsp;<B>*</B>
+                                            </label>
+                                            <div class="col-sm-4">
+                                                <input class="form-control" ng-model="editItem.script.spark.name" autocomplete="off" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Class<B class="help" data-toggle="tooltip" data-placement="top" title="参数--class，程序入口类，pyspark无需此项">?</B>
+                                            </label>
+                                            <div class="col-sm-4">
+                                                <input class="form-control" ng-model="editItem.script.spark.class" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                入口参数<B class="help" data-toggle="tooltip" data-placement="top" title="入口函数的参数">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <input class="form-control" ng-model="editItem.script.spark.args" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Spark参数<B class="help" data-toggle="tooltip" data-placement="top" title="spark参数，例如：--conf spark.eventLog.enabled=true">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <textarea class="form-control" rows="3" ng-model="editItem.script.spark.spark_other_args"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Flink -->
+                                    <div ng-if="editItem.script.type == 'flinkbatch'">
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                JobManager<B class="help" data-toggle="tooltip" data-placement="top" title="相当于spark的Driver">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.flink.yjm" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                TaskManager<B class="help" data-toggle="tooltip" data-placement="top" title="相当于spark的executor">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.flink.ytm" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">数量</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.flink.yn" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">slots</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-model="editItem.script.flink.ys" autocomplete="off">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                资源占用<B class="help" data-toggle="tooltip" data-placement="top" title="运行时最大总资源分配情况">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">内存</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-value="editItem.script.flink.$total_memory()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-control">
+                                                    <div class="col-sm-3" style="padding-right: 0; padding-left: 0">
+                                                        <label class="control-label">cores</label>
+                                                    </div>
+                                                    <div class="col-sm-9" style="padding-right: 0; padding-left: 0">
+                                                        <input class="form-control input-control" ng-value="editItem.script.flink.$total_cores()" autocomplete="off" readonly="readonly">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Name<B class="help" data-toggle="tooltip" data-placement="top" title="参数-ynm，此字段应该是个唯一值，切莫与其他程序同名">?</B>&nbsp;<B>*</B>
+                                            </label>
+                                            <div class="col-sm-4">
+                                                <input class="form-control" ng-model="editItem.script.flink.ynm" autocomplete="off" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Class<B class="help" data-toggle="tooltip" data-placement="top" title="参数-c，程序入口类">?</B>
+                                            </label>
+                                            <div class="col-sm-4">
+                                                <input class="form-control" ng-model="editItem.script.flink.c" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                入口参数<B class="help" data-toggle="tooltip" data-placement="top" title="入口函数的参数">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <input class="form-control" ng-model="editItem.script.flink.args" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Flink参数<B class="help" data-toggle="tooltip" data-placement="top" title="fink参数，例如：-d -yst">?</B>
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <textarea class="form-control" rows="3" ng-model="editItem.script.flink.flink_other_args"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="text" class="tab-pane fade in" role="tabpanel">
+                                <div ng-if="editItem.script.editMode_ == 'text'">
+                                    <div class="form-group row">
+                                        <label class="col-sm-2 control-label">代码&nbsp;<B>*</B></label>
+                                        <div class="col-sm-10">
+                                            <textarea class="form-control" rows="10" ng-model="editItem.script.content" required></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="reset" class="btn btn-secondary">重置</button>
+                    <button type="button" class="btn btn-info" id="btn_test" ng-click="onTest()">测试</button>
+                    <button type="submit" class="btn btn-primary" id="btn_confirmed">确认</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editDlg" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">调度设置</h4>
+            </div>
+            <form class="form-horizontal" ng-submit="onSaveItem()">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">
+                            名称&nbsp;<B>*</B>
+                        </label>
+                        <div class="col-sm-5">
+                            <input class="form-control" ng-model="editItem.name" autocomplete="off" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">
+                            描述
+                        </label>
+                        <div class="col-sm-5">
+                            <textarea class="form-control" ng-model="editItem.description" rows="3" maxlength="255"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">
+                            周期&nbsp;<B>*</B>
+                        </label>
+                        <div class="col-sm-5">
+                            <input ng-if="!editItem.showVisual_" class="form-control" ng-model="editItem.cron" placeholder="cron表达式" required>
+                            <div ng-if="editItem.showVisual_">
+                                <h4 style="margin: 0 0; padding: 5px 0;">
+                                    <label class="label label-info">
+                                        每
+                                    </label>
+                                </h4>
+                                <input ng-if="editItem.cycle == 1" class="form-control" type="number" min="1" ng-model="editItem.intervals" placeholder="间隔" required>
+                                <select class="form-control selectpicker show-tick"
+                                        ng-model="editItem.cycle" ng-options="item.value as item.name for item in cycleList" ng-change="onCycleChange()">
+                                </select>
+                                <div ng-if="editItem.cycle == 4">
+                                    <select class="form-control selectpicker show-tick"
+                                            ng-model="editItem.week" ng-options="item.value as item.name for item in weekList"  multiple required>
+                                    </select>
+                                </div>
+                                <div ng-if="editItem.cycle >= 3">
+                                    <select class="form-control selectpicker show-tick"
+                                            ng-model="editItem.hour" ng-options="item.value as item.name for item in hourList">
+                                    </select>
+                                </div>
+                                <div ng-if="editItem.cycle >=2">
+                                    <select class="form-control selectpicker show-tick"
+                                            ng-model="editItem.minute" ng-options="item.value as item.name for item in minuteList" >
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4" style="padding: 0.5% 15px; line-height: 14px;">
+                            <label class="label label-info">可视化模式</label>&nbsp;<input type="checkbox" name="visual-checkbox" checked>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inp_start" class="col-sm-3 control-label">
+                            开始时间&nbsp;<B>*</B>
+                        </label>
+                        <div class="col-sm-5">
+                            <input id="inp_start" class="laydate-icon" ng-model="editItem.startTime" autocomplete="off" required/>
+                        </div>
+                        <br/>
+                    </div>
+                    <div class="form-group">
+                        <label for="inp_end" class="col-sm-3 control-label">
+                            结束时间&nbsp;<B>*</B>
+                        </label>
+                        <div class="col-sm-5">
+                            <input id="inp_end" class="laydate-icon" ng-model="editItem.endTime" autocomplete="off" required/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">
+                            发送邮件
+                        </label>
+                        <div class="col-sm-5">
+                            <select class="form-control selectpicker show-tick" ng-model="editItem.sendEmail"
+                                    ng-options="item.value as item.name for item in booleanTypeList" required>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">
+                            钉钉通知<B class="help" data-toggle="tooltip" data-placement="top" title="需要指定@用户，可用“&”拼接，如：token&@phone1@phone2">?</B>
+                        </label>
+                        <div class="col-sm-5">
+                            <div ng-repeat="tip in editItem.dingdingHooks track by $index">
+                                <input style="width: 95%; display: inline-block" type="text" class="form-control" ng-model="editItem.dingdingHooks[$index]" placeholder="钉钉token" required><span style="width: 5%" class="glyphicon glyphicon-minus" ng-click="onRemoveTip(editItem.dingdingHooks, $index)"></span>
+                            </div>
+                            <div ng-click="!editItem.dingdingHooks ? editItem.dingdingHooks = []: '';onAddTip(editItem.dingdingHooks);">
+                                <span style="padding-top: 7px;" class="glyphicon glyphicon-plus"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">
+                            启用
+                        </label>
+                        <div class="col-sm-5">
+                            <select class="form-control selectpicker show-tick" ng-model="editItem.enabled"
+                                    ng-options="item.value as item.name for item in booleanTypeList" required>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary" id="btn_submit">提交</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid animated fadeInDown">
+    <div class="bw-nav">
+        <div class="row">
+            <ol class="breadcrumb">
+                <li><a href="javascript:" ng-click="onOpenList()">离线调度</a></li>
+                <li class="active">{{editItem.id ? "编辑" : "新增"}}</li>
+            </ol>
+            <a class="bw-refresh" onclick="location.reload()" title="刷新">
+                <i class="fa fa-refresh" style="font-size: 18px"></i>
+            </a>
+        </div>
+    </div>
+    <div class="bw-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="main shadow">
+                    <div class="bar">
+                        <button type="button" class="btn btn-link btn-xs">
+                            <span class="glyphicon glyphicon-cog" aria-hidden="true"></span> 拓扑
+                        </button>
+                        <button type="button" class="btn btn-default btn-xs" ng-click="onClearTop()">
+                            <span class="glyphicon glyphicon-edit" aria-hidden="true"></span> 重绘
+                        </button>
+                        <button type="button" class="btn btn-default btn-xs" ng-click="onEditItem()">
+                            <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> 保存
+                        </button>
+                    </div>
+                    <div class="topology">
+                        <div id="flex_tools">
+                            <div class="tools"></div>
+                        </div>
+                        <div id="flex_canvas">
+                            <div class="canvas" id="topo_canvas"></div>
+                        </div>
+                        <div id="flex_props">
+                            <div id="flex_props_home">
+                                <label>
+                                    小提示
+                                </label>
+                                <ul>
+                                    <li>须满足：节点数 = 分支数 + 1</li>
+                                    <li>分支的起点和终点必须指向不同节点</li>
+                                    <li>不同分支的终点必须指向不同节点</li>
+                                    <li>不能存在回环</li>
+                                </ul>
+                            </div>
+                            <div id="flex_props_node" class="hidden">
+                                <div class="form-group">
+                                    <label>
+                                        失败重试次数
+                                    </label>
+                                    <input id="_retries" type="number" class="form-control" onchange="onChangeProp()" />
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        失败重试间隔(min)
+                                    </label>
+                                    <input id="_intervals" type="number" class="form-control" onchange="onChangeProp()" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--右键菜单定义-->
+                <div class="context-menus" id="canvas_menus" style="display: none">
+                    <div>
+                        <a onclick="onLock()" class="menu-a-disabled" id="menu_lock" disabled>
+                            锁定
+                        </a>
+                    </div>
+                    <div class="line"></div>
+                    <div>
+                        <a onclick="onEdit()" class="menu-a-disabled" id="menu_edit" disabled>
+                            编辑
+                        </a>
+                    </div>
+                    <div>
+                        <a onclick="onDelete()" class="menu-a">
+                            删除
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../libs/bootstrap-select/bootstrap-select.min.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-select/i18n/defaults-zh_CN.js" type="text/javascript"></script>
+<script src="../libs/bootstrap-switch/bootstrap-switch.min.js" type="text/javascript"></script>
+<script src="../libs/dropzone/dropzone.min.js" type="application/javascript"></script>
+<script src="../libs/lewule/topology.bundle.js" type="application/javascript"></script>
+<script src="../libs/laydate/laydate.js" type="application/javascript"></script>
+<script src="../libs/angular-1.3.9/angular.min.js" type="text/javascript"></script>
+<script src="../libs/angular-1.3.9/myangular.js" type="text/javascript"></script>
+<script src="../js/common.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var defNodeProp = {
+        name: 'file',
+        paddingLeft: 10,
+        paddingRight: 10,
+        paddingTop: 10,
+        paddingBottom: 10,
+        borderRadius: 0.1,
+        hideInput: true,
+        whiteSpace: 'nowrap',
+        type: 0
+    };
+    var defLineProp = {
+        name: 'curve',
+        fromArrow: '',
+        toArrow: 'triangleSolid',
+        type: 1
+    };
+
+    //画布对象
+    var canvas = null;
+    //选中多个节点对象
+    var selNodes = null;
+    //选中节点的详情
+    var selected = null;
+    //是否锁对象
+    var locked = false;
+    //右键菜单对应标记是否可用
+
+    var Topology = {
+        tools: [
+            {
+                group: '节点类型',
+                children: [
+                    {
+                        name: 'Shell',
+                        icon: 'icon-shell',
+                        data: Object.assign({
+                            text: 'Shell',
+                            icon: '&#xe6a8',
+                            iconFamily: 'iconfont',
+                            iconColor: '#333333',
+                            rect: {
+                                width: 40,
+                                height: 60
+                            },
+                            data: {
+                                retries: 0,
+                                intervals: 1
+                            }
+                        }, defNodeProp)
+                    },
+                    {
+                        name: 'Python',
+                        icon: 'icon-python',
+                        data: Object.assign({
+                            text: 'Python',
+                            icon: '&#xe611',
+                            iconFamily: 'iconfont',
+                            iconColor: '#3573a6',
+                            rect: {
+                                width: 40,
+                                height: 60
+                            },
+                            data: {
+                                retries: 0,
+                                intervals: 1
+                            }
+                        }, defNodeProp)
+                    },
+                    {
+                        name: 'Spark Batch',
+                        icon: 'icon-spark',
+                        data: Object.assign({
+                            text: 'Spark Batch',
+                            icon: '&#xe737',
+                            iconFamily: 'iconfont',
+                            iconColor: '#e25a1c',
+                            rect: {
+                                width: 40,
+                                height: 60
+                            },
+                            data: {
+                                retries: 0,
+                                intervals: 1
+                            }
+                        }, defNodeProp)
+                    },
+                    {
+                        name: 'Flink Batch',
+                        icon: 'icon-flink',
+                        data: Object.assign({
+                            text: 'Flink Batch',
+                            icon: '&#xe504',
+                            iconFamily: 'iconfont',
+                            iconColor: '#f54144',
+                            rect: {
+                                width: 40,
+                                height: 60
+                            },
+                            data: {
+                                retries: 0,
+                                intervals: 1
+                            }
+                        }, defNodeProp)
+                    }
+                ]
+            }
+        ],
+        // 对象的最初入口
+        init: function (nodes, lines) {
+            var self = this;
+            //绑定事件
+            self.bindEvent();
+            self.onLoadTools(self.tools);
+            self.initCanvas();
+            var pens = nodes.concat(lines);
+            var data = {
+                'pens': pens,
+                "scale": 1,
+                "locked": 0
+            };
+            canvas.open(data);
+            setTimeout(function () {
+                canvas.render();
+                canvas.overflow();
+            }, 50);
+        },
+        // 绑定事件
+        bindEvent: function () {
+            // 隐藏显示
+            $('body').click(function () {
+                $('#canvas_menus').css('display', 'none');
+            });
+            // 画布右键属性
+            $('#flex_canvas').bind('contextmenu', function () {
+                //设置右键菜单
+                if (selNodes) {
+                    //锁定
+                    if (locked) {
+                        $('#menu_lock').html('解锁');
+                    } else {
+                        $('#menu_lock').html('锁定');
+                    }
+                    $('#menu_lock').removeClass('menu-a-disabled');
+                    $('#menu_lock').addClass('menu-a');
+                } else {
+                    //锁定
+                    $('#menu_lock').addClass('menu-a-disabled');
+                    $('#menu_lock').removeClass('menu-a');
+                }
+                if (selected && selected.type === 'node') {
+                    $("#menu_edit").removeClass('menu-a-disabled');
+                    $("#menu_edit").addClass('menu-a');
+                } else {
+                    $('#menu_edit').addClass('menu-a-disabled');
+                    $('#menu_edit').removeClass('menu-a');
+                }
+                //显示右键菜单
+                $('#canvas_menus').css({
+                    'left': document.body.scrollLeft + event.clientX, 'top':
+                        document.body.scrollTop + event.clientY
+                }).show();
+                return false;
+            });
+        },
+        // 加载左侧工具
+        onLoadTools: function (tools) {
+            var _html = '';
+            tools.forEach(function (val) {
+                val.children.forEach(function (val1) {
+                    _html += '<a href="#" title="' + val1.name + '" ondragstart="onDragStart(event,' + JSON.stringify(val1).replace(/\"/g, "'") + ')" draggable="true">' +
+                        ' <i class="iconfont ' + val1.icon + '"></i> ' + val1.name +
+                        '</a>';
+                });
+            });
+            $('#flex_tools .tools').html(_html);
+        },
+        // 初始化画布
+        initCanvas: function () {
+            var self = this;
+            // 监听画布
+            function onMessage(event, data) {
+                switch (event) {
+                    case 'node':
+                        selNodes = [data];
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initNode();
+                        break;
+                    case 'line':
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initLine();
+                        break;
+                    case 'multi':
+                        locked = true;
+                        if (data.nodes && data.nodes.length) {
+                            selNodes = data.nodes;
+                            for (var item in data.nodes) {
+                                if (!item.locked) {
+                                    locked = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (locked && data.lines) {
+                            for (var item in data.lines) {
+                                if (!item.locked) {
+                                    locked = false;
+                                    break;
+                                }
+                            }
+                        }
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        break;
+                    case 'space':
+                        $("#flex_props_home").removeClass("hidden");
+                        $("#flex_props_node").addClass("hidden");
+                        setTimeout(function () {
+                            selected = null;
+                            selNodes = null;
+                        });
+                        break;
+                    case 'addNode':
+                        selNodes = [data];
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initNode();
+                        break;
+                    case 'addLine':
+                        selected = {
+                            "type": event,
+                            "data": data
+                        };
+                        locked = data.locked;
+                        self.initLine();
+                        break;
+                    case 'delete':
+                        $("#flex_props_home").removeClass("hidden");
+                        $("#flex_props_node").addClass("hidden");
+                        break;
+                }
+            }
+            // 初始化canvas
+            canvas = new Le5leTopology.Topology('topo_canvas', {
+                on: onMessage
+            });
+            canvas.undo = function() {};
+            canvas.redo = function() {};
+            canvas.cut = function() {};
+            canvas.copy = function() {};
+            canvas.paste = function() {};
+            canvas.divLayer.canvas.onwheel = function () {};
+        },
+        // 初始化node
+        initNode: function () {
+            $("#flex_props_home").addClass("hidden");
+            $("#flex_props_node").removeClass("hidden");
+            $("#_retries").val(selected.data.data.retries);
+            $("#_intervals").val(selected.data.data.intervals);
+            setTimeout(function () {
+                canvas.render();
+                canvas.overflow();
+            }, 50);
+            initScript(selected.data);
+        },
+        // 初始化line
+        initLine: function () {
+            $("#flex_props_home").removeClass("hidden");
+            $("#flex_props_node").addClass("hidden");
+            setTimeout(function () {
+                canvas.render();
+                canvas.overflow();
+            }, 50);
+        },
+        // 拖动node开始时设定该图形的参数
+        onDragStart: function (event, node) {
+            event.dataTransfer.setData('text/plain', JSON.stringify(node.data));
+        },
+        onChangeProp: function () {
+            selected.data.data.retries = parseInt($("#_retries").val());
+            selected.data.data.intervals = parseInt($("#_intervals").val());
+        },
+        // 锁定
+        onLock: function () {
+            locked = !locked;
+            if (selected.type === 'multi') {
+                if (selected.data.nodes) {
+                    for (var item in selected.data.nodes) {
+                        item.locked = locked;
+                    }
+                }
+                if (selected.data.lines) {
+                    for (var item in selected.data.lines) {
+                        item.locked = locked;
+                    }
+                }
+            } else {
+                selected.data.locked = locked;
+            }
+            canvas.render();
+        },
+        onEdit: function() {
+            if (!selected || selected.type === 'line') {
+                return;
+            }
+            editScript(selected.data);
+        },
+        // 删除
+        onDelete: function () {
+            canvas.delete();
+        },
+        clear: function () {
+            canvas.open();
+        },
+        render: function () {
+            canvas.render();
+        },
+        getNodes: function() {
+            return canvas.data.pens.filter(function (pen) {
+                if (pen.type === 0) {
+                    return pen;
+                }
+            });
+        },
+        getLines: function() {
+            return canvas.data.pens.filter(function (pen) {
+                if (pen.type === 1) {
+                    return pen;
+                }
+            });
+        },
+        validate: function () {
+            var nodes = this.getNodes();
+            var lines = this.getLines();
+            if (nodes.length === 0) {
+                return '节点不能为空';
+            }
+            for (var i = 0; i < nodes.length; i ++) {
+                var node = nodes[i];
+                if (isNaN(node.data.retries)) {
+                    return '节点【' + node.text + '】失败重试次数为空';
+                }
+                if (isNaN(node.data.intervals)) {
+                    return '节点【' + node.text + '】失败重试间隔为空';
+                }
+            }
+            if (nodes.length !== lines.length  + 1) {
+                return '须满足：节点数 = 分支数 + 1';
+            }
+            for (i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                if (!line.from.id || !line.to.id || line.from.id === line.to.id) {
+                    return '分支的起点和终点必须指向不同节点';
+                }
+                for (var j = i + 1; j < lines.length; j ++) {
+                    var lineNext = lines[j];
+                    if (line.to.id === lineNext.to.id) {
+                        return '不同分支的终点必须指向不同节点';
+                    }
+                    if (line.from.id === lineNext.to.id && line.to.id === lineNext.from.id) {
+                        return '不能存在回环';
+                    }
+                }
+            }
+        },
+        getTop: function() {
+            var nodes = this.getNodes();
+            var lines = this.getLines();
+            var simpleNodes = [];
+            var simpleLines = [];
+            nodes.forEach(function (node) {
+                simpleNodes.push({
+                    id: node.id,
+                    text: node.text,
+                    icon: node.icon,
+                    iconFamily: node.iconFamily,
+                    iconColor: node.iconColor,
+                    rect: node.rect,
+                    data: {
+                        retries: node.data.retries,
+                        intervals: node.data.intervals
+                    }
+                });
+            });
+            lines.forEach(function (line) {
+                simpleLines.push({
+                    id: line.id,
+                    from: line.from,
+                    to: line.to,
+                    controlPoints: line.controlPoints
+                })
+            });
+            return {
+                nodes: simpleNodes,
+                lines: simpleLines
+            };
+        }
+    };
+
+    // window全局，这样别的地方方便调用
+    window.onDragStart = Topology.onDragStart;
+    window.onChangeProp = Topology.onChangeProp;
+    window.onLock = Topology.onLock;
+    window.onEdit = Topology.onEdit;
+    window.onDelete = Topology.onDelete;
+    window.copy = Topology.copy;
+    window.paste = Topology.paste;
+
+</script>
+<script th:inline="javascript">
+    var scriptTypeText = {
+        'shell': 'Shell',
+        'python': 'Python',
+        'sparkbatch': 'Spark Batch',
+        'flinkbatch': 'Flink Batch'
+    };
+    var scheduleId = [[${scheduleId}]];
+    var $visualCheckbox = $('[name="visual-checkbox"]');
+    var $btnTest = $('#btn_test');
+    var $btnSubmit = $('#btn_submit');
+    var app = angular.module("content-app", []);
+    registerHttpInterceptor(app);
+    registerDateRange(app, 'inp_start', 'inp_end');
+    app.controller("content-controller", function ($scope, $http, $timeout) {
+        $scope.user = [[${session.user}]];
+        appendCycle($scope);
+        appendMinute($scope);
+        appendHour($scope);
+        appendWeek($scope);
+        appendBooleanType($scope);
+        getCluster($scope, $http);
+        getClusterUser($scope, $http);
+        getAgent($scope, $http);
+        getComputeFrameworkVersionSync($scope);
+
+        initScriptEditProp($scope, $timeout);
+
+        $scope.onOpenList = function () {
+            if (parent.xadmin) {
+                parent.xadmin.add_tab('离线调度', 'schedule/list.html');
+            } else {
+                window.open('./list.html', '离线调度');
+            }
+        };
+
+        $scope.init = function() {
+            var initDefault = function () {
+                var now = new Date();
+                var tenYearsLater = new Date(now.getTime() + (60 * 60 * 24 * 365 * 10 * 1000));
+                $scope.editItem = {
+                    cycle: 1,
+                    intervals: 2,
+                    minute: 0,
+                    hour: 0,
+                    week: ['6'],
+                    cron: '0 */2 * * * ?',
+                    startTime: now.format('yyyy-MM-dd HH:mm:ss'),
+                    endTime: tenYearsLater.format('yyyy-MM-dd HH:mm:ss'),
+                    sendEmail: true,
+                    enabled: true,
+                    showVisual_: true,
+                    scripts: []
+                };
+                $timeout(function () {
+                    Topology.init([], []);
+                }, 50);
+            };
+            var initItem = function (item) {
+                if (item.intervals === null) {
+                    item.intervals = 2;
+                }
+                if (item.minute === null) {
+                    item.minute = 0;
+                }
+                if (item.hour === null) {
+                    item.hour = 0;
+                }
+                if (item.week === null) {
+                    item.week = ['6'];
+                }
+                if (item.cron) {
+                    item.showVisual_ = false;
+                } else {
+                    item.showVisual_ = true;
+                    item.cron = '0 */2 * * * ?';
+                }
+                var topology = JSON.parse(item.topology);
+                topology.nodes.forEach(function (node) {
+                    Object.assign(node, defNodeProp);
+                });
+                topology.lines.forEach(function (line) {
+                    Object.assign(line, defLineProp);
+                });
+                $scope.editItem = item;
+                $timeout(function () {
+                    Topology.init(
+                        topology.nodes,
+                        topology.lines
+                    );
+                    $scope.assignTopNode();
+                }, 50);
+            };
+            if (scheduleId) {
+                $http.get('./one.api?id=' + scheduleId)
+                    .success(function (item) {
+                        item.scripts.forEach(function (script) {
+                            if (script.type !== 'shell' && script.type !== 'python') {
+                                script.queue_ = script.queue;
+                            }
+                        });
+                        initItem(item);
+                        $visualCheckbox.bootstrapSwitch('state', $scope.editItem.showVisual_);
+                    });
+            } else {
+                initDefault();
+                $visualCheckbox.bootstrapSwitch('state', $scope.editItem.showVisual_);
+            }
+        };
+
+        $scope.initScript = function(topNode) {
+            if (!topNode.data.script_) {
+                if (topNode.text === 'Shell') {
+                    topNode.data.script_ = {
+                        type: 'shell',
+                        scheduleTopNodeId: topNode.id,
+                        timeout: 2,
+                        editMode_: 'text',
+                        parent_: topNode.id,
+                        valid_: false
+                    };
+                }
+                if (topNode.text === 'Python') {
+                    topNode.data.script_ = {
+                        type: 'python',
+                        scheduleTopNodeId: topNode.id,
+                        timeout: 2,
+                        editMode_: 'text',
+                        parent_: topNode.id,
+                        valid_: false
+                    };
+                }
+                if (topNode.text === 'Spark Batch') {
+                    topNode.data.script_ = {
+                        type: 'sparkbatch',
+                        scheduleTopNodeId: topNode.id,
+                        timeout: 2,
+                        spark: Object.assign($scope.Spark.createDefault(), {
+                            'args': '--allocate.balancer.type=available'
+                        }),
+                        flink: Object.assign($scope.Flink.createDefault(), {
+                            'args': '--allocate.balancer.type=available'
+                        }),
+                        nodeBlackListType_: 'batch',
+                        allocateBalancerType_: 'available',
+                        editMode_: 'visual',
+                        parent_: topNode.id,
+                        valid_: false
+                    }
+                }
+                if (topNode.text === 'Flink Batch') {
+                    topNode.data.script_ = {
+                        type: 'flinkbatch',
+                        scheduleTopNodeId: topNode.id,
+                        timeout: 2,
+                        spark: Object.assign($scope.Spark.createDefault(), {
+                            'args': '--allocate.balancer.type=available'
+                        }),
+                        flink: Object.assign($scope.Flink.createDefault(), {
+                            'args': '--allocate.balancer.type=available'
+                        }),
+                        nodeBlackListType_: 'batch',
+                        allocateBalancerType_: 'available',
+                        editMode_: 'visual',
+                        parent_: topNode.id,
+                        valid_: false
+                    }
+                }
+                $scope.editScript(topNode);
+            }
+        };
+
+        /**
+         * 初始化编辑节点
+         */
+        $scope.assignTopNode = function() {
+            var topNodes = Topology.getNodes();
+            topNodes.forEach(function (topNode) {
+                var scripts = $scope.editItem.scripts;
+                for (var i = 0; i < scripts.length; i ++) {
+                    var script = scripts[i];
+                    if (topNode.id === script.scheduleTopNodeId) {
+                        if (script.type === 'shell') {
+                            topNode.data.script_ = Object.assign(script, {
+                                editMode_: 'text',
+                                valid_: true,
+                                parent_: topNode.id
+                            });
+                        }
+                        if (script.type === 'python') {
+                            topNode.data.script_ = Object.assign(script, {
+                                editMode_: 'text',
+                                valid_: true,
+                                parent_: topNode.id
+                            });
+                        }
+                        if (script.type === 'sparkbatch') {
+                            topNode.data.script_ = Object.assign(script, {
+                                flink: Object.assign($scope.Flink.createDefault(), {
+                                    'args': '--allocate.balancer.type=available'
+                                }),
+                                editMode_: 'visual',
+                                valid_: true,
+                                parent_: topNode.id
+                            });
+                            (function (script) {
+                                $timeout(function () {
+                                    $scope.parseText(script);
+                                }, 50);
+                            })(script);
+                        }
+                        if (script.type === 'flinkbatch') {
+                            topNode.data.script_ = Object.assign(script, {
+                                spark: Object.assign($scope.Spark.createDefault(), {
+                                    'args': '--allocate.balancer.type=available'
+                                }),
+                                editMode_: 'visual',
+                                valid_: true,
+                                parent_: topNode.id
+                            });
+                            (function (script) {
+                                $timeout(function () {
+                                    $scope.parseText(script);
+                                }, 50);
+                            })(script);
+                        }
+                        break;
+                    }
+                }
+            });
+        };
+
+        $scope.editScript = function(topNode) {
+            if (topNode.data.script_.type === 'sparkbatch' || topNode.data.script_.type === 'flinkbatch') {
+                var uid = topNode.data.script_.createBy || $scope.user.id;
+                var clusterId = topNode.data.script_.clusterId || '';
+                var clusterUser = $scope.clusterUserMap[uid + '_' + clusterId];
+                if (clusterUser) {
+                    $scope.queueList = clusterUser.queue.split(',');
+                } else {
+                    $scope.queueList = [];
+                }
+            }
+            $scope.editItem.script = topNode.data.script_;
+            $timeout(function () {
+                $('#editScriptDlg').modal();
+                $timeout(function () {
+                    $scope.onScriptObjChange();
+                }, 50);
+            }, 50);
+        };
+
+        $('#editScriptDlg').on('hidden.bs.modal', function () {
+            var scriptForm = $('#scriptForm')[0];
+            $scope.editItem.script.valid_ = scriptForm.checkValidity();
+        });
+
+        $scope.onScriptNameChange = function() {
+            var parent_ = $scope.editItem.script.parent_;
+            var nodes = Topology.getNodes();
+            var node;
+            for (var i = 0; i < nodes.length; i ++) {
+                if (parent_ === nodes[i].id) {
+                    node = nodes[i];
+                    break;
+                }
+            }
+            if (!node) {
+                return;
+            }
+            if (!$scope.editItem.script.name) {
+                node.text = scriptTypeText[$scope.editItem.script.type];
+            } else {
+                node.text = $scope.editItem.script.name;
+            }
+            Topology.render();
+        };
+
+        $scope.onTest = function () {
+            var scriptForm = $('#scriptForm')[0];
+            if (!scriptForm.checkValidity()) {
+                return scriptForm.reportValidity();
+            }
+            if ($scope.editItem.script.editMode_ === 'visual') {
+                $scope.parseVisual($scope.editItem.script);
+            }
+            var req = angular.copy($scope.editItem.script);
+            $btnTest.attr('disabled', 'true');
+            $http.post('../script/execute.api', req)
+                .success(function (data) {
+                    $btnTest.removeAttr('disabled');
+                    swal({
+                        title: '脚本执行请求成功',
+                        text: '准备开始执行脚本',
+                        type: 'info',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        position: 'top-end'
+                    }).then(function () {
+                        if (parent.xadmin) {
+                            parent.xadmin.open('执行日志', 'script_history/list.html?id=' + data.id);
+                        } else {
+                            window.open('../script_history/list.html?id=' + data.id);
+                        }
+                    });
+                })
+                .error(function () {
+                    $btnTest.removeAttr('disabled');
+                });
+        };
+
+        $scope.onConfirmed = function () {
+            $('#editScriptDlg').modal('hide');
+        };
+
+        $scope.onClearTop = function () {
+            Topology.clear();
+        };
+
+        $scope.onEditItem = function () {
+            var topNodes = Topology.getNodes();
+            var scriptForm = $('#scriptForm')[0];
+            for (var i = 0; i < topNodes.length; i ++) {
+                $scope.editItem.script = topNodes[i].data.script_;
+                if (!$scope.editItem.script.valid_) {
+                    return $timeout(function () {
+                        $('#editScriptDlg').modal();
+                        $timeout(function () {
+                            $scope.onScriptObjChange();
+                            $timeout(function () {
+                                scriptForm.reportValidity();
+                            }, 500);
+                        }, 50);
+                    }, 50);
+                } else {
+                    if ($scope.editItem.script.editMode_ === 'visual') {
+                        $scope.parseVisual($scope.editItem.script);
+                    }
+                }
+            }
+            var err = Topology.validate();
+            if (err) {
+                return swal('拓扑构建失败', err, 'error');
+            }
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
+        };
+
+        $scope.onCycleChange = function () {
+            $timeout(function () {
+                $('.selectpicker').selectpicker('render');
+            }, 50);
+        };
+
+        $scope.onAddTip = function (tips) {
+            if (!tips) {
+                tips = [''];
+            }
+            tips.push('');
+        };
+
+        $scope.onRemoveTip = function (tips, index) {
+            if (!tips) {
+                return;
+            }
+            tips.splice(index, 1);
+        };
+
+        //保存
+        $scope.onSaveItem = function () {
+            var topNodes = Topology.getNodes();
+            delete $scope.editItem.script;
+            $scope.editItem.scripts = [];
+            topNodes.forEach(function (topNode) {
+                var tmp = angular.copy(topNode.data.script_);
+                delete tmp.parent_;
+                $scope.editItem.scripts.push(tmp);
+            });
+            var req = angular.copy($scope.editItem);
+            var startTime = $('#inp_start').val();
+            var endTime = $('#inp_end').val();
+            req.startTime = startTime;
+            req.endTime = endTime;
+            req.topology = JSON.stringify(Topology.getTop());
+            if (req.showVisual_) {
+                req.cron = null;
+            }
+            $btnSubmit.attr('disabled', 'true');
+            $http.post('./save.api', req)
+                .success(function () {
+                    $btnSubmit.removeAttr('disabled');
+                    swal({
+                        title: '保存成功',
+                        type: 'success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(function () {
+                        if (parent.xadmin) {
+                            $scope.closeTab();
+                        } else {
+                            location.href = "./list.html";
+                        }
+                    });
+                })
+                .error(function () {
+                    $btnSubmit.removeAttr('disabled');
+                });
+        };
+
+        $scope.closeTab = function () {
+            var el = parent.document.querySelector("li.layui-this").getElementsByClassName("layui-icon layui-unselect layui-tab-close")[0];
+            $timeout(function () {
+                parent.xadmin.reloadSchedule();
+                el.click();
+            }, 50);
+            parent.xadmin.add_tab('离线调度', 'schedule/list.html');
+        };
+
+        //初始化切换开关
+        $('[name="visual-checkbox"]').bootstrapSwitch({
+            onColor: 'success',
+            offColor: 'default',
+            size: 'mini',
+            onSwitchChange: function(event, state){
+                $timeout(function () {
+                    $scope.editItem.showVisual_ = state;
+                    $timeout(function () {
+                        $('.selectpicker').selectpicker('render');
+                    }, 50);
+                }, 50);
+            }
+        });
+
+        $timeout(function () {
+            $('.selectpicker').selectpicker();
+        }, 50);
+
+        $timeout(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        }, 50);
+
+        $scope.init();
+
+        window.initScript = $scope.initScript;
+        window.editScript = $scope.editScript;
+    });
+</script>
+</body>
+</html>

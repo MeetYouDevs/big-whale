@@ -14,23 +14,23 @@ import java.util.Map;
  */
 public class LoginUser extends User {
 
-    private final String id;
+    private final Integer id;
     private final boolean root;
     private Map<String, String> resources = new HashMap<>();
 
-    public LoginUser(String id, boolean root, String username, String password, Collection<? extends GrantedAuthority> authorities) {
+    public LoginUser(Integer id, boolean root, String username, String password, Collection<? extends GrantedAuthority> authorities) {
         super(username, password, authorities);
         this.id = id;
         this.root = root;
     }
 
-    public LoginUser(String id,  boolean root, String username, String password, boolean enabled, boolean accountNonExpired, boolean credentialsNonExpired, boolean accountNonLocked, Collection<? extends GrantedAuthority> authorities) {
+    public LoginUser(Integer id,  boolean root, String username, String password, boolean enabled, boolean accountNonExpired, boolean credentialsNonExpired, boolean accountNonLocked, Collection<? extends GrantedAuthority> authorities) {
         super(username, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
         this.id = id;
         this.root = root;
     }
 
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 

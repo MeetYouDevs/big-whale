@@ -3,6 +3,8 @@ package com.meiyou.bigwhale.util;
 import com.meiyou.bigwhale.common.Constant;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
@@ -12,6 +14,8 @@ import java.util.Date;
  * @description file description
  */
 public class SchedulerUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerUtils.class);
 
     private static Scheduler scheduler;
 
@@ -37,68 +41,59 @@ public class SchedulerUtils {
         return scheduler;
     }
 
-    public static void scheduleCornJob(Class<? extends Job> jobClass, String cronExpression) throws SchedulerException {
-        scheduleCornJob(jobClass, jobClass.getSimpleName(), cronExpression);
+    public static void scheduleCronJob(Class<? extends Job> jobClass, String cronExpression) {
+        scheduleCronJob(jobClass, jobClass.getSimpleName(), cronExpression);
     }
 
-    public static void scheduleCornJob(Class<? extends Job> jobClass, String name, String cronExpression) throws SchedulerException {
-        scheduleCornJob(jobClass, name, Constant.JobGroup.COMMON, cronExpression);
+    public static void scheduleCronJob(Class<? extends Job> jobClass, Object name, String cronExpression) {
+        scheduleCronJob(jobClass, name, Constant.JobGroup.COMMON, cronExpression);
     }
 
-    public static void scheduleCornJob(Class<? extends Job> jobClass, String name, String group, String cronExpression) throws SchedulerException {
-        scheduleCornJob(jobClass, name, group, cronExpression, null);
+    public static void scheduleCronJob(Class<? extends Job> jobClass, Object name, String group, String cronExpression) {
+        scheduleCronJob(jobClass, name, group, cronExpression, null);
     }
 
-    public static void scheduleCornJob(Class<? extends Job> jobClass, String name, String group, String cronExpression, JobDataMap jobDataMap) throws SchedulerException {
-        JobKey jobKey = new JobKey(name, group);
-        if (!scheduler.checkExists(jobKey)) {
-            JobBuilder jobBuilder = JobBuilder.newJob(jobClass);
-            jobBuilder.withIdentity(jobKey);
-            if (jobDataMap != null && !jobDataMap.isEmpty()) {
-                jobBuilder.setJobData(jobDataMap);
-            }
-            JobDetail jobDetail = jobBuilder.build();
-            CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cronExpression).withMisfireHandlingInstructionDoNothing();
-            TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger().withSchedule(cronScheduleBuilder);
-            CronTrigger trigger = triggerBuilder.build();
-            scheduler.scheduleJob(jobDetail, trigger);
-        }
+    public static void scheduleCronJob(Class<? extends Job> jobClass, Object name, String group, String cronExpression, JobDataMap jobDataMap) {
+        scheduleCronJob(jobClass, name, group, cronExpression, jobDataMap, null, null);
     }
 
-    public static void scheduleCornJob(Class<? extends Job> jobClass, String name, String group, String cronExpression, JobDataMap jobDataMap, Date startDate, Date endDate) throws SchedulerException {
-        JobKey jobKey = new JobKey(name, group);
-        if (!scheduler.checkExists(jobKey)) {
-            JobBuilder jobBuilder = JobBuilder.newJob(jobClass);
-            jobBuilder.withIdentity(jobKey);
-            if (jobDataMap != null && !jobDataMap.isEmpty()) {
-                jobBuilder.setJobData(jobDataMap);
+    public static void scheduleCronJob(Class<? extends Job> jobClass, Object name, String group, String cronExpression, JobDataMap jobDataMap, Date startDate, Date endDate) {
+        try {
+            JobKey jobKey = new JobKey(String.valueOf(name), group);
+            if (!scheduler.checkExists(jobKey)) {
+                JobBuilder jobBuilder = JobBuilder.newJob(jobClass);
+                jobBuilder.withIdentity(jobKey);
+                if (jobDataMap != null && !jobDataMap.isEmpty()) {
+                    jobBuilder.setJobData(jobDataMap);
+                }
+                JobDetail jobDetail = jobBuilder.build();
+                CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cronExpression).withMisfireHandlingInstructionDoNothing();
+                TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger().withSchedule(cronScheduleBuilder);
+                if (startDate != null) {
+                    triggerBuilder.startAt(startDate);
+                } else {
+                    triggerBuilder.startNow();
+                }
+                if (endDate != null) {
+                    triggerBuilder.endAt(endDate);
+                }
+                CronTrigger trigger = triggerBuilder.build();
+                scheduler.scheduleJob(jobDetail, trigger);
             }
-            JobDetail jobDetail = jobBuilder.build();
-            CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cronExpression).withMisfireHandlingInstructionDoNothing();
-            TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger().withSchedule(cronScheduleBuilder);
-            if (startDate != null) {
-                triggerBuilder.startAt(startDate);
-            } else {
-                triggerBuilder.startNow();
-            }
-            if (endDate != null) {
-                triggerBuilder.endAt(endDate);
-            }
-            CronTrigger trigger = triggerBuilder.build();
-            scheduler.scheduleJob(jobDetail, trigger);
+        } catch (Exception e) {
+            LOGGER.error("Submit job error, name=" + name + " and group=" + group, e);
         }
     }
 
     /**
      * 默认立即执行且只执行一次
      * @param jobClass
-     * @throws SchedulerException
      */
-    public static void scheduleSimpleJob(Class<? extends Job> jobClass) throws SchedulerException {
+    public static void scheduleSimpleJob(Class<? extends Job> jobClass) {
         scheduleSimpleJob(jobClass, jobClass.getSimpleName());
     }
 
-    public static void scheduleSimpleJob(Class<? extends Job> jobClass, String name) throws SchedulerException {
+    public static void scheduleSimpleJob(Class<? extends Job> jobClass, Object name) {
         scheduleSimpleJob(jobClass, name, 0, 0);
     }
 
@@ -107,60 +102,95 @@ public class SchedulerUtils {
      * @param name
      * @param intervalInMilliseconds 执行间隔
      * @param repeatCount 重复次数，小于0的时候重复执行
-     * @throws SchedulerException
      */
-    public static void scheduleSimpleJob(Class<? extends Job> jobClass, String name, long intervalInMilliseconds, int repeatCount) throws SchedulerException {
+    public static void scheduleSimpleJob(Class<? extends Job> jobClass, Object name, long intervalInMilliseconds, int repeatCount) {
         scheduleSimpleJob(jobClass, name, Constant.JobGroup.COMMON, intervalInMilliseconds, repeatCount);
     }
 
-    public static void scheduleSimpleJob(Class<? extends Job> jobClass, String name, String group, long intervalInMilliseconds, int repeatCount) throws SchedulerException {
+    public static void scheduleSimpleJob(Class<? extends Job> jobClass, Object name, String group, long intervalInMilliseconds, int repeatCount) {
         scheduleSimpleJob(jobClass, name, group, intervalInMilliseconds, repeatCount, null);
     }
 
-    public static void scheduleSimpleJob(Class<? extends Job> jobClass, String name, String group, long intervalInMilliseconds, int repeatCount, JobDataMap jobDataMap) throws SchedulerException {
+    public static void scheduleSimpleJob(Class<? extends Job> jobClass, Object name, String group, long intervalInMilliseconds, int repeatCount, JobDataMap jobDataMap) {
         scheduleSimpleJob(jobClass, name, group, intervalInMilliseconds, repeatCount, jobDataMap, null, null);
     }
 
-    public static void scheduleSimpleJob(Class<? extends Job> jobClass, String name, String group, long intervalInMilliseconds, int repeatCount, JobDataMap jobDataMap, Date startDate, Date endDate) throws SchedulerException {
-        JobKey jobKey = new JobKey(name, group);
-        if (!scheduler.checkExists(jobKey)) {
-            JobBuilder jobBuilder = JobBuilder.newJob(jobClass);
-            jobBuilder.withIdentity(jobKey);
-            if (jobDataMap != null && !jobDataMap.isEmpty()) {
-                jobBuilder.setJobData(jobDataMap);
+    public static void scheduleSimpleJob(Class<? extends Job> jobClass, Object name, String group, long intervalInMilliseconds, int repeatCount, JobDataMap jobDataMap, Date startDate, Date endDate) {
+        try {
+            JobKey jobKey = new JobKey(String.valueOf(name), group);
+            if (!scheduler.checkExists(jobKey)) {
+                JobBuilder jobBuilder = JobBuilder.newJob(jobClass);
+                jobBuilder.withIdentity(jobKey);
+                if (jobDataMap != null && !jobDataMap.isEmpty()) {
+                    jobBuilder.setJobData(jobDataMap);
+                }
+                JobDetail jobDetail = jobBuilder.build();
+                SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule();
+                simpleScheduleBuilder.withIntervalInMilliseconds(intervalInMilliseconds);
+                if (repeatCount >= 0) {
+                    simpleScheduleBuilder.withRepeatCount(repeatCount);
+                } else {
+                    simpleScheduleBuilder.repeatForever();
+                }
+                TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger().withSchedule(simpleScheduleBuilder);
+                if (startDate != null) {
+                    triggerBuilder.startAt(startDate);
+                } else {
+                    triggerBuilder.startNow();
+                }
+                if (endDate != null) {
+                    triggerBuilder.endAt(endDate);
+                }
+                SimpleTrigger trigger = triggerBuilder.build();
+                scheduler.scheduleJob(jobDetail, trigger);
             }
-            JobDetail jobDetail = jobBuilder.build();
-            SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule();
-            simpleScheduleBuilder.withIntervalInMilliseconds(intervalInMilliseconds);
-            if (repeatCount >= 0) {
-                simpleScheduleBuilder.withRepeatCount(repeatCount);
-            } else {
-                simpleScheduleBuilder.repeatForever();
-            }
-            TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger().withSchedule(simpleScheduleBuilder);
-            if (startDate != null) {
-                triggerBuilder.startAt(startDate);
-            } else {
-                triggerBuilder.startNow();
-            }
-            if (endDate != null) {
-                triggerBuilder.endAt(endDate);
-            }
-            SimpleTrigger trigger = triggerBuilder.build();
-            scheduler.scheduleJob(jobDetail, trigger);
+        } catch (Exception e) {
+            LOGGER.error("Submit job error, name=" + name + " and group=" + group, e);
         }
     }
 
-    public static void deleteJob(String name, String group) throws SchedulerException {
-        JobKey jobKey = new JobKey(name, group);
-        if (scheduler.checkExists(jobKey)) {
-            scheduler.deleteJob(jobKey);
+    public static void interrupt(Object name, String group) {
+        JobKey jobKey = new JobKey(String.valueOf(name), group);
+        try {
+            if (scheduler.checkExists(jobKey)) {
+                scheduler.interrupt(jobKey);
+            }
+        } catch (SchedulerException e) {
+            LOGGER.warn("Interrupt job error, name=" + name + " and group=" + group, e);
         }
     }
 
-    public static boolean checkExists(String name, String group) throws SchedulerException {
-        JobKey jobKey = new JobKey(name, group);
-        return scheduler.checkExists(jobKey);
+    public static void deleteJob(Object name, String group) {
+        JobKey jobKey = new JobKey(String.valueOf(name), group);
+        try {
+            if (scheduler.checkExists(jobKey)) {
+                scheduler.deleteJob(jobKey);
+            }
+        } catch (SchedulerException e) {
+            LOGGER.warn("Delete job error, name=" + name + " and group=" + group, e);
+        }
+    }
+
+    public static void pauseJob(Object name, String group) {
+        JobKey jobKey = new JobKey(String.valueOf(name), group);
+        try {
+            if (scheduler.checkExists(jobKey)) {
+                scheduler.pauseJob(jobKey);
+            }
+        } catch (SchedulerException e) {
+            LOGGER.warn("Pause job error, name=" + name + " and group=" + group, e);
+        }
+    }
+
+    public static void resumeJob(Object name, String group) {
+        JobKey jobKey = new JobKey(String.valueOf(name), group);
+        try {
+            if (scheduler.checkExists(jobKey)) {
+                scheduler.resumeJob(jobKey);
+            }
+        } catch (SchedulerException e) {
+            LOGGER.warn("Resume job error, name=" + name + " and group=" + group, e);
+        }
     }
 
 }

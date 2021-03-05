@@ -6,8 +6,8 @@ import com.meiyou.bigwhale.entity.ClusterUser;
 import java.util.List;
 
 
-public interface ClusterUserService extends PagingAndSortingQueryService<ClusterUser, String> {
+public interface ClusterUserService extends PagingAndSortingQueryService<ClusterUser, Integer> {
 
-    List<ClusterUser> findByClusterIdAndQueue(String clusterId, String queue);
+    List<ClusterUser> findByClusterIdAndQueue(Integer clusterId, String queue);
 
 }

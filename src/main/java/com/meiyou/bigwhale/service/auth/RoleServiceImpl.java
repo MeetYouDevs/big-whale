@@ -16,7 +16,7 @@ import java.util.List;
  * @description file description
  */
 @Service
-public class RoleServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Role, String> implements RoleService {
+public class RoleServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Role, Integer> implements RoleService {
 
     @Autowired
     private RoleResourceService roleResourceService;

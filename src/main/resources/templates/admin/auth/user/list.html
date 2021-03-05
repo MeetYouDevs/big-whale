@@ -17,7 +17,7 @@
             <form class="form-horizontal" ng-submit="onSaveItem()">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="modal_input_username" class="col-sm-4 control-label">
+                        <label for="modal_input_username" class="col-sm-3 control-label">
                             用户名&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -26,7 +26,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_nickname" class="col-sm-4 control-label">
+                        <label for="modal_input_nickname" class="col-sm-3 control-label">
                             昵称
                         </label>
                         <div class="col-sm-5">
@@ -34,7 +34,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_email" class="col-sm-4 control-label">
+                        <label for="modal_input_email" class="col-sm-3 control-label">
                             邮箱
                         </label>
                         <div class="col-sm-5">
@@ -42,7 +42,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_phone" class="col-sm-4 control-label">
+                        <label for="modal_input_phone" class="col-sm-3 control-label">
                             电话
                         </label>
                         <div class="col-sm-5">
@@ -50,7 +50,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_password" class="col-sm-4 control-label">
+                        <label for="modal_input_password" class="col-sm-3 control-label">
                             密码&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -58,7 +58,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <div class="col-sm-offset-4 col-sm-4">
+                        <div class="col-sm-offset-3 col-sm-5">
                             <div class="checkbox">
                                 <label>
                                     <input type="checkbox" ng-model="editItem.enabled"/> 启用
@@ -71,7 +71,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_select_role" class="col-sm-4 control-label">角色</label>
+                        <label for="modal_select_role" class="col-sm-3 control-label">角色</label>
                         <div class="col-sm-5">
                             <select id="modal_select_role" class="form-control selectpicker show-tick" data-actions-box="true" data-select-all-text="全选" data-deselect-all-text="反选"
                                     ng-model="editItem.roles" ng-options="item.value as item.name for item in roles" title="请选择" multiple>
@@ -102,93 +102,91 @@
     </div>
     <div class="bw-body">
         <div class="row">
-            <div class="col-md-12">
-                <div class="col-md-12 search-form">
-                    <form class="form-inline" ng-submit="options.mypage.toFirst()">
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="用户名/昵称" ng-model="query.searchText">
-                        </div>
-                        <div class="item-inl form-group">
-                            <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        操作
-                                    </th>
-                                    <th>
-                                        用户名
-                                    </th>
-                                    <th>
-                                        昵称
-                                    </th>
-                                    <th>
-                                        邮箱
-                                    </th>
-                                    <th>
-                                        电话
-                                    </th>
-                                    <th>
-                                        角色
-                                    </th>
-                                    <th>
-                                        是否启用
-                                    </th>
-                                    <th>
-                                        创建时间
-                                    </th>
-                                    <th>
-                                        修改时间
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="item in items" ng-show="item.username.indexOf(query.searchText) >= 0 || item.nickname.indexOf(query.searchText) >= 0">
-                                    <td>
-                                        <p class="operate">
-                                            <span ng-click="onEditItem(item)">
-                                                <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
-                                            </span>
-                                            <br/>
-                                            <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
-                                                <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
-                                            </span>
-                                        </p>
-                                    </td>
-                                    <td>
-                                        {{item.username}}
-                                    </td>
-                                    <td>
-                                        {{item.nickname}}
-                                    </td>
-                                    <td>
-                                        {{item.email}}
-                                    </td>
-                                    <td>
-                                        {{item.phone}}
-                                    </td>
-                                    <td>
-                                        {{item.roleNames}}
-                                    </td>
-                                    <td>
-                                        <label ng-if="item.enabled" class="label label-success">启用</label>
-                                        <label ng-if="!item.enabled" class="label label-danger">禁用</label>
-                                    </td>
-                                    <td>
-                                        {{item.createTime}}
-                                    </td>
-                                    <td>
-                                        {{item.updateTime}}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="col-md-12 search-form">
+                <form class="form-inline">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="用户名/昵称" ng-model="query.searchText">
                     </div>
+                    <div class="item-inl form-group">
+                        <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th>
+                                    用户名
+                                </th>
+                                <th>
+                                    昵称
+                                </th>
+                                <th>
+                                    邮箱
+                                </th>
+                                <th>
+                                    电话
+                                </th>
+                                <th>
+                                    角色
+                                </th>
+                                <th>
+                                    是否启用
+                                </th>
+                                <th>
+                                    创建时间
+                                </th>
+                                <th>
+                                    修改时间
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in items" ng-show="item.username.indexOf(query.searchText) >= 0 || item.nickname.indexOf(query.searchText) >= 0">
+                                <td>
+                                    <p class="operate">
+                                        <span ng-click="onEditItem(item)">
+                                            <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
+                                        </span>
+                                        <br/>
+                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                        </span>
+                                    </p>
+                                </td>
+                                <td>
+                                    {{item.username}}
+                                </td>
+                                <td>
+                                    {{item.nickname}}
+                                </td>
+                                <td>
+                                    {{item.email}}
+                                </td>
+                                <td>
+                                    {{item.phone}}
+                                </td>
+                                <td>
+                                    {{item.roleNames}}
+                                </td>
+                                <td>
+                                    <label ng-if="item.enabled" class="label label-success">启用</label>
+                                    <label ng-if="!item.enabled" class="label label-danger">禁用</label>
+                                </td>
+                                <td>
+                                    {{item.createTime}}
+                                </td>
+                                <td>
+                                    {{item.updateTime}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -215,12 +213,12 @@
                 enabled: true,
                 level: 0
             };
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $scope.onEditItem = function (item) {
             $scope.editItem = angular.copy(item);
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $('#editDlg').on('shown.bs.modal', function () {
@@ -230,7 +228,7 @@
         $scope.onSaveItem = function () {
             $('#btn_submit').attr('disabled', 'true');
             $http.post('./save.api', $scope.editItem)
-                .success(function (data) {
+                .success(function () {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                     $scope.reload();
@@ -241,7 +239,7 @@
                         timer: 1500
                     });
                 })
-                .error(function (data) {
+                .error(function () {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                 });

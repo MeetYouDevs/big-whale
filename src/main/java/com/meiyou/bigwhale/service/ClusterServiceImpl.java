@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
-public class ClusterServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Cluster, String> implements ClusterService {
+public class ClusterServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Cluster, Integer> implements ClusterService {
 
     @Autowired
     private ClusterUserService clusterUserService;
@@ -17,10 +17,10 @@ public class ClusterServiceImpl extends AbstractMysqlPagingAndSortingQueryServic
     @Override
     public <S extends Cluster> S save(S entity) {
         if (entity.getDefaultFileCluster()) {
-            findByQuery("id!=" + entity.getId()).forEach(item -> {
-                if (item.getDefaultFileCluster()) {
-                    item.setDefaultFileCluster(false);
-                    save(item);
+            findAll().forEach(cluster -> {
+                if (cluster.getDefaultFileCluster() && !cluster.getId().equals(entity.getId())) {
+                    cluster.setDefaultFileCluster(false);
+                    save(cluster);
                 }
             });
         }

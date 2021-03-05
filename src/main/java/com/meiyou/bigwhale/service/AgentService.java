@@ -6,10 +6,10 @@ import com.meiyou.bigwhale.data.service.PagingAndSortingQueryService;
 /**
  * @author progr1mmer
  */
-public interface AgentService extends PagingAndSortingQueryService<Agent, String> {
+public interface AgentService extends PagingAndSortingQueryService<Agent, Integer> {
 
-    String getInstanceByClusterId(String clusterId, boolean check);
+    String getInstanceByClusterId(Integer clusterId, boolean check);
 
-    String getInstanceByAgentId(String agentId, boolean check);
+    String getInstanceByAgentId(Integer agentId, boolean check);
 
 }

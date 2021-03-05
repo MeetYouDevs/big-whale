@@ -10,6 +10,6 @@ import org.springframework.stereotype.Service;
  * @description file description
  */
 @Service
-public class RoleResourceServiceImpl extends AbstractMysqlPagingAndSortingQueryService<RoleResource, String> implements RoleResourceService {
+public class RoleResourceServiceImpl extends AbstractMysqlPagingAndSortingQueryService<RoleResource, Integer> implements RoleResourceService {
 
 }

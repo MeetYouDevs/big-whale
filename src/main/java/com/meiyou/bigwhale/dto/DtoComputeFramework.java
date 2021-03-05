@@ -18,7 +18,7 @@ import org.apache.commons.lang.StringUtils;
 @AllArgsConstructor
 public class DtoComputeFramework extends AbstractPageDto {
 
-    private String id;
+    private Integer id;
     private String type;
     private String version;
     private String command;

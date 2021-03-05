@@ -9,8 +9,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
-
 @Controller
 public class PathController {
 
@@ -43,105 +41,115 @@ public class PathController {
         return "welcome";
     }
 
-    @GetMapping("/script/list.html")
-    public String scriptPage() {
-        return "script/list";
+    @GetMapping("/schedule/list.html")
+    public String scheduleList() {
+        return "schedule/list";
     }
 
-    @GetMapping("/script/edit.html")
-    public String scriptAdd(
-            @RequestParam(name = "id", required = false) String id,
+    @GetMapping("/schedule/edit.html")
+    public String scheduleEdit(
+            @RequestParam(name = "id", required = false) Integer id,
             Model viewObjects) {
-        if (StringUtils.isNotBlank(id)) {
+        if (id != null) {
+            viewObjects.addAttribute("scheduleId", id);
+        }
+        return "schedule/edit";
+    }
+
+    @GetMapping("/schedule/instance.html")
+    public String scheduleInstance(
+            @RequestParam(name = "id", required = false) Integer id,
+            @RequestParam(name = "instanceId", required = false) String instanceId,
+            Model viewObjects) {
+        if (id != null) {
+            viewObjects.addAttribute("scheduleId", id);
+        }
+        if (StringUtils.isNotBlank(instanceId)) {
+            viewObjects.addAttribute("instanceId", instanceId);
+        }
+        return "schedule/instance";
+    }
+
+    @GetMapping("/stream/list.html")
+    public String streamList() {
+        return "stream/list";
+    }
+
+    @GetMapping("/stream/edit.html")
+    public String streamEdit(
+            @RequestParam(name = "id", required = false) Integer id,
+            Model viewObjects) {
+        if (id != null) {
             viewObjects.addAttribute("scriptId", id);
         }
-        return "script/edit";
+        return "stream/edit";
     }
 
-    @GetMapping("/scheduling/list.html")
-    public String taskPage() {
-        return "scheduling/list";
-    }
-
-    @GetMapping("/scheduling/edit.html")
-    public String taskAdd(@RequestParam(name = "id", required = false) String id,
-                          Model viewObjects) {
-        if (StringUtils.isNotBlank(id)) {
-            viewObjects.addAttribute("schedulingId", id);
-        }
-        return "scheduling/edit";
-    }
-
-    @GetMapping("/yarn_app/list.html")
-    public String jobYarnPage(
-            @RequestParam(name = "appId", required = false) String appId,
+    @GetMapping("/script_history/list.html")
+    public String scriptHistoryList(
+            @RequestParam(name = "id", required = false) Integer id,
+            @RequestParam(name = "scheduleId", required = false) Integer scheduleId,
+            @RequestParam(name = "scheduleTopNodeId", required = false) String scheduleTopNodeId,
+            @RequestParam(name = "scheduleInstanceId", required = false) String scheduleInstanceId,
+            @RequestParam(name = "scriptId", required = false) Integer scriptId,
             Model viewObjects) {
-        if (StringUtils.isNotBlank(appId)) {
-            viewObjects.addAttribute("appId", appId);
-        }
-        return "yarn_app/list";
-    }
-
-    @GetMapping("/script/cmd_record/list.html")
-    public String cmdRecordPage(
-            @RequestParam(name = "id", required = false) String id,
-            @RequestParam(name = "scriptId", required = false) String scriptId,
-            @RequestParam(name = "schedulingId", required = false) String schedulingId,
-            Model viewObjects) {
-        if (StringUtils.isNotBlank(id)) {
+        if (id != null) {
             viewObjects.addAttribute("id", id);
         }
-        if (StringUtils.isNotBlank(scriptId)) {
+        if (scheduleId != null) {
+            viewObjects.addAttribute("scheduleId", scheduleId);
+            viewObjects.addAttribute("scheduleTopNodeId", scheduleTopNodeId);
+            viewObjects.addAttribute("scheduleInstanceId", scheduleInstanceId);
+        }
+        if (scriptId != null) {
             viewObjects.addAttribute("scriptId", scriptId);
+            viewObjects.addAttribute("scriptId_", "-");
         }
-        if (StringUtils.isNotBlank(schedulingId)) {
-            viewObjects.addAttribute("schedulingId", schedulingId);
-        }
-        return "script/cmd_record/list";
+        return "script_history/list";
     }
 
     @GetMapping("/hdfs/list.html")
-    public String hdfsPage() {
+    public String hdfsList() {
         return "hdfs/list";
     }
 
+    @GetMapping("/yarn_app/list.html")
+    public String yarnList() {
+        return "yarn_app/list";
+    }
+
     @GetMapping("/admin/cluster/list.html")
-    public String clusterPage() {
+    public String clusterList() {
         return "admin/cluster/list";
     }
 
     @GetMapping("/admin/cluster/cluster_user/list.html")
-    public String clusterUserPage(
-            @RequestParam(name = "clusterId", required = false) String clusterId,
-            Model model) {
-        if (StringUtils.isNotBlank(clusterId)) {
-            model.addAttribute("clusterId", clusterId);
-        }
+    public String clusterUserList() {
         return "admin/cluster/cluster_user/list";
     }
 
     @GetMapping("/admin/cluster/agent/list.html")
-    public String agentPage() {
+    public String agentList() {
         return "admin/cluster/agent/list";
     }
 
     @GetMapping("/admin/cluster/compute_framework/list.html")
-    public String computeFrameworkPage() {
+    public String computeFrameworkList() {
         return "admin/cluster/compute_framework/list";
     }
 
     @GetMapping("/auth/resource/list.html")
-    public String resourcesPage() {
+    public String resourceList() {
         return "admin/auth/resource/list";
     }
 
     @GetMapping("/auth/role/list.html")
-    public String rolesPage() {
+    public String roleList() {
         return "admin/auth/role/list";
     }
 
     @GetMapping("/auth/user/list.html")
-    public String usersPage() {
+    public String userList() {
         return "admin/auth/user/list";
     }
 

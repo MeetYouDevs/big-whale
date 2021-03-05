@@ -16,7 +16,7 @@
             <form class="form-horizontal" ng-submit="onSaveItem()">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="modal_input_code" class="col-sm-4 control-label">
+                        <label for="modal_input_code" class="col-sm-3 control-label">
                             code&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -25,7 +25,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_name" class="col-sm-4 control-label">
+                        <label for="modal_input_name" class="col-sm-3 control-label">
                             名称&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -33,7 +33,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_url" class="col-sm-4 control-label">
+                        <label for="modal_input_url" class="col-sm-3 control-label">
                             url
                         </label>
                         <div class="col-sm-5">
@@ -64,61 +64,59 @@
     </div>
     <div class="bw-body">
         <div class="row">
-            <div class="col-md-12">
-                <div class="col-md-12 search-form">
-                    <form class="form-inline" ng-submit="options.mypage.toFirst()">
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="code/名称" ng-model="query.searchText">
-                        </div>
-                        <div class="item-inl form-group">
-                            <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        操作
-                                    </th>
-                                    <th>
-                                        code
-                                    </th>
-                                    <th>
-                                        名称
-                                    </th>
-                                    <th>
-                                        url
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="item in items" ng-show="item.code.indexOf(query.searchText) >= 0 || item.name.indexOf(query.searchText) >= 0">
-                                    <td>
-                                        <p class="operate">
-                                            <span ng-click="onEditItem(item)">
-                                                <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
-                                            </span><br/>
-                                            <a class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
-                                                <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
-                                            </a>
-                                        </p>
-                                    </td>
-                                    <td>
-                                        {{item.code}}
-                                    </td>
-                                    <td>
-                                        {{item.name}}
-                                    </td>
-                                    <td>
-                                        {{item.url}}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="col-md-12 search-form">
+                <form class="form-inline">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="code/名称" ng-model="query.searchText">
                     </div>
+                    <div class="item-inl form-group">
+                        <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th>
+                                    code
+                                </th>
+                                <th>
+                                    名称
+                                </th>
+                                <th>
+                                    url
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in items" ng-show="item.code.indexOf(query.searchText) >= 0 || item.name.indexOf(query.searchText) >= 0">
+                                <td>
+                                    <p class="operate">
+                                        <span ng-click="onEditItem(item)">
+                                            <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
+                                        </span><br/>
+                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                        </span>
+                                    </p>
+                                </td>
+                                <td>
+                                    {{item.code}}
+                                </td>
+                                <td>
+                                    {{item.name}}
+                                </td>
+                                <td>
+                                    {{item.url}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -140,18 +138,18 @@
             $scope.editItem = {
                 url: ''
             };
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $scope.onEditItem = function (item) {
             $scope.editItem = angular.copy(item);
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $scope.onSaveItem = function () {
             $('#btn_submit').attr('disabled', 'true');
             $http.post('./save.api', $scope.editItem)
-                .success(function (data) {
+                .success(function () {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                     $scope.reload();
@@ -162,7 +160,7 @@
                         timer: 1500
                     });
                 })
-                .error(function (data) {
+                .error(function () {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                 });

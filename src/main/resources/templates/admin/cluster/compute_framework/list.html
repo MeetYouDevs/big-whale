@@ -17,7 +17,7 @@
             <form class="form-horizontal" ng-submit="onSaveItem()">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="modal_select_type" class="col-sm-4 control-label">
+                        <label for="modal_select_type" class="col-sm-3 control-label">
                             计算框架
                         </label>
                         <div class="col-sm-5">
@@ -28,7 +28,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_version" class="col-sm-4 control-label">
+                        <label for="modal_input_version" class="col-sm-3 control-label">
                             版本&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -36,7 +36,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_command" class="col-sm-4 control-label">
+                        <label for="modal_input_command" class="col-sm-3 control-label">
                             命令&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -44,7 +44,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_orders" class="col-sm-4 control-label">
+                        <label for="modal_input_orders" class="col-sm-3 control-label">
                             排序&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -75,68 +75,68 @@
     </div>
     <div class="bw-body">
         <div class="row">
-            <div class="col-md-12 ">
-                <div class="col-md-12 search-form">
-                    <form class="form-inline" ng-submit="options.mypage.toFirst()">
-                        <div class="form-group">
-                            <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        操作
-                                    </th>
-                                    <th>
-                                        计算框架
-                                    </th>
-                                    <th>
-                                        版本
-                                    </th>
-                                    <th>
-                                        命令
-                                    </th>
-                                    <th>
-                                        排序
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="item in options.items">
-                                    <td>
-                                        <p class="operate">
-                                            <span ng-click="onEditItem(item)">
-                                                <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
-                                            </span><br/>
-                                            <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
-                                                <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
-                                            </span>
-                                        </p>
-                                    </td>
-                                    <td>
-                                        {{item.type}}
-                                    </td>
-                                    <td>
-                                        {{item.version}}
-                                    </td>
-                                    <td>
-                                        {{item.command}}
-                                    </td>
-                                    <td>
-                                        {{item.orders}}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="col-md-12 search-form">
+                <form class="form-inline" ng-submit="options.mypage.toFirst()">
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
                     </div>
-                </div>
-                <mypage ng-model="options"></mypage>
-                <div class="clearfix"></div>
+                </form>
             </div>
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th>
+                                    计算框架
+                                </th>
+                                <th>
+                                    版本
+                                </th>
+                                <th>
+                                    命令
+                                </th>
+                                <th>
+                                    排序
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in options.items">
+                                <td>
+                                    <p class="operate">
+                                        <span ng-click="onEditItem(item)">
+                                            <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
+                                        </span><br/>
+                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                        </span>
+                                    </p>
+                                </td>
+                                <td>
+                                    {{item.type}}
+                                </td>
+                                <td>
+                                    {{item.version}}
+                                </td>
+                                <td>
+                                    {{item.command}}
+                                </td>
+                                <td>
+                                    {{item.orders}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <mypage ng-model="options"></mypage>
+            </div>
+            <div class="clearfix"></div>
         </div>
     </div>
 </div>
@@ -155,12 +155,12 @@
             $scope.editItem = {
                 type: 'Spark'
             };
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $scope.onEditItem = function(item) {
             $scope.editItem = angular.copy(item);
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $('#editDlg').on('shown.bs.modal', function () {
@@ -170,7 +170,7 @@
         $scope.onSaveItem = function() {
             $('#btn_submit').attr('disabled','true');
             $http.post('./save.api', $scope.editItem)
-                .success(function(data) {
+                .success(function() {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                     $scope.reload();
@@ -181,7 +181,7 @@
                         timer: 1500
                     });
                 })
-                .error(function (data) {
+                .error(function () {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                 });
@@ -194,7 +194,7 @@
         // 获取数据列表
         $scope.options = {
             query: {},
-            listUrl: './getpage.api'
+            listUrl: './page.api'
         };
 
         // 刷新

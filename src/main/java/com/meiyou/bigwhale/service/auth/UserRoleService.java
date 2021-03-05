@@ -8,5 +8,5 @@ import com.meiyou.bigwhale.entity.auth.UserRole;
  * @date 2019/10/24
  * @description file description
  */
-public interface UserRoleService extends PagingAndSortingQueryService<UserRole, String> {
+public interface UserRoleService extends PagingAndSortingQueryService<UserRole, Integer> {
 }

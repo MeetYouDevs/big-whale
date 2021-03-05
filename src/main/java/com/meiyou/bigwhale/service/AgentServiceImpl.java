@@ -15,7 +15,7 @@ import java.util.*;
  * @author progr1mmer
  */
 @Service
-public class AgentServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Agent, String> implements AgentService {
+public class AgentServiceImpl extends AbstractMysqlPagingAndSortingQueryService<Agent, Integer> implements AgentService {
 
     private Logger logger = LoggerFactory.getLogger(AgentServiceImpl.class);
 
@@ -23,7 +23,7 @@ public class AgentServiceImpl extends AbstractMysqlPagingAndSortingQueryService<
     private SshConfig sshConfig;
 
     @Override
-    public String getInstanceByClusterId(String clusterId, boolean check) {
+    public String getInstanceByClusterId(Integer clusterId, boolean check) {
         List<Agent> agents = findByQuery("clusterId=" + clusterId);
         while (!agents.isEmpty()) {
             int random = new Random().nextInt(agents.size());
@@ -38,7 +38,7 @@ public class AgentServiceImpl extends AbstractMysqlPagingAndSortingQueryService<
     }
 
     @Override
-    public String getInstanceByAgentId(String agentId, boolean check) {
+    public String getInstanceByAgentId(Integer agentId, boolean check) {
         Agent agent = findById(agentId);
         List<String> instances = new ArrayList<>();
         Collections.addAll(instances, agent.getInstances().split(","));

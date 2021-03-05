@@ -32,19 +32,14 @@ body {
     padding: 15px;
 }
 
-.bw-body .row .col-md-12 {
+.bw-body .row {
     background: #ffffff;
-}
-
-.bw-body .row .col-md-12 .col-md-12 {
-    padding-left: 0;
-    padding-right: 0;
 }
 
 .search-form {
     border-top: 1px;
     border-bottom: 1px dashed #eee;
-    padding: 10px 0;
+    padding: 10px 15px 0 15px;
 }
 
 .search-form .form-group {
@@ -60,7 +55,7 @@ body {
     padding: 0 10px 0 5px;
 }
 
-.operate > .remove {
+.operate > .remove,.kill {
     color: red;
 }
 
@@ -76,7 +71,7 @@ body {
 .order div i {
     display: block;
     font-size: 12px;
-    -webkit-transform:scale(0.7);
+    -webkit-transform: scale(0.7);
     line-height: 6px;
     top: 0;
     color: #999999;
@@ -86,15 +81,65 @@ body {
     color: #337ab7;
 }
 
-.script-name {
+.id {
+    display: inline-block;
+    min-width: 50px;
+}
+
+.name {
     display: inline-block;
     max-width: 150px;
     white-space: pre-wrap;
     word-wrap: break-word;
 }
 
-@media (max-width: 1280px) {
+.desc {
+    display: inline-block;
+    max-width: 150px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.form-control-plaintext {
+    display: inline-block;
+    width: 79%;
+    padding: 6px 12px;
+    margin-bottom: 0;
+    background-color: transparent;
+    border: solid transparent;
+    border-width: 1px 0;
+    border-bottom: 1px solid #dee2e6!important;
+}
+
+.form-control-plaintext:read-only {
+    outline: none;
+}
+
+.col-control {
+    margin-left: -15px;
+}
+
+span[disabled=disabled] {
+    pointer-events: none;
+}
+
+@media (max-width: 992px) {
+    .bw-body .row .col-md-12 form {
+        padding-top: 10px;
+    }
+}
+
+@media (max-width: 1200px) {
     .operate {
         width: 50px;
     }
+
+    .name {
+        max-width: 100px;
+    }
+
+    .desc {
+        max-width: 100px;
+    }
+
 }

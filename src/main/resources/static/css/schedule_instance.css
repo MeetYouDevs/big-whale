@@ -1,0 +1,78 @@
+.instance-form {
+    padding-top: 10px;
+}
+
+.instance-list {
+    max-height: 350px;
+}
+
+.instance-list .list-group-item {
+    padding: 5px 10px;
+}
+
+.instance-tree {
+    position: relative;
+    overflow: auto;
+    margin: 10px 0;
+    min-height: 550px;
+    border: 1px solid #ddd;
+    padding: 5px 0;
+}
+
+.instance-tree .list-group-item:first-child {
+    border-top-left-radius: unset;
+    border-top-right-radius: unset;
+}
+
+.instance-tree .list-group-item:last-child {
+    border-bottom-left-radius: unset;
+    border-bottom-right-radius: unset;
+}
+
+.instance-tree .state {
+    padding: 5px 15px
+}
+
+.instance-tree .refresh {
+    position: absolute;
+    top: 15px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.instance-tree .refresh img {
+    vertical-align: text-top;
+}
+
+.instance-operate {
+    margin: 10px 0;
+}
+
+.instance-operate button {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.treeview .list-group-item {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: unset;
+}
+.treeview .list-group-item:not(.node-disabled):hover {
+    background-color: #fff;
+}
+.treeview .list-group-item span {
+    display: inline;
+}
+.treeview .list-group-item .cube {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    margin-left: 3px;
+}
+
+@media (max-width: 992px) {
+    .instance-tree {
+        min-height: 560px;
+    }
+}

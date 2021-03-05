@@ -17,33 +17,33 @@
             <form class="form-horizontal" ng-submit="onSaveItem()">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="modal_select_uid" class="col-sm-4 control-label">
+                        <label for="modal_select_clusterId_new" class="col-sm-3 control-label">
+                            集群&nbsp;<B>*</B>
+                        </label>
+                        <div class="col-sm-5" ng-if="editItem.id == null">
+                            <select id="modal_select_clusterId_new" class="form-control selectpicker show-tick" data-actions-box="true" data-select-all-text="全选" data-deselect-all-text="反选"
+                                    ng-model="editItem.clusterIds" ng-options="item.id as item.name for item in clusterList" title="请选择" multiple required>
+                            </select>
+                        </div>
+                        <div class="col-sm-5" ng-if="editItem.id != null">
+                            <select class="form-control selectpicker show-tick" ng-model="editItem.clusterId"
+                                    ng-options="item.id as item.name for item in clusterList" required>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_select_uid" class="col-sm-3 control-label">
                             平台用户&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
-                            <select id="modal_select_uid" class="form-control selectpicker show-tick" data-live-search="true" ng-model="editItem.uid"
+                            <select id="modal_select_uid" class="form-control selectpicker show-tick" data-live-search="true" ng-model="editItem.userId"
                                     ng-options="item.id as item.username for item in userList" required>
                                 <option value="">请选择</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_select_clusterId_new" class="col-sm-4 control-label">
-                            集群&nbsp;<B>*</B>
-                        </label>
-                        <div class="col-sm-5" ng-if="editItem.id == null">
-                            <select id="modal_select_clusterId_new" class="form-control selectpicker show-tick" data-actions-box="true" data-select-all-text="全选" data-deselect-all-text="反选"
-                                    ng-model="editItem.clusterId" ng-options="item.id as item.name for item in clusterList" title="请选择" multiple required>
-                            </select>
-                        </div>
-                        <div class="col-sm-5" ng-if="editItem.id != null">
-                            <select id="modal_select_clusterId_edit" class="form-control selectpicker show-tick"
-                                    ng-model="editItem.clusterId" ng-options="item.id as item.name for item in clusterList" required>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="modal_input_queue" class="col-sm-4 control-label">
+                        <label for="modal_input_queue" class="col-sm-3 control-label">
                             队列&nbsp;<B>*</B>
                         </label>
                         <div class="col-sm-5">
@@ -54,7 +54,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_input_proxy_user" class="col-sm-4 control-label">
+                        <label for="modal_input_proxy_user" class="col-sm-3 control-label">
                             代理用户
                         </label>
                         <div class="col-sm-5">
@@ -85,86 +85,86 @@
     </div>
     <div class="bw-body">
         <div class="row">
-            <div class="col-md-12">
-                <div class="col-md-12 search-form">
-                    <form class="form-inline" ng-submit="options.mypage.toFirst()">
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="队列包含" ng-model="options.query.queue">
-                        </div>
-                        <div class="form-group" th:if="${session.user.check('cluster_cluster_user_manage')}">
-                            <label for="query_select_uid">用户</label>
-                            <select id="query_select_uid" class="selectpicker show-tick" data-live-search="true"
-                                    ng-model="options.query.uid" ng-options="item.id as item.username for item in userList">
-                                <option value="">不限</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="query_select_clusterId">集群</label>
-                            <select id="query_select_clusterId" class="selectpicker show-tick"
-                                    ng-model="options.query.clusterId" ng-options="item.id as item.name for item in clusterList">
-                                <option value="">不限</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-success">搜索</button>
-                            <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-12 table-responsive">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        操作
-                                    </th>
-                                    <th>
-                                        用户
-                                    </th>
-                                    <th>
-                                        集群
-                                    </th>
-                                    <th>
-                                        队列
-                                    </th>
-                                    <th>
-                                        代理用户
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <tr ng-repeat="item in options.items">
-                                <td>
-                                    <p class="operate">
-                                        <span ng-click="onEditItem(item)">
-                                            <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
-                                        </span><br/>
-                                        <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
-                                            <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
-                                        </span>
-                                    </p>
-                                </td>
-                                <td>
-                                    {{userMap[item.uid].username}}
-                                </td>
-                                <td>
-                                    {{clusterMap[item.clusterId].name}}
-                                </td>
-                                <td>
-                                    {{item.queue}}
-                                </td>
-                                <td>
-                                    {{item.user}}
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
+            <div class="col-md-12 search-form">
+                <form class="form-inline" ng-submit="options.mypage.toFirst()">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="队列包含" ng-model="options.query.queue">
                     </div>
-                </div>
-                <mypage ng-model="options"></mypage>
-                <div class="clearfix"></div>
+                    <div class="form-group">
+                        <label for="query_select_clusterId">集群</label>
+                        <select id="query_select_clusterId" class="selectpicker show-tick"
+                                ng-model="options.query.clusterId" ng-options="item.id as item.name for item in clusterList">
+                            <option value="">不限</option>
+                        </select>
+                    </div>
+                    <div class="form-group" th:if="${session.user.check('cluster_cluster_user_manage')}">
+                        <label for="query_select_uid">用户</label>
+                        <select id="query_select_uid" class="selectpicker show-tick" data-live-search="true"
+                                ng-model="options.query.userId" ng-options="item.id as item.username for item in userList">
+                            <option value="">不限</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">搜索</button>
+                        <button type="button" class="btn btn-primary" ng-click="onNewItem()">新增</button>
+                    </div>
+                </form>
             </div>
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    操作
+                                </th>
+                                <th>
+                                    用户
+                                </th>
+                                <th>
+                                    集群
+                                </th>
+                                <th>
+                                    队列
+                                </th>
+                                <th>
+                                    代理用户
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="item in options.items">
+                            <td>
+                                <p class="operate">
+                                    <span ng-click="onEditItem(item)">
+                                        <i class="glyphicon glyphicon-pencil" aria-hidden="true" title="编辑"></i>
+                                    </span><br/>
+                                    <span class="remove" id="{{item.id}}_removeBtn" ng-click="onRemoveItem(item)">
+                                        <i class="glyphicon glyphicon-trash" aria-hidden="true" title="删除"></i>
+                                    </span>
+                                </p>
+                            </td>
+                            <td>
+                                {{userMap[item.userId].username}}
+                            </td>
+                            <td>
+                                {{clusterMap[item.clusterId].name}}
+                            </td>
+                            <td>
+                                {{item.queue}}
+                            </td>
+                            <td>
+                                {{item.user}}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <mypage ng-model="options"></mypage>
+            </div>
+            <div class="clearfix"></div>
         </div>
     </div>
 </div>
@@ -184,12 +184,12 @@
 
         $scope.onNewItem = function () {
             $scope.editItem = {};
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $scope.onEditItem = function(item) {
             $scope.editItem = angular.copy(item);
-            $('#editDlg').modal();
+            $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
         $('#editDlg').on('shown.bs.modal', function () {
@@ -209,7 +209,7 @@
                 $scope.editItem.clusterId = clusterIds;
             }
             $http.post('./save.api', $scope.editItem)
-                .success(function(data) {
+                .success(function() {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                     $scope.reload();
@@ -220,7 +220,7 @@
                         timer: 1500
                     });
                 })
-                .error(function (data) {
+                .error(function () {
                     $('#btn_submit').removeAttr('disabled');
                     $('#editDlg').modal('hide');
                 });
@@ -245,7 +245,7 @@
             query: {
                 clusterId: clusterId
             },
-            listUrl: './getpage.api'
+            listUrl: './page.api'
         };
 
         // 刷新

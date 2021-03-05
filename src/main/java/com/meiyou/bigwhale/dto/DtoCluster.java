@@ -12,7 +12,7 @@ import org.apache.commons.lang.StringUtils;
 @AllArgsConstructor
 public class DtoCluster extends AbstractPageDto {
 
-    private String id;
+    private Integer id;
     private String name;
     private String yarnUrl;
     private String fsDefaultFs;
@@ -21,7 +21,7 @@ public class DtoCluster extends AbstractPageDto {
     private String fsDir;
     private Boolean defaultFileCluster;
     private Boolean flinkProxyUserEnabled;
-    private String streamingBlackNodeList;
+    private String streamBlackNodeList;
     private String batchBlackNodeList;
 
     @Override

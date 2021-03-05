@@ -8,6 +8,6 @@ import com.meiyou.bigwhale.entity.ComputeFramework;
  * @date 2020/2/20
  * @description file description
  */
-public interface ComputeFrameworkService extends PagingAndSortingQueryService<ComputeFramework, String> {
+public interface ComputeFrameworkService extends PagingAndSortingQueryService<ComputeFramework, Integer> {
 
 }

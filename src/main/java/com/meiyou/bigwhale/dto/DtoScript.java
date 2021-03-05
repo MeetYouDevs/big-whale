@@ -17,34 +17,48 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 public class DtoScript extends AbstractPageDto {
 
-    private static final Pattern SPARK_NAME_PATTERN = Pattern.compile("--name ([\\w-.,]+)");
-    private static final Pattern FLINK_NAME_PATTERN = Pattern.compile("-ynm ([\\w-.,]+)");
-    private static final Pattern SPARK_QUEUE_PATTERN = Pattern.compile("--queue ([\\w-.,]+)");
-    private static final Pattern FLINK_QUEUE_PATTERN = Pattern.compile("-yqu ([\\w-.,]+)");
+    public static final Pattern SPARK_NAME_PATTERN = Pattern.compile("--name ([\\w-.,]+)");
+    public static final Pattern FLINK_NAME_PATTERN = Pattern.compile("-ynm ([\\w-.,]+)");
+    public static final Pattern SPARK_QUEUE_PATTERN = Pattern.compile("--queue ([\\w-.,]+)");
+    public static final Pattern FLINK_QUEUE_PATTERN = Pattern.compile("-yqu ([\\w-.,]+)");
 
-    private String id;
+    private Integer id;
     private String name;
     private String description;
-    private Integer type;
+    private String type;
+    private Integer scheduleId;
+    /**
+     * 拓扑节点ID
+     */
+    private String scheduleTopNodeId;
+    private Integer monitorId;
+    private Boolean monitorEnabled;
+    private Integer agentId;
+    private Integer clusterId;
     private Integer timeout;
-    private String script;
+    private String content;
     private String input;
     private String output;
-    private String agentId;
-    private String clusterId;
-    private String uid;
     private Date createTime;
+    private Integer createBy;
     private Date updateTime;
+    private Integer updateBy;
 
+    /**
+     * yarn应用属性
+     */
     private String user;
     private String queue;
     private String app;
+
 
     /**
      * 资源展示字段
      */
     private Integer totalMemory;
     private Integer totalCores;
+
+    private DtoMonitor monitor;
 
     /**
      * 模糊搜字段
@@ -55,65 +69,73 @@ public class DtoScript extends AbstractPageDto {
     @Override
     public String validate() {
         if (StringUtils.isBlank(name)) {
-            return "名称不能为空";
-        }
-        if (timeout == null) {
-            return "运行超时时间不能为空";
+            return "脚本名称不能为空";
         }
         if (type == null) {
-            return "类型不能为空";
+            return "脚本类型不能为空";
+        }
+        if (timeout == null) {
+            return "脚本超时不能为空";
         }
         //检查集群或代理参数
-        if (type != Constant.SCRIPT_TYPE_SHELL_BATCH) {
-            if (StringUtils.isBlank(clusterId)) {
-                return "集群不能为空";
+        if (isYarn()) {
+            if (clusterId == null) {
+                return "脚本集群不能为空";
             }
             agentId = null;
         } else {
-            if (StringUtils.isBlank(agentId)) {
-                return "代理不能为空";
+            if (agentId == null) {
+                return "脚本代理不能为空";
             }
             clusterId = null;
         }
-        if (StringUtils.isBlank(script)) {
-            return "脚本不能为空";
+        if (StringUtils.isBlank(content)) {
+            return "脚本代码不能为空";
         }
-        script = script.trim().replaceAll(" ", " ");
+        content = content.trim().replaceAll(" ", " ");
         //提取app的值
         app = null;
-        if (type != Constant.SCRIPT_TYPE_SHELL_BATCH) {
-            if (type == Constant.SCRIPT_TYPE_SPARK_STREAMING || type == Constant.SCRIPT_TYPE_SPARK_BATCH) {
-                Matcher matcher = SPARK_NAME_PATTERN.matcher(script);
+        if (isYarn()) {
+            if (Constant.ScriptType.SPARK_BATCH.equals(type) || Constant.ScriptType.SPARK_STREAM.equals(type)) {
+                Matcher matcher = SPARK_NAME_PATTERN.matcher(content);
                 if (matcher.find()) {
                     app = matcher.group(1);
                 }
-                matcher = SPARK_QUEUE_PATTERN.matcher(script);
+                matcher = SPARK_QUEUE_PATTERN.matcher(content);
                 if (matcher.find()) {
                     queue = matcher.group(1);
                 }
             }
-            if (type == Constant.SCRIPT_TYPE_FLINK_STREAMING || type == Constant.SCRIPT_TYPE_FLINK_BATCH) {
-                Matcher matcher = FLINK_NAME_PATTERN.matcher(script);
+            if (Constant.ScriptType.FLINK_BATCH.equals(type) || Constant.ScriptType.FLINK_STREAM.equals(type)) {
+                Matcher matcher = FLINK_NAME_PATTERN.matcher(content);
                 if (matcher.find()) {
                     app = matcher.group(1);
                 }
-                matcher = FLINK_QUEUE_PATTERN.matcher(script);
+                matcher = FLINK_QUEUE_PATTERN.matcher(content);
                 if (matcher.find()) {
                     queue = matcher.group(1);
                 }
             }
             if (StringUtils.isBlank(app)) {
-                return "未能从参数中提取到应用名称，请检查脚本";
+                return "脚本【" + name + "】未能从参数中提取到应用名称，请检查代码";
             }
-        } else {
-            app = name;
+        }
+        if (monitor != null) {
+            return monitor.validate();
         }
         return null;
     }
 
     public boolean isBatch() {
-        return type == Constant.SCRIPT_TYPE_SHELL_BATCH ||
-                type == Constant.SCRIPT_TYPE_SPARK_BATCH ||
-                type == Constant.SCRIPT_TYPE_FLINK_BATCH;
+        return !Constant.ScriptType.SPARK_STREAM.equals(type) &&
+                !Constant.ScriptType.FLINK_STREAM.equals(type);
     }
+
+    public boolean isYarn() {
+        return Constant.ScriptType.SPARK_BATCH.equals(type) ||
+                Constant.ScriptType.SPARK_STREAM.equals(type) ||
+                Constant.ScriptType.FLINK_BATCH.equals(type) ||
+                Constant.ScriptType.FLINK_STREAM.equals(type);
+    }
+
 }

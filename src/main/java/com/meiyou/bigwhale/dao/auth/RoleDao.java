@@ -8,6 +8,6 @@ import org.springframework.data.repository.PagingAndSortingRepository;
  * @date 2019/9/25
  * @description file description
  */
-public interface RoleDao extends PagingAndSortingRepository<Role, String> {
+public interface RoleDao extends PagingAndSortingRepository<Role, Integer> {
 
 }

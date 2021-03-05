@@ -8,6 +8,6 @@ import org.springframework.data.repository.PagingAndSortingRepository;
  * @date 2020/2/20
  * @description file description
  */
-public interface ComputeFrameworkDao extends PagingAndSortingRepository<ComputeFramework, String> {
+public interface ComputeFrameworkDao extends PagingAndSortingRepository<ComputeFramework, Integer> {
 
 }
