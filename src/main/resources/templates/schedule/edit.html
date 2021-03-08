@@ -616,7 +616,7 @@
                         </a>
                     </div>
                     <div>
-                        <a onclick="onDelete()" class="menu-a">
+                        <a onclick="onDelete()" class="menu-a-disabled" id="menu_delete" disabled>
                             删除
                         </a>
                     </div>
@@ -655,8 +655,6 @@
 
     //画布对象
     var canvas = null;
-    //选中多个节点对象
-    var selNodes = null;
     //选中节点的详情
     var selected = null;
     //是否锁对象
@@ -771,26 +769,41 @@
             // 画布右键属性
             $('#flex_canvas').bind('contextmenu', function () {
                 //设置右键菜单
-                if (selNodes) {
-                    //锁定
-                    if (locked) {
-                        $('#menu_lock').html('解锁');
+                var $lock = $('#menu_lock');
+                var $edit = $('#menu_edit');
+                var $delete = $('#menu_delete');
+                if (selected) {
+                    $delete.addClass('menu-a');
+                    $delete.removeClass('menu-a-disabled');
+                    if (selected.type === 'multi') {
+                        $lock.html('锁定');
+                        $lock.addClass('menu-a-disabled');
+                        $lock.removeClass('menu-a');
+                        $edit.addClass('menu-a-disabled');
+                        $edit.removeClass('menu-a');
                     } else {
-                        $('#menu_lock').html('锁定');
+                        if (locked) {
+                            $lock.html('解锁');
+                        } else {
+                            $lock.html('锁定');
+                        }
+                        $lock.addClass('menu-a');
+                        $lock.removeClass('menu-a-disabled');
+                        if (selected.type === 'node') {
+                            $edit.addClass('menu-a');
+                            $edit.removeClass('menu-a-disabled');
+                        } else {
+                            $edit.addClass('menu-a-disabled');
+                            $edit.removeClass('menu-a');
+                        }
                     }
-                    $('#menu_lock').removeClass('menu-a-disabled');
-                    $('#menu_lock').addClass('menu-a');
                 } else {
-                    //锁定
-                    $('#menu_lock').addClass('menu-a-disabled');
-                    $('#menu_lock').removeClass('menu-a');
-                }
-                if (selected && selected.type === 'node') {
-                    $("#menu_edit").removeClass('menu-a-disabled');
-                    $("#menu_edit").addClass('menu-a');
-                } else {
-                    $('#menu_edit').addClass('menu-a-disabled');
-                    $('#menu_edit').removeClass('menu-a');
+                    $lock.addClass('menu-a-disabled');
+                    $lock.removeClass('menu-a');
+                    $edit.addClass('menu-a-disabled');
+                    $edit.removeClass('menu-a');
+                    $delete.addClass('menu-a-disabled');
+                    $delete.removeClass('menu-a');
                 }
                 //显示右键菜单
                 $('#canvas_menus').css({
@@ -819,7 +832,6 @@
             function onMessage(event, data) {
                 switch (event) {
                     case 'node':
-                        selNodes = [data];
                         selected = {
                             "type": event,
                             "data": data
@@ -836,24 +848,6 @@
                         self.initLine();
                         break;
                     case 'multi':
-                        locked = true;
-                        if (data.nodes && data.nodes.length) {
-                            selNodes = data.nodes;
-                            for (var item in data.nodes) {
-                                if (!item.locked) {
-                                    locked = false;
-                                    break;
-                                }
-                            }
-                        }
-                        if (locked && data.lines) {
-                            for (var item in data.lines) {
-                                if (!item.locked) {
-                                    locked = false;
-                                    break;
-                                }
-                            }
-                        }
                         selected = {
                             "type": event,
                             "data": data
@@ -864,11 +858,9 @@
                         $("#flex_props_node").addClass("hidden");
                         setTimeout(function () {
                             selected = null;
-                            selNodes = null;
                         });
                         break;
                     case 'addNode':
-                        selNodes = [data];
                         selected = {
                             "type": event,
                             "data": data
@@ -932,28 +924,16 @@
         },
         // 锁定
         onLock: function () {
-            locked = !locked;
-            if (selected.type === 'multi') {
-                if (selected.data.nodes) {
-                    for (var item in selected.data.nodes) {
-                        item.locked = locked;
-                    }
-                }
-                if (selected.data.lines) {
-                    for (var item in selected.data.lines) {
-                        item.locked = locked;
-                    }
-                }
-            } else {
+            if (selected && selected.type !== 'multi') {
+                locked = !locked;
                 selected.data.locked = locked;
+                canvas.render();
             }
-            canvas.render();
         },
         onEdit: function() {
-            if (!selected || selected.type === 'line') {
-                return;
+            if (selected && selected.type === 'node') {
+                editScript(selected.data);
             }
-            editScript(selected.data);
         },
         // 删除
         onDelete: function () {

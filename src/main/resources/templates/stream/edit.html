@@ -460,7 +460,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label class="col-sm-2 control-label">
-                                            {{editItem.type == 'sparkstream' ? '批次积压告警阈值' : '任务阻塞告警阈值(%)'}}<B class="help" data-toggle="tooltip" data-placement="top" data-original-title="{{editItem.type == 'sparkstream' ? '批次积压大于等于该值的时候将进行告警，为0禁用' : '单位时间内，任务阻塞比(阻塞任务数 / 消费任务数)大于等于该值的时候将进行告警，为0禁用，最大100'}}">?</B>&nbsp;<B>*</B>
+                                            {{editItem.type == 'sparkstream' ? '积压告警阈值' : '阻塞告警阈值(%)'}}<B class="help" data-toggle="tooltip" data-placement="top" data-original-title="{{editItem.type == 'sparkstream' ? '批次积压大于等于该值的时候将进行告警，为0禁用' : '单位时间内，任务阻塞比(阻塞任务数 / 消费任务数)大于等于该值的时候将进行告警，为0禁用，最大100'}}">?</B>&nbsp;<B>*</B>
                                         </label>
                                         <div class="col-sm-4">
                                             <input class="form-control" type="number" ng-model="editItem.monitor.waitingBatches" min="0" required>
@@ -468,7 +468,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label class="col-sm-2 control-label">
-                                            {{editItem.type == 'sparkstream' ? '批次积压重启' : '任务阻塞重启'}}<B class="help" data-toggle="tooltip" data-placement="top" data-original-title="{{editItem.type == 'sparkstream' ? '批次积压达到阈值后，自动进行任务重启' : '任务阻塞达到阈值后，自动进行任务重启'}}">?</B>
+                                            {{editItem.type == 'sparkstream' ? '积压重启' : '阻塞重启'}}<B class="help" data-toggle="tooltip" data-placement="top" data-original-title="{{editItem.type == 'sparkstream' ? '批次积压达到阈值后，自动进行任务重启' : '任务阻塞达到阈值后，自动进行任务重启'}}">?</B>
                                         </label>
                                         <div class="col-sm-4">
                                             <select class="form-control selectpicker show-tick" ng-model="editItem.monitor.blockingRestart"
