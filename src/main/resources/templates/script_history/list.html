@@ -182,12 +182,14 @@
             },
             listUrl: './page.api',
             reloadAfter : function(items) {
-                var finished = $scope.isFinish(items);
-                if (!finished) {
-                    if (t1) {
-                        window.clearInterval(t1);
+                if (id) {
+                    var finished = $scope.isFinish(items);
+                    if (!finished) {
+                        if (t1) {
+                            window.clearInterval(t1);
+                        }
+                        t1 = window.setInterval($scope.reloadData, 2000);
                     }
-                    t1 = window.setInterval($scope.reloadData, 2000);
                 }
             }
         };
@@ -196,17 +198,13 @@
             $http.post('./page.api', $scope.options.query)
                 .success(function (data) {
                     var items = data.content;
-                    if (id) {
-                        $scope.options.items[0]['outputs'] = items[0]['outputs'];
-                        $scope.options.items[0]['errors'] = items[0]['errors'];
-                        $scope.options.items[0]['state'] = items[0]['state'];
-                        $scope.options.items[0]['jobUrl'] = items[0]['jobUrl'];
-                        $scope.options.items[0]['startTime'] = items[0]['startTime'];
-                        $scope.options.items[0]['finishTime'] = items[0]['finishTime'];
-                        $scope.options.items[0]['running'] = items[0]['running'];
-                    } else {
-                        $scope.options.items = items;
-                    }
+                    $scope.options.items[0]['outputs'] = items[0]['outputs'];
+                    $scope.options.items[0]['errors'] = items[0]['errors'];
+                    $scope.options.items[0]['startTime'] = items[0]['startTime'];
+                    $scope.options.items[0]['finishTime'] = items[0]['finishTime'];
+                    $scope.options.items[0]['state'] = items[0]['state'];
+                    $scope.options.items[0]['jobUrl'] = items[0]['jobUrl'];
+                    $scope.options.items[0]['running'] = items[0]['running'];
                     var finished = $scope.isFinish(items);
                     if (finished) {
                         window.clearInterval(t1);
