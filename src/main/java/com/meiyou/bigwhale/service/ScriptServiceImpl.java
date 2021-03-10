@@ -12,13 +12,13 @@ import com.meiyou.bigwhale.job.ScriptHistoryShellRunnerJob;
 import com.meiyou.bigwhale.service.auth.UserService;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import com.meiyou.bigwhale.util.WebHdfsUtils;
-import com.meiyou.bigwhale.util.YarnApiUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -558,8 +558,9 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         String queueOld = dbScript.getQueue();
         String queueReq = req.getQueue();
         if (!dbScript.getClusterId().equals(req.getClusterId()) || !queueOld.equals(queueReq)) {
-            Cluster clusterOld = clusterService.findById(dbScript.getClusterId());
-            return YarnApiUtils.getActiveApp(clusterOld.getYarnUrl(), dbScript.getUser(), queueOld, dbScript.getApp(), 3) != null;
+            // 只判断最近的一个任务状态，非最近的任务如果还在运行jobFinalStatus将会被更新为UNKNOWN
+            ScriptHistory scriptHistory = scriptHistoryService.findOneByQuery("scriptId=" + dbScript.getId(), new Sort(Sort.Direction.DESC, "createTime", "id"));
+            return scriptHistory != null && scriptHistory.isRunning();
         }
         return false;
     }
