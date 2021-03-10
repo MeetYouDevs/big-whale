@@ -113,15 +113,9 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             scriptHistory.updateState(httpYarnApp.getState());
         }
         scriptHistory.setJobId(httpYarnApp.getId());
-        scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
         scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
-        if ("FAILED".equals(httpYarnApp.getFinalStatus())) {
-            scriptHistory.setErrors(httpYarnApp.getDiagnostics());
-        }
+        scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
         scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
-        if (httpYarnApp.getFinishedTime() != 0) {
-            scriptHistory.setFinishTime(new Date(httpYarnApp.getFinishedTime()));
-        }
         scriptHistoryService.save(scriptHistory);
     }
 
@@ -135,10 +129,19 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             } else {
                 scriptHistory.updateState(httpYarnApp.getState());
             }
+            scriptHistory.setJobId(httpYarnApp.getId());
+            scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
             scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
             if ("FAILED".equals(httpYarnApp.getFinalStatus())) {
-                scriptHistory.setErrors(httpYarnApp.getDiagnostics());
+                if (httpYarnApp.getDiagnostics() != null) {
+                    if (httpYarnApp.getDiagnostics().length() > 61440) {
+                        scriptHistory.setErrors(httpYarnApp.getDiagnostics().substring(0, 61440));
+                    } else {
+                        scriptHistory.setErrors(httpYarnApp.getDiagnostics());
+                    }
+                }
             }
+            scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
             scriptHistory.setFinishTime(new Date(httpYarnApp.getFinishedTime()));
         } else {
             scriptHistory.updateState(Constant.JobState.FAILED);

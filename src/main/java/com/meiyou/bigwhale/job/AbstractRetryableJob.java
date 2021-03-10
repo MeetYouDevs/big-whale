@@ -26,11 +26,13 @@ public abstract class AbstractRetryableJob extends AbstractNoticeableJob {
     /**
      * 重试当前节点
      * @param scriptHistory
+     * @param errorType
      */
     protected void retryCurrentNode(ScriptHistory scriptHistory, String errorType) {
         notice(scriptHistory, errorType);
         boolean retryable = scriptHistory.getScheduleId() != null &&
-                (scriptHistory.getScheduleHistoryMode() == null || Constant.HistoryMode.RETRY.equals(scriptHistory.getScheduleHistoryMode()));
+                (scriptHistory.getScheduleHistoryMode() == null || Constant.HistoryMode.RETRY.equals(scriptHistory.getScheduleHistoryMode())) &&
+                !"UNKNOWN".equals(scriptHistory.getJobFinalStatus());
         if (retryable) {
             ScheduleSnapshot scheduleSnapshot = scheduleSnapshotService.findById(scriptHistory.getScheduleSnapshotId());
             ScheduleSnapshot.Topology.Node node = scheduleSnapshot.analyzeCurrentNode(scriptHistory.getScheduleTopNodeId());
