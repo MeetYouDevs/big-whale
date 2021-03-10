@@ -121,8 +121,8 @@ public class ScriptHistoryController extends BaseController{
                 .scriptType(scriptHistory.getScriptType())
                 .clusterId(scriptHistory.getClusterId())
                 .agentId(scriptHistory.getAgentId())
-                .content(scriptHistory.getContent())
                 .timeout(scriptHistory.getTimeout())
+                .content(scriptHistory.getContent())
                 .createTime(scriptHistory.getCreateTime())
                 .createBy(scriptHistory.getCreateBy())
                 .build();

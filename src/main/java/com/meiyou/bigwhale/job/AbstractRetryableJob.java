@@ -55,8 +55,8 @@ public abstract class AbstractRetryableJob extends AbstractNoticeableJob {
                     .scriptType(scriptHistory.getScriptType())
                     .agentId(scriptHistory.getAgentId())
                     .clusterId(scriptHistory.getClusterId())
-                    .content(scriptHistory.getContent())
                     .timeout(scriptHistory.getTimeout())
+                    .content(scriptHistory.getContent())
                     .createTime(scriptHistory.getCreateTime())
                     .createBy(scriptHistory.getCreateBy())
                     .build();
