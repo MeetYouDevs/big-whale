@@ -1,12 +1,21 @@
 package com.meiyou.bigwhale.job;
 
 import com.meiyou.bigwhale.common.Constant;
+import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
+import com.meiyou.bigwhale.entity.Cluster;
+import com.meiyou.bigwhale.entity.Script;
 import com.meiyou.bigwhale.entity.ScriptHistory;
+import com.meiyou.bigwhale.service.ClusterService;
+import com.meiyou.bigwhale.service.ScriptService;
 import com.meiyou.bigwhale.util.SchedulerUtils;
+import com.meiyou.bigwhale.util.YarnApiUtils;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -17,6 +26,8 @@ import java.util.*;
 @DisallowConcurrentExecution
 public class ScriptHistoryTimeoutJob extends AbstractRetryableJob implements Job {
 
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+
     private static final String [] RUNNING_STATES = new String[] {
             Constant.JobState.INITED,
             Constant.JobState.SUBMITTING,
@@ -24,6 +35,11 @@ public class ScriptHistoryTimeoutJob extends AbstractRetryableJob implements Job
             Constant.JobState.ACCEPTED,
             Constant.JobState.RUNNING
     };
+
+    @Autowired
+    private ClusterService clusterService;
+    @Autowired
+    protected ScriptService scriptService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
@@ -34,18 +50,38 @@ public class ScriptHistoryTimeoutJob extends AbstractRetryableJob implements Job
         }
         for (ScriptHistory scriptHistory : scriptHistories) {
             if (scriptHistoryService.execTimeout(scriptHistory)) {
+                boolean retry = true;
                 if (scriptHistory.getSteps().contains(Constant.JobState.SUBMITTED)) {
                     scriptHistory.updateState(Constant.JobState.TIMEOUT);
+                    scriptHistory.setFinishTime(new Date());
                 } else {
-                    scriptHistory.updateState(Constant.JobState.SUBMITTING_TIMEOUT);
+                    // Yarn资源不够时，客户端会长时间处于提交请求状态，平台无法中断此请求，故在此处再判断一次状态
+                    if (scriptHistory.getClusterId() != null && scriptHistory.getSteps().contains(Constant.JobState.SUBMITTING)) {
+                        Cluster cluster = clusterService.findById(scriptHistory.getClusterId());
+                        Script script = scriptService.findById(scriptHistory.getScriptId());
+                        HttpYarnApp httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), script.getUser(), script.getQueue(),
+                                script.getApp() + ".bw_instance_" + (script.isBatch() ? "b" : "s") + DATE_FORMAT.format(scriptHistory.getCreateTime()), 3);
+                        if (httpYarnApp != null) {
+                            retry = false;
+                            scriptHistory.updateState(Constant.JobState.SUBMITTED);
+                            scriptHistory.setJobFinalStatus("UNDEFINED");
+                        } else {
+                            scriptHistory.updateState(Constant.JobState.SUBMITTING_TIMEOUT);
+                            scriptHistory.setFinishTime(new Date());
+                        }
+                    } else {
+                        scriptHistory.updateState(Constant.JobState.SUBMITTING_TIMEOUT);
+                        scriptHistory.setFinishTime(new Date());
+                    }
                 }
-                scriptHistory.setFinishTime(new Date());
                 scriptHistoryService.save(scriptHistory);
                 // 处理调度
                 SchedulerUtils.interrupt(scriptHistory.getId(), Constant.JobGroup.SCRIPT_HISTORY);
                 SchedulerUtils.deleteJob(scriptHistory.getId(), Constant.JobGroup.SCRIPT_HISTORY);
                 // 重试
-                retryCurrentNode(scriptHistory, Constant.ErrorType.TIMEOUT);
+                if (retry) {
+                    retryCurrentNode(scriptHistory, Constant.ErrorType.TIMEOUT);
+                }
             }
         }
     }
