@@ -55,8 +55,8 @@ public class YarnApiUtils {
             List<HttpYarnApp> appList = parseAppsApiResponse(result);
             if (!appList.isEmpty()) {
                 appList.sort((app1, app2) -> {
-                    long time1 = app1.getFinishedTime();
-                    long time2 = app2.getFinishedTime();
+                    long time1 = app1.getStartedTime();
+                    long time2 = app2.getStartedTime();
                     return Long.compare(time2, time1);
                 });
                 for (HttpYarnApp httpYarnApp : appList) {

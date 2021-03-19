@@ -289,6 +289,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
         scriptHistory.setState(dbScriptHistory.getState());
         scriptHistory.setSteps(dbScriptHistory.getSteps());
         scriptHistory.setFinishTime(dbScriptHistory.getFinishTime());
+        scriptHistory.setJobFinalStatus(dbScriptHistory.getJobFinalStatus());
         scriptHistoryService.save(scriptHistory);
     }
 
