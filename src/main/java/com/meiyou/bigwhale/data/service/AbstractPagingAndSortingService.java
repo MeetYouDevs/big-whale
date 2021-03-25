@@ -11,7 +11,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.regex.Pattern;
 
@@ -25,8 +24,6 @@ public abstract class AbstractPagingAndSortingService<T, ID extends Serializable
 
     private static final Pattern DATE_PATTERN = Pattern.compile("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}");
     private static final Pattern UTC_DATE_PATTERN = Pattern.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}Z");
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private static final DateFormat UTC_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     protected Class<T> clazz;
 
@@ -122,10 +119,10 @@ public abstract class AbstractPagingAndSortingService<T, ID extends Serializable
                 Field field = tmpClazz.getDeclaredField(fieldName);
                 if ("java.util.Date".equals(field.getType().getName())) {
                     if (DATE_PATTERN.matcher(strVal).find()) {
-                        return DATE_FORMAT.parse(strVal);
+                        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(strVal);
                     }
                     if (UTC_DATE_PATTERN.matcher(strVal).find()) {
-                        return UTC_DATE_FORMAT.parse(strVal);
+                        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(strVal);
                     }
                 }
                 Constructor constructor = field.getType().getConstructor(String.class);

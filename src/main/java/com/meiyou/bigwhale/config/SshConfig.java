@@ -1,14 +1,14 @@
 package com.meiyou.bigwhale.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.util.Assert;
 
 /**
  * @author progr1mmer
  * @date Created on 2020/3/18
  */
-@Component
+@Configuration
 @ConfigurationProperties(prefix = "big-whale.ssh")
 public class SshConfig {
 
