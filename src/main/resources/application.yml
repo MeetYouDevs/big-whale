@@ -3,7 +3,7 @@ server:
   servlet:
     context-path: /
     session:
-      timeout: Pt30m
+      timeout: Pt4h
       cookie:
         name: JSESSIONID_BW
 

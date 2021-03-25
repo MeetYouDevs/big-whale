@@ -1,14 +1,14 @@
 package com.meiyou.bigwhale.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * @author Suxy
  * @date 2019/11/8
  * @description file description
  */
-@Component
+@Configuration
 @ConfigurationProperties(prefix = "big-whale.dingding")
 public class DingdingConfig {
 

@@ -4,13 +4,12 @@ import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.Msg;
 import com.meiyou.bigwhale.controller.BaseController;
 import com.meiyou.bigwhale.entity.auth.*;
+import com.meiyou.bigwhale.security.LoginUser;
 import com.meiyou.bigwhale.service.MonitorService;
 import com.meiyou.bigwhale.service.ScheduleService;
 import com.meiyou.bigwhale.service.auth.*;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -41,8 +40,6 @@ public class AuthController extends BaseController {
     private ScheduleService scheduleService;
     @Autowired
     private MonitorService monitorService;
-
-    private PasswordEncoder passwordEncoder = new StandardPasswordEncoder();
 
     @RequestMapping(value = "/resource/list.api", method = RequestMethod.GET)
     public Msg resourceList() {
@@ -151,7 +148,7 @@ public class AuthController extends BaseController {
                 return failed("用户已存在");
             }
             req.setCreateTime(now);
-            req.setPassword(passwordEncoder.encode(req.getPassword()));
+            req.setPassword(LoginUser.PASSWORD_ENCODER.encode(req.getPassword()));
         } else {
             User dbUser = userService.findById(req.getId());
             if (dbUser == null) {
@@ -159,7 +156,7 @@ public class AuthController extends BaseController {
             }
             //修改密码
             if (!dbUser.getPassword().equals(req.getPassword())) {
-                req.setPassword(passwordEncoder.encode(req.getPassword()));
+                req.setPassword(LoginUser.PASSWORD_ENCODER.encode(req.getPassword()));
             }
         }
         req.setUpdateTime(now);

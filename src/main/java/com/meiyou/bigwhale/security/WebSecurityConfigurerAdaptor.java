@@ -1,6 +1,5 @@
 package com.meiyou.bigwhale.security;
 
-import org.apache.commons.lang.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -14,7 +13,6 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl;
-import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -23,7 +21,6 @@ import org.springframework.util.AntPathMatcher;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * @author Suxy
@@ -35,11 +32,10 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
 
     private AntPathMatcher antPathMatcher = new AntPathMatcher();
 
-    private final String[] authPath = new String[]{"/auth/**", "/admin/**", "/api/**"};
+    private final String[] authPath = new String[]{"/auth/**", "/admin/**"};
 
     @Resource
     private JdbcTemplate jdbcTemplate;
-
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -55,7 +51,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
         //授权
         http.exceptionHandling().accessDeniedHandler(accessDeniedHandler());
         //退出
-        http.logout().logoutUrl("/logout.html").permitAll().invalidateHttpSession(true);
+        http.logout().logoutUrl("/logout").permitAll().invalidateHttpSession(true);
     }
 
     @Override
@@ -65,8 +61,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
                 "/libs/**",
                 "/css/**",
                 "/js/**",
-                "/img/**",
-                "/openapi/**"
+                "/img/**"
         );
     }
 
@@ -76,7 +71,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
         userDetailsService.setJdbcTemplate(jdbcTemplate);
         userDetailsService.setUsersByUsernameQuery("select username,password,enabled,id,root from auth_user where username = ?");
         userDetailsService.setAuthoritiesByUsernameQuery("select username,role from auth_user_role where username = ?");
-        auth.userDetailsService(userDetailsService).passwordEncoder(new StandardPasswordEncoder());
+        auth.userDetailsService(userDetailsService).passwordEncoder(LoginUser.PASSWORD_ENCODER);
     }
 
     public boolean hasPermission(HttpServletRequest request, Authentication authentication) {
@@ -85,14 +80,8 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
             if (((LoginUser) principal).isRoot()) {
                 return true;
             }
-            for (String url : ((LoginUser) principal).getResources().values()) {
-                if (url.contains(",")) {
-                    for (String part : url.split(",")) {
-                        if (antPathMatcher.match(part, request.getRequestURI())) {
-                            return true;
-                        }
-                    }
-                } else {
+            for (List<String> urls : ((LoginUser) principal).getResources().values()) {
+                for (String url : urls) {
                     if (antPathMatcher.match(url, request.getRequestURI())) {
                         return true;
                     }
@@ -113,21 +102,23 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
                 principal.getAuthorities().forEach(grantedAuthority -> roles.append("\'").append(grantedAuthority.getAuthority()).append("\'").append(","));
                 String sql = String.format(defRoleResourceByRoleCode, roles.substring(0, roles.length() - 1));
                 List<Map<String, Object>> roleResourcesList = jdbcTemplate.queryForList(sql);
-                Map<String, String> roleResourcesMap = new HashMap<>();
+                Map<String, List<String>> resources = new HashMap<>();
                 String contextPath = httpServletRequest.getContextPath();
                 roleResourcesList.forEach(item -> {
                     String resource = item.get("resource") != null ? (String) item.get("resource") : "";
-                    String url = "";
+                    List<String> urls = new ArrayList<>();
                     if (item.get("url") != null) {
-                        url = StringUtils.join(Stream.of(item.get("url").toString().split(",")).map(u -> contextPath + u).toArray(), ",");
+                        for (String u : item.get("url").toString().split(",")) {
+                            urls.add(contextPath + u);
+                        }
                     }
-                    roleResourcesMap.put(resource, url);
+                    resources.put(resource, urls);
                 });
-                principal.setResources(roleResourcesMap);
+                principal.setResources(resources);
             }
             httpServletRequest.getSession().setAttribute("user", principal);
             httpServletResponse.setContentType("application/json;charset=UTF-8");
-            httpServletResponse.getWriter().write("{\"code\": 0, \"msg\": \"" + principal.getUsername() + "\"}");
+            httpServletResponse.getWriter().write("{\"code\": 0, \"msg\": \"登录成功\", \"content\": \"" + principal.getUsername() + "\"}");
         };
     }
 
@@ -135,9 +126,9 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
         return (httpServletRequest, httpServletResponse, e) -> {
             httpServletResponse.setContentType("application/json;charset=UTF-8");
             if (e instanceof BadCredentialsException) {
-                httpServletResponse.getWriter().write("{\"code\": -1, \"msg\": \"账号或密码错误\"}");
+                httpServletResponse.getWriter().write("{\"code\": -1, \"msg\": \"账号或密码错误\", \"content\": null}");
             } else {
-                httpServletResponse.getWriter().write("{\"code\": -1, \"msg\": \"账号状态异常，请联系管理员\"}");
+                httpServletResponse.getWriter().write("{\"code\": -1, \"msg\": \"账号状态异常，请联系管理员\", \"content\": null}");
             }
         };
     }
@@ -145,7 +136,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
     private AccessDeniedHandler accessDeniedHandler() {
         return (httpServletRequest, httpServletResponse, e) -> {
             httpServletResponse.setContentType("application/json;charset=UTF-8");
-            httpServletResponse.getWriter().write("{\"code\": -1, \"msg\": \"无权访问\"}");
+            httpServletResponse.getWriter().write("{\"code\": -1, \"msg\": \"无权访问\", \"content\": null}");
         };
     }
 
@@ -159,7 +150,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
                 boolean enabled = rs.getBoolean(3);
                 Integer id = rs.getInt(4);
                 boolean root = rs.getBoolean(5);
-                return new LoginUser(id, root, username1, password, enabled, true, true, true, AuthorityUtils.NO_AUTHORITIES);
+                return new LoginUser(username1, password, enabled, true, true, true, AuthorityUtils.NO_AUTHORITIES, id, root);
             });
         }
 
@@ -180,7 +171,7 @@ public class WebSecurityConfigurerAdaptor extends WebSecurityConfigurerAdapter {
             }
             Integer id = ((LoginUser) userFromUserQuery).getId();
             boolean root = ((LoginUser) userFromUserQuery).isRoot();
-            return new LoginUser(id, root, returnUsername, userFromUserQuery.getPassword(), userFromUserQuery.isEnabled(), true, true, true, combinedAuthorities);
+            return new LoginUser(returnUsername, userFromUserQuery.getPassword(), userFromUserQuery.isEnabled(), true, true, true, combinedAuthorities, id, root);
         }
     }
 

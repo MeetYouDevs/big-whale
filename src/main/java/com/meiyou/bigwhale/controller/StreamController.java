@@ -152,11 +152,12 @@ public class StreamController extends BaseController {
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)
     public Msg delete(@RequestBody DtoScript req) {
         Script script = scriptService.findById(req.getId());
-        if (script != null) {
-            Monitor monitor = monitorService.findById(script.getMonitorId());
-            SchedulerUtils.deleteJob(monitor.getId(), Constant.JobGroup.MONITOR);
-            scriptService.delete(script);
+        if (script == null) {
+            return failed();
         }
+        Monitor monitor = monitorService.findById(script.getMonitorId());
+        SchedulerUtils.deleteJob(monitor.getId(), Constant.JobGroup.MONITOR);
+        scriptService.delete(script);
         return success();
     }
 
