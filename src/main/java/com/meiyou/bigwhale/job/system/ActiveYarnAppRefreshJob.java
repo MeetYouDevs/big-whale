@@ -117,14 +117,14 @@ public class ActiveYarnAppRefreshJob extends AbstractNoticeableJob implements In
                 checkAppDuplicate(cluster, yarnApps);
                 checkAppNoRunning(cluster, yarnApps);
             }
-            if (checkAppMemorySkipCount >= 300) {
+            if (checkAppMemorySkipCount >= 180) {
                 checkAppMemory(cluster, yarnApps);
             }
         }
         if (checkAppDuplicateAndNoRunningSkipCount >= 30) {
             checkAppDuplicateAndNoRunningSkipCount = 0;
         }
-        if (checkAppMemorySkipCount >= 300) {
+        if (checkAppMemorySkipCount >= 180) {
             checkAppMemorySkipCount = 0;
         }
     }
@@ -161,7 +161,7 @@ public class ActiveYarnAppRefreshJob extends AbstractNoticeableJob implements In
     private void checkAppNoRunning(Cluster cluster, List<YarnApp> yarnApps) {
         long nowTimestamp = System.currentTimeMillis();
         for (YarnApp yarnApp : yarnApps) {
-            if (Constant.JobState.ACCEPTED.equals(yarnApp.getState()) && nowTimestamp - yarnApp.getStartedTime().getTime() >= 300000) {
+            if (Constant.JobState.ACCEPTED.equals(yarnApp.getState()) && nowTimestamp - yarnApp.getStartedTime().getTime() >= 600000) {
                 String trackingUrl = yarnApp.getTrackingUrl();
                 notice(cluster, yarnApp, trackingUrl, Constant.ErrorType.APP_NO_RUNNING);
             }
