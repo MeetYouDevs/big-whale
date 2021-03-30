@@ -1384,6 +1384,10 @@
             $('#editDlg').modal({backdrop: 'static', keyboard: false});
         };
 
+        $('#editDlg').on('shown.bs.modal', function () {
+            $('.selectpicker').selectpicker('refresh');
+        });
+
         $scope.onCycleChange = function () {
             $timeout(function () {
                 $('.selectpicker').selectpicker('render');

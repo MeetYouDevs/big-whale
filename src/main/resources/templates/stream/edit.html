@@ -622,6 +622,7 @@
                 $timeout(function () {
                     $scope.parseText($scope.editItem);
                     $timeout(function() {
+                        $('.selectpicker').selectpicker('refresh');
                         $('[data-toggle="tooltip"]').tooltip();
                     }, 100);
                 }, 50);
