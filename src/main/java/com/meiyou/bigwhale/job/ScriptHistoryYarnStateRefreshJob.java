@@ -90,7 +90,7 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             scriptHistories.forEach(scriptHistory -> {
                 if (!matchIds.contains(scriptHistory.getId())) {
                     if (scriptHistory.getContent().contains(".bw_test_instance_")) {
-                        scriptHistory.updateState(Constant.JobState.KILLED);
+                        scriptHistory.updateState(Constant.JobState.SUCCEEDED);
                         scriptHistory.setJobFinalStatus(Constant.JobState.KILLED);
                         scriptHistory.setFinishTime(new Date());
                         scriptHistoryService.save(scriptHistory);
