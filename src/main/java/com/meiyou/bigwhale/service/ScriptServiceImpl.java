@@ -645,6 +645,9 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
             command = content;
         }
         scriptHistory.setContent(command);
+        if (script.isYarn() && scriptHistory.getScriptId() == null) {
+            scriptHistory.setOutputs("proxy user: " + script.getUser() + "\n");
+        }
         if (scheduleSnapshot == null) {
             scriptHistory.updateState(Constant.JobState.INITED);
         } else {

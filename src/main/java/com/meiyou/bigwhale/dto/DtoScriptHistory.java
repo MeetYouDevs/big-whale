@@ -7,12 +7,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class DtoScriptHistory extends AbstractPageDto {
+
+    private static final Pattern PROXY_USER_PATTERN = Pattern.compile("proxy user: ([\\w-.,]+)");
 
     private Integer id;
     /**
@@ -85,4 +89,14 @@ public class DtoScriptHistory extends AbstractPageDto {
                 Constant.JobState.ACCEPTED.equals(state) ||
                 Constant.JobState.RUNNING.equals(state);
     }
+
+    public static String extractUser(String outputs) {
+        String proxyUser = null;
+        Matcher matcher = PROXY_USER_PATTERN.matcher(outputs);
+        if (matcher.find()) {
+            proxyUser = matcher.group(1);
+        }
+        return proxyUser;
+    }
+
 }

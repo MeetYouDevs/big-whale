@@ -17,10 +17,10 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 public class DtoScript extends AbstractPageDto {
 
-    public static final Pattern SPARK_NAME_PATTERN = Pattern.compile("--name ([\\w-.,]+)");
-    public static final Pattern FLINK_NAME_PATTERN = Pattern.compile("-ynm ([\\w-.,]+)");
-    public static final Pattern SPARK_QUEUE_PATTERN = Pattern.compile("--queue ([\\w-.,]+)");
-    public static final Pattern FLINK_QUEUE_PATTERN = Pattern.compile("-yqu ([\\w-.,]+)");
+    private static final Pattern SPARK_QUEUE_PATTERN = Pattern.compile("--queue ([\\w-.,]+)");
+    private static final Pattern FLINK_QUEUE_PATTERN = Pattern.compile("-yqu ([\\w-.,]+)");
+    private static final Pattern SPARK_NAME_PATTERN = Pattern.compile("--name ([\\w-.,]+)");
+    private static final Pattern FLINK_NAME_PATTERN = Pattern.compile("-ynm ([\\w-.,]+)");
 
     private Integer id;
     private String name;
@@ -96,26 +96,9 @@ public class DtoScript extends AbstractPageDto {
         //提取app的值
         app = null;
         if (isYarn()) {
-            if (Constant.ScriptType.SPARK_BATCH.equals(type) || Constant.ScriptType.SPARK_STREAM.equals(type)) {
-                Matcher matcher = SPARK_NAME_PATTERN.matcher(content);
-                if (matcher.find()) {
-                    app = matcher.group(1);
-                }
-                matcher = SPARK_QUEUE_PATTERN.matcher(content);
-                if (matcher.find()) {
-                    queue = matcher.group(1);
-                }
-            }
-            if (Constant.ScriptType.FLINK_BATCH.equals(type) || Constant.ScriptType.FLINK_STREAM.equals(type)) {
-                Matcher matcher = FLINK_NAME_PATTERN.matcher(content);
-                if (matcher.find()) {
-                    app = matcher.group(1);
-                }
-                matcher = FLINK_QUEUE_PATTERN.matcher(content);
-                if (matcher.find()) {
-                    queue = matcher.group(1);
-                }
-            }
+            String [] arr = extractQueueAndApp(type, content);
+            queue = arr[0];
+            app = arr[1];
             if (StringUtils.isBlank(app)) {
                 return "脚本【" + name + "】未能从参数中提取到应用名称，请检查代码";
             }
@@ -136,6 +119,38 @@ public class DtoScript extends AbstractPageDto {
                 Constant.ScriptType.SPARK_STREAM.equals(type) ||
                 Constant.ScriptType.FLINK_BATCH.equals(type) ||
                 Constant.ScriptType.FLINK_STREAM.equals(type);
+    }
+
+    /**
+     * [queue, app]
+     * @param scriptType
+     * @param content
+     * @return
+     */
+    public static String [] extractQueueAndApp(String scriptType, String content) {
+        String queue = null;
+        String app = null;
+        if (Constant.ScriptType.SPARK_BATCH.equals(scriptType) || Constant.ScriptType.SPARK_STREAM.equals(scriptType)) {
+            Matcher matcher = SPARK_QUEUE_PATTERN.matcher(content);
+            if (matcher.find()) {
+                queue = matcher.group(1);
+            }
+            matcher = SPARK_NAME_PATTERN.matcher(content);
+            if (matcher.find()) {
+                app = matcher.group(1);
+            }
+        }
+        if (Constant.ScriptType.FLINK_BATCH.equals(scriptType) || Constant.ScriptType.FLINK_STREAM.equals(scriptType)) {
+            Matcher matcher = FLINK_QUEUE_PATTERN.matcher(content);
+            if (matcher.find()) {
+                queue = matcher.group(1);
+            }
+            matcher = FLINK_NAME_PATTERN.matcher(content);
+            if (matcher.find()) {
+                app = matcher.group(1);
+            }
+        }
+        return new String[]{queue, app};
     }
 
 }

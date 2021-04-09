@@ -249,6 +249,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
     }
 
     private void readContent(boolean stdout, InputStream in) {
+        String prefix = scriptHistory.getOutputs() != null ? scriptHistory.getOutputs() : "";
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[1024];
             int length;
@@ -257,7 +258,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
                     out.write(buffer, 0, length);
                     String tmp = out.toString("UTF-8");
                     if (stdout) {
-                        scriptHistory.setOutputs(tmp);
+                        scriptHistory.setOutputs(prefix + tmp);
                     } else {
                         scriptHistory.setErrors(tmp);
                     }
@@ -267,7 +268,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
             if (out.size() > 0) {
                 String content = out.toString("UTF-8");
                 if (stdout) {
-                    scriptHistory.setOutputs(content);
+                    scriptHistory.setOutputs(prefix + content);
                 } else {
                     scriptHistory.setErrors(content);
                 }
@@ -320,7 +321,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
             cmd = arr[arr.length - 1];
             commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s %s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
         } else {
-            String [] arr = extractQueueAndApp();
+            String [] arr = DtoScript.extractQueueAndApp(scriptHistory.getScriptType(), scriptHistory.getContent());
             if (Constant.ScriptType.SPARK_BATCH.equals(scriptHistory.getScriptType()) || Constant.ScriptType.SPARK_STREAM.equals(scriptHistory.getScriptType())) {
                 if (scriptHistory.getContent().indexOf("--queue " + arr[0]) > scriptHistory.getContent().indexOf("--name " + arr[1])) {
                     cmd = arr[1] + ".*" + arr[0];
@@ -350,34 +351,6 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
                 session.close();
             }
         }
-    }
-
-    private String [] extractQueueAndApp() {
-        String app = null;
-        String queue = null;
-        String content = scriptHistory.getContent();
-        String scriptType = scriptHistory.getScriptType();
-        if (Constant.ScriptType.SPARK_BATCH.equals(scriptType) || Constant.ScriptType.SPARK_STREAM.equals(scriptType)) {
-            Matcher matcher = DtoScript.SPARK_NAME_PATTERN.matcher(content);
-            if (matcher.find()) {
-                app = matcher.group(1);
-            }
-            matcher = DtoScript.SPARK_QUEUE_PATTERN.matcher(content);
-            if (matcher.find()) {
-                queue = matcher.group(1);
-            }
-        }
-        if (Constant.ScriptType.FLINK_BATCH.equals(scriptType) || Constant.ScriptType.FLINK_STREAM.equals(scriptType)) {
-            Matcher matcher = DtoScript.FLINK_NAME_PATTERN.matcher(content);
-            if (matcher.find()) {
-                app = matcher.group(1);
-            }
-            matcher = DtoScript.FLINK_QUEUE_PATTERN.matcher(content);
-            if (matcher.find()) {
-                queue = matcher.group(1);
-            }
-        }
-        return new String[]{queue, app};
     }
 
     public static void build(ScriptHistory scriptHistory) {
