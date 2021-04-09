@@ -3,9 +3,11 @@ package com.meiyou.bigwhale.job;
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
 import com.meiyou.bigwhale.dto.DtoScript;
+import com.meiyou.bigwhale.dto.DtoScriptHistory;
 import com.meiyou.bigwhale.entity.Cluster;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.service.ClusterService;
+import com.meiyou.bigwhale.service.ScriptService;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import com.meiyou.bigwhale.util.YarnApiUtils;
 import org.apache.commons.lang.StringUtils;
@@ -33,6 +35,8 @@ public class ScriptHistoryTimeoutJob extends AbstractRetryableJob implements Job
 
     @Autowired
     private ClusterService clusterService;
+    @Autowired
+    protected ScriptService scriptService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
@@ -50,9 +54,15 @@ public class ScriptHistoryTimeoutJob extends AbstractRetryableJob implements Job
                 } else {
                     // Yarn资源不够时，客户端会长时间处于提交请求状态，平台无法中断此请求，故在此处再判断一次状态
                     if (scriptHistory.getClusterId() != null && scriptHistory.getSteps().contains(Constant.JobState.SUBMITTING)) {
-                        String [] arr = DtoScript.extractYarnParams(scriptHistory.getScriptType(), scriptHistory.getContent());
                         Cluster cluster = clusterService.findById(scriptHistory.getClusterId());
-                        HttpYarnApp httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), arr[0], arr[1], arr[2], 3);
+                        String user;
+                        if (scriptHistory.getScriptId() != null) {
+                            user = scriptService.findById(scriptHistory.getScriptId()).getUser();
+                        } else {
+                            user = DtoScriptHistory.extractUser(scriptHistory.getOutputs());
+                        }
+                        String [] arr = DtoScript.extractQueueAndApp(scriptHistory.getScriptType(), scriptHistory.getContent());
+                        HttpYarnApp httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), user, arr[0], arr[1], 3);
                         if (httpYarnApp != null) {
                             retry = false;
                             scriptHistory.updateState(Constant.JobState.SUBMITTED);

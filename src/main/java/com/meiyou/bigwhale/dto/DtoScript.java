@@ -17,8 +17,6 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 public class DtoScript extends AbstractPageDto {
 
-    private static final Pattern SPARK_USER_PATTERN = Pattern.compile("--proxy-user ([\\w-.,]+)");
-    private static final Pattern FLINK_USER_PATTERN = Pattern.compile("-yD ypu=([\\w-.,]+)");
     private static final Pattern SPARK_QUEUE_PATTERN = Pattern.compile("--queue ([\\w-.,]+)");
     private static final Pattern FLINK_QUEUE_PATTERN = Pattern.compile("-yqu ([\\w-.,]+)");
     private static final Pattern SPARK_NAME_PATTERN = Pattern.compile("--name ([\\w-.,]+)");
@@ -98,9 +96,9 @@ public class DtoScript extends AbstractPageDto {
         //提取app的值
         app = null;
         if (isYarn()) {
-            String [] arr = extractYarnParams(type, content);
-            queue = arr[1];
-            app = arr[2];
+            String [] arr = extractQueueAndApp(type, content);
+            queue = arr[0];
+            app = arr[1];
             if (StringUtils.isBlank(app)) {
                 return "脚本【" + name + "】未能从参数中提取到应用名称，请检查代码";
             }
@@ -124,21 +122,16 @@ public class DtoScript extends AbstractPageDto {
     }
 
     /**
-     * [user, queue, app]
+     * [queue, app]
      * @param scriptType
      * @param content
      * @return
      */
-    public static String [] extractYarnParams(String scriptType, String content) {
-        String user = null;
+    public static String [] extractQueueAndApp(String scriptType, String content) {
         String queue = null;
         String app = null;
         if (Constant.ScriptType.SPARK_BATCH.equals(scriptType) || Constant.ScriptType.SPARK_STREAM.equals(scriptType)) {
-            Matcher matcher = SPARK_USER_PATTERN.matcher(content);
-            if (matcher.find()) {
-                user = matcher.group(1);
-            }
-            matcher = SPARK_QUEUE_PATTERN.matcher(content);
+            Matcher matcher = SPARK_QUEUE_PATTERN.matcher(content);
             if (matcher.find()) {
                 queue = matcher.group(1);
             }
@@ -148,11 +141,7 @@ public class DtoScript extends AbstractPageDto {
             }
         }
         if (Constant.ScriptType.FLINK_BATCH.equals(scriptType) || Constant.ScriptType.FLINK_STREAM.equals(scriptType)) {
-            Matcher matcher = FLINK_USER_PATTERN.matcher(content);
-            if (matcher.find()) {
-                user = matcher.group(1);
-            }
-            matcher = FLINK_QUEUE_PATTERN.matcher(content);
+            Matcher matcher = FLINK_QUEUE_PATTERN.matcher(content);
             if (matcher.find()) {
                 queue = matcher.group(1);
             }
@@ -161,7 +150,7 @@ public class DtoScript extends AbstractPageDto {
                 app = matcher.group(1);
             }
         }
-        return new String[]{user, queue, app};
+        return new String[]{queue, app};
     }
 
 }

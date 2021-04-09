@@ -249,6 +249,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
     }
 
     private void readContent(boolean stdout, InputStream in) {
+        String prefix = scriptHistory.getOutputs() != null ? scriptHistory.getOutputs() : "";
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[1024];
             int length;
@@ -257,7 +258,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
                     out.write(buffer, 0, length);
                     String tmp = out.toString("UTF-8");
                     if (stdout) {
-                        scriptHistory.setOutputs(tmp);
+                        scriptHistory.setOutputs(prefix + tmp);
                     } else {
                         scriptHistory.setErrors(tmp);
                     }
@@ -267,7 +268,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
             if (out.size() > 0) {
                 String content = out.toString("UTF-8");
                 if (stdout) {
-                    scriptHistory.setOutputs(content);
+                    scriptHistory.setOutputs(prefix + content);
                 } else {
                     scriptHistory.setErrors(content);
                 }
@@ -320,18 +321,18 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
             cmd = arr[arr.length - 1];
             commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s %s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
         } else {
-            String [] arr = DtoScript.extractYarnParams(scriptHistory.getScriptType(), scriptHistory.getContent());
+            String [] arr = DtoScript.extractQueueAndApp(scriptHistory.getScriptType(), scriptHistory.getContent());
             if (Constant.ScriptType.SPARK_BATCH.equals(scriptHistory.getScriptType()) || Constant.ScriptType.SPARK_STREAM.equals(scriptHistory.getScriptType())) {
-                if (scriptHistory.getContent().indexOf("--queue " + arr[1]) > scriptHistory.getContent().indexOf("--name " + arr[2])) {
-                    cmd = arr[2] + ".*" + arr[1];
+                if (scriptHistory.getContent().indexOf("--queue " + arr[0]) > scriptHistory.getContent().indexOf("--name " + arr[1])) {
+                    cmd = arr[1] + ".*" + arr[0];
                 } else {
-                    cmd = arr[1] + ".*" + arr[2];
+                    cmd = arr[0] + ".*" + arr[1];
                 }
             } else {
-                if (scriptHistory.getContent().indexOf("-yqu " + arr[1]) > scriptHistory.getContent().indexOf("-ynm " + arr[2])) {
-                    cmd = arr[2] + ".*" + arr[1];
+                if (scriptHistory.getContent().indexOf("-yqu " + arr[0]) > scriptHistory.getContent().indexOf("-ynm " + arr[1])) {
+                    cmd = arr[1] + ".*" + arr[0];
                 } else {
-                    cmd = arr[1] + ".*" + arr[2];
+                    cmd = arr[0] + ".*" + arr[1];
                 }
             }
             commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s.*%s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";

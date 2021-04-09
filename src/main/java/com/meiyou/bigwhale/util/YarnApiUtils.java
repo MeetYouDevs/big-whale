@@ -46,6 +46,9 @@ public class YarnApiUtils {
      * @return
      */
     public static HttpYarnApp getActiveApp(String yarnUrl, String user, String queue, String name, int retries) {
+        if (queue != null && !"root".equals(queue) && !queue.startsWith("root.")) {
+            queue = "root." + queue;
+        }
         Map<String, Object> params = new HashMap<>();
         params.put("user", user);
         params.put("queue", queue);
@@ -82,7 +85,7 @@ public class YarnApiUtils {
      * @return
      */
     public static HttpYarnApp getLastNoActiveApp(String yarnUrl, String user, String queue, String name, int retries) {
-        if (!queue.startsWith("root.")) {
+        if (queue != null && !"root".equals(queue) && !queue.startsWith("root.")) {
             queue = "root." + queue;
         }
         Map<String, Object> params = new HashMap<>();
