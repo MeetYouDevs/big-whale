@@ -60,6 +60,11 @@ public class MonitorJob extends AbstractNoticeableJob implements InterruptableJo
             restart();
             return;
         }
+        // 手动启动的任务，后面才开启的监控，设置一下监控ID
+        if (scriptHistory.getMonitorId() == null) {
+            scriptHistory.setMonitorId(monitorId);
+            scriptHistoryService.save(scriptHistory);
+        }
         if (Constant.JobState.INITED.equals(scriptHistory.getState()) ||
                 Constant.JobState.SUBMITTING.equals(scriptHistory.getState())) {
             return;
