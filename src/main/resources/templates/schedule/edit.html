@@ -579,6 +579,7 @@
                                     小提示
                                 </label>
                                 <ul>
+                                    <li>双击快速编辑节点</li>
                                     <li>须满足：节点数 = 分支数 + 1</li>
                                     <li>分支的起点和终点必须指向不同节点</li>
                                     <li>不同分支的终点必须指向不同节点</li>
@@ -812,6 +813,12 @@
                 }).show();
                 return false;
             });
+            $('#flex_canvas').bind('dblclick', function () {
+                if (selected && selected.type === 'node') {
+                    onEdit();
+                }
+                return false;
+            })
         },
         // 加载左侧工具
         onLoadTools: function (tools) {
@@ -819,7 +826,7 @@
             tools.forEach(function (val) {
                 val.children.forEach(function (val1) {
                     _html += '<a href="#" title="' + val1.name + '" ondragstart="onDragStart(event,' + JSON.stringify(val1).replace(/\"/g, "'") + ')" draggable="true">' +
-                        ' <i class="iconfont ' + val1.icon + '"></i> ' + val1.name +
+                        '<i class="iconfont ' + val1.icon + '"></i> ' + val1.name +
                         '</a>';
                 });
             });

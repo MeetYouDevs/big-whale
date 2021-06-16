@@ -139,9 +139,9 @@ public class ActiveYarnAppRefreshJob extends AbstractNoticeableJob implements In
         for (YarnApp yarnApp : yarnApps) {
             String key;
             if (yarnApp.getName().contains(".bw_instance_s")) {
-                key = yarnApp.getUser() + "$" + yarnApp.getQueue() + "$" + yarnApp.getName().split("\\.bw_instance_")[0];
+                key = yarnApp.getUser() + ";" + yarnApp.getQueue() + ";" + yarnApp.getName().split("\\.bw_instance_")[0];
             } else {
-                key = yarnApp.getUser() + "$" + yarnApp.getQueue() + "$" + yarnApp.getName();
+                key = yarnApp.getUser() + ";" + yarnApp.getQueue() + ";" + yarnApp.getName();
             }
             List<YarnApp> vals = appInstanceMap.computeIfAbsent(key, k -> new ArrayList<>());
             vals.add(yarnApp);

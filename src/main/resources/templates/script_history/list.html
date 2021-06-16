@@ -182,7 +182,7 @@
             },
             listUrl: './page.api',
             reloadAfter : function(items) {
-                if (id) {
+                if (id || scheduleTopNodeId || scriptId) {
                     var finished = $scope.isFinish(items);
                     if (!finished) {
                         if (t1) {
@@ -198,16 +198,29 @@
             $http.post('./page.api', $scope.options.query)
                 .success(function (data) {
                     var items = data.content;
-                    $scope.options.items[0]['outputs'] = items[0]['outputs'];
-                    $scope.options.items[0]['errors'] = items[0]['errors'];
-                    $scope.options.items[0]['startTime'] = items[0]['startTime'];
-                    $scope.options.items[0]['finishTime'] = items[0]['finishTime'];
-                    $scope.options.items[0]['state'] = items[0]['state'];
-                    $scope.options.items[0]['jobUrl'] = items[0]['jobUrl'];
-                    $scope.options.items[0]['running'] = items[0]['running'];
-                    var finished = $scope.isFinish(items);
-                    if (finished) {
+                    var match = 0;
+                    $scope.options.items.forEach(function (oldItem) {
+                        items.forEach(function (newItem) {
+                            if (oldItem['id'] === newItem['id']) {
+                                match ++;
+                                oldItem['outputs'] = newItem['outputs'];
+                                oldItem['errors'] = newItem['errors'];
+                                oldItem['startTime'] = newItem['startTime'];
+                                oldItem['finishTime'] = newItem['finishTime'];
+                                oldItem['state'] = newItem['state'];
+                                oldItem['jobUrl'] = newItem['jobUrl'];
+                                oldItem['running'] = newItem['running'];
+                            }
+                        });
+                    });
+                    if (match === $scope.options.items.length) {
+                        var finished = $scope.isFinish(items);
+                        if (finished) {
+                            window.clearInterval(t1);
+                        }
+                    } else {
                         window.clearInterval(t1);
+                        $scope.options.mypage.reload();
                     }
                 });
         };

@@ -20,7 +20,7 @@ public class ScriptHistoryServiceImpl extends AbstractMysqlPagingAndSortingQuery
     @Override
     public void missingScheduling(ScriptHistory scriptHistory) {
         scriptHistory.updateState(Constant.JobState.FAILED);
-        // scriptHistory.setFinishTime(new Date());
+        scriptHistory.setFinishTime(new Date());
         scriptHistory.setErrors("Missing scheduling");
         save(scriptHistory);
     }
@@ -32,8 +32,8 @@ public class ScriptHistoryServiceImpl extends AbstractMysqlPagingAndSortingQuery
         Date time;
         if (scriptHistory.getStartTime() != null) {
             time = scriptHistory.getStartTime();
-        } else if (scriptHistory.getScheduleHistoryTime() != null) {
-            time = scriptHistory.getScheduleHistoryTime();
+        } else if (scriptHistory.getScheduleOperateTime() != null) {
+            time = scriptHistory.getScheduleOperateTime();
         } else {
             time = scriptHistory.getCreateTime();
         }

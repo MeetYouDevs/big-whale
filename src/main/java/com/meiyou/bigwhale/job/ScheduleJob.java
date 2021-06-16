@@ -4,17 +4,16 @@ import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.entity.Script;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.entity.Schedule;
-import com.meiyou.bigwhale.entity.ScheduleSnapshot;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
 import com.meiyou.bigwhale.service.ScriptService;
 import com.meiyou.bigwhale.service.ScheduleService;
-import com.meiyou.bigwhale.service.ScheduleSnapshotService;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -35,8 +34,6 @@ public class ScheduleJob implements Job {
     private ScriptService scriptService;
     @Autowired
     private ScheduleService scheduleService;
-    @Autowired
-    private ScheduleSnapshotService scheduleSnapshotService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
@@ -46,65 +43,41 @@ public class ScheduleJob implements Job {
         schedule.setNeedFireTime(jobExecutionContext.getScheduledFireTime());
         schedule.setNextFireTime(jobExecutionContext.getNextFireTime());
         scheduleService.save(schedule);
-        ScheduleSnapshot scheduleSnapshot = scheduleSnapshotService.findByScheduleIdAndSnapshotTime(scheduleId, jobExecutionContext.getScheduledFireTime());
-        if (scheduleSnapshot == null) {
-            return;
-        }
-        confirmedNeed(jobExecutionContext, scheduleSnapshot);
+        confirmedNeed(jobExecutionContext, schedule);
     }
 
-    private void confirmedNeed(JobExecutionContext jobExecutionContext, ScheduleSnapshot scheduleSnapshot) {
+    private void confirmedNeed(JobExecutionContext jobExecutionContext, Schedule schedule) {
         String scheduleInstanceId = dateFormat.format(jobExecutionContext.getScheduledFireTime());
-        List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + scheduleSnapshot.getScheduleId() +
+        List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + schedule.getId() +
                 ";scheduleInstanceId=" + scheduleInstanceId + ";state=" + Constant.JobState.UN_CONFIRMED_);
         if (scriptHistories.isEmpty()) {
             scheduleInstanceId = dateFormat.format(jobExecutionContext.getNextFireTime());
-            scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + scheduleSnapshot.getScheduleId() +
+            scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + schedule.getId() +
                     ";scheduleInstanceId=" + scheduleInstanceId);
             if (scriptHistories.isEmpty()) {
-                scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + scheduleSnapshot.getScheduleId() +
+                scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + schedule.getId() +
                         ";state=" + Constant.JobState.UN_CONFIRMED_);
                 scriptHistories.forEach(scriptHistoryService::missingScheduling);
-                prepareNext(jobExecutionContext, scheduleSnapshot);
+                prepareNext(jobExecutionContext, schedule);
             }
             return;
         }
-        generateHistory(null, scheduleInstanceId, scheduleSnapshot, 1);
-        prepareNext(jobExecutionContext, scheduleSnapshot);
+        generateHistory(schedule, scheduleInstanceId, null, 1);
+        prepareNext(jobExecutionContext, schedule);
     }
 
-    private void prepareNext(JobExecutionContext jobExecutionContext, ScheduleSnapshot scheduleSnapshot) {
+    private void prepareNext(JobExecutionContext jobExecutionContext, Schedule schedule) {
         String scheduleInstanceId = dateFormat.format(jobExecutionContext.getNextFireTime());
-        generateHistory(null, scheduleInstanceId, scheduleSnapshot, 0);
+        generateHistory(schedule, scheduleInstanceId, null, 0);
     }
 
-    private void generateHistory(String scheduleTopNodeId, String scheduleInstanceId, ScheduleSnapshot scheduleSnapshot, int generateStatus) {
-        Map<String, ScheduleSnapshot.Topology.Node> nextNodeIdToObj = scheduleSnapshot.analyzeNextNode(scheduleTopNodeId);
+    private void generateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId, int generateStatus) {
+        Map<String, Schedule.Topology.Node> nextNodeIdToObj = schedule.analyzeNextNode(previousScheduleTopNodeId);
         for (String nodeId : nextNodeIdToObj.keySet()) {
-            Script script = scriptService.findOneByQuery("scheduleId=" + scheduleSnapshot.getScheduleId() +  ";scheduleTopNodeId=" + nodeId);
-            scriptService.generateHistory(script, scheduleSnapshot, scheduleInstanceId, generateStatus);
-            generateHistory(nodeId, scheduleInstanceId, scheduleSnapshot, generateStatus);
+            Script script = scriptService.findOneByQuery("scheduleId=" + schedule.getId() +  ";scheduleTopNodeId=" + nodeId);
+            scriptService.generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId, generateStatus);
+            generateHistory(schedule, scheduleInstanceId, nodeId, generateStatus);
         }
-    }
-
-    public static Date getPreviousFireTime(String cron, Date startDate) {
-        Date nextFireTime1 = getNextFireTime(cron, startDate);
-        Date nextFireTime2 = getNextFireTime(cron, nextFireTime1);
-        int intervals = (int) (nextFireTime2.getTime() - nextFireTime1.getTime());
-        Date cal1 = DateUtils.addMilliseconds(nextFireTime1, - intervals);
-        Date cal2 = getNextFireTime(cron, cal1);
-        Date cal3 = getNextFireTime(cron, cal2);
-        Date cal4 = getNextFireTime(cron, cal3);
-        while (cal4.compareTo(nextFireTime1) > 0) {
-            cal1 = DateUtils.addMilliseconds(cal1, - intervals);
-            cal2 = getNextFireTime(cron, cal1);
-            cal3 = getNextFireTime(cron, cal2);
-            cal4 = getNextFireTime(cron, cal3);
-        }
-        if (cal4.equals(nextFireTime1)) {
-            return cal2;
-        }
-        return cal3;
     }
 
     public static Date getNeedFireTime(String cron, Date startDate) {
@@ -114,29 +87,27 @@ public class ScheduleJob implements Job {
         Date cal1 = DateUtils.addMilliseconds(nextFireTime1, - intervals);
         Date cal2 = getNextFireTime(cron, cal1);
         Date cal3 = getNextFireTime(cron, cal2);
-        if (cal3.equals(nextFireTime1)) {
-            return cal2;
-        } else {
-            Date cal4 = getNextFireTime(cron, cal3);
-            while (cal4.compareTo(nextFireTime1) > 0) {
-                cal1 = DateUtils.addMilliseconds(cal1, - intervals);
-                cal2 = getNextFireTime(cron, cal1);
-                cal3 = getNextFireTime(cron, cal2);
-                cal4 = getNextFireTime(cron, cal3);
+        while (!cal3.equals(nextFireTime1)) {
+            cal1 = DateUtils.addMilliseconds(cal1, - intervals);
+            cal2 = getNextFireTime(cron, cal1);
+            cal3 = getNextFireTime(cron, cal2);
+            if (cal3.before(nextFireTime1)) {
+                intervals = -1000;
             }
-            if (cal4.equals(nextFireTime1)) {
-                return cal3;
-            }
-            return cal2;
         }
+        return cal2;
     }
 
     public static Date getNextFireTime(String cron, Date startDate) {
-        CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
-        TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger().withSchedule(cronScheduleBuilder);
-        triggerBuilder.startAt(startDate);
-        CronTrigger trigger = triggerBuilder.build();
-        return trigger.getFireTimeAfter(startDate);
+        return getCronExpression(cron).getTimeAfter(startDate);
+    }
+
+    private static CronExpression getCronExpression(String cron) {
+        try {
+            return new CronExpression(cron);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     public static void build(Schedule schedule) {

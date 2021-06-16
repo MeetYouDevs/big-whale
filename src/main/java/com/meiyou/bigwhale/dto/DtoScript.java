@@ -26,15 +26,18 @@ public class DtoScript extends AbstractPageDto {
     private String name;
     private String description;
     private String type;
+    private Integer monitorId;
+    /**
+     * 列表查询字段
+     */
+    private Boolean monitorEnabled;
     private Integer scheduleId;
     /**
      * 拓扑节点ID
      */
     private String scheduleTopNodeId;
-    private Integer monitorId;
-    private Boolean monitorEnabled;
-    private Integer agentId;
     private Integer clusterId;
+    private Integer agentId;
     private Integer timeout;
     private String content;
     private String input;
@@ -96,7 +99,7 @@ public class DtoScript extends AbstractPageDto {
         //提取app的值
         app = null;
         if (isYarn()) {
-            String [] arr = extractQueueAndApp(type, content);
+            String [] arr = extractQueueAndApp();
             queue = arr[0];
             app = arr[1];
             if (StringUtils.isBlank(app)) {
@@ -123,14 +126,12 @@ public class DtoScript extends AbstractPageDto {
 
     /**
      * [queue, app]
-     * @param scriptType
-     * @param content
      * @return
      */
-    public static String [] extractQueueAndApp(String scriptType, String content) {
+    private String [] extractQueueAndApp() {
         String queue = null;
         String app = null;
-        if (Constant.ScriptType.SPARK_BATCH.equals(scriptType) || Constant.ScriptType.SPARK_STREAM.equals(scriptType)) {
+        if (Constant.ScriptType.SPARK_BATCH.equals(type) || Constant.ScriptType.SPARK_STREAM.equals(type)) {
             Matcher matcher = SPARK_QUEUE_PATTERN.matcher(content);
             if (matcher.find()) {
                 queue = matcher.group(1);
@@ -140,7 +141,7 @@ public class DtoScript extends AbstractPageDto {
                 app = matcher.group(1);
             }
         }
-        if (Constant.ScriptType.FLINK_BATCH.equals(scriptType) || Constant.ScriptType.FLINK_STREAM.equals(scriptType)) {
+        if (Constant.ScriptType.FLINK_BATCH.equals(type) || Constant.ScriptType.FLINK_STREAM.equals(type)) {
             Matcher matcher = FLINK_QUEUE_PATTERN.matcher(content);
             if (matcher.find()) {
                 queue = matcher.group(1);

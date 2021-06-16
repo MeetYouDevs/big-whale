@@ -1,10 +1,10 @@
 package com.meiyou.bigwhale.job;
 
 import com.meiyou.bigwhale.common.Constant;
+import com.meiyou.bigwhale.entity.Schedule;
 import com.meiyou.bigwhale.entity.ScriptHistory;
-import com.meiyou.bigwhale.entity.ScheduleSnapshot;
+import com.meiyou.bigwhale.service.ScheduleService;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
-import com.meiyou.bigwhale.service.ScheduleSnapshotService;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -19,9 +19,9 @@ import java.util.Date;
 public abstract class AbstractRetryableJob extends AbstractNoticeableJob {
 
     @Autowired
-    protected ScriptHistoryService scriptHistoryService;
+    private ScriptHistoryService scriptHistoryService;
     @Autowired
-    protected ScheduleSnapshotService scheduleSnapshotService;
+    private ScheduleService scheduleService;
 
     /**
      * 重试当前节点
@@ -31,30 +31,35 @@ public abstract class AbstractRetryableJob extends AbstractNoticeableJob {
     protected void retryCurrentNode(ScriptHistory scriptHistory, String errorType) {
         notice(scriptHistory, errorType);
         boolean retryable = scriptHistory.getScheduleId() != null &&
-                (scriptHistory.getScheduleHistoryMode() == null || Constant.HistoryMode.RETRY.equals(scriptHistory.getScheduleHistoryMode())) &&
+                !scriptHistory.getScheduleSupplement() &&
                 !"UNKNOWN".equals(scriptHistory.getJobFinalStatus());
         if (retryable) {
-            ScheduleSnapshot scheduleSnapshot = scheduleSnapshotService.findById(scriptHistory.getScheduleSnapshotId());
-            ScheduleSnapshot.Topology.Node node = scheduleSnapshot.analyzeCurrentNode(scriptHistory.getScheduleTopNodeId());
-            if (node.retries() == 0) {
+            Schedule schedule = scheduleService.findById(scriptHistory.getScheduleId());
+            if (schedule == null || schedule.getUpdateTime().after(scriptHistory.getCreateTime())) {
+                // 过期任务不重试
                 return;
             }
-            if (scriptHistory.getScheduleRetryNum() != null && scriptHistory.getScheduleRetryNum() >= node.retries()) {
+            String [] scheduleFailureHandleArr = scriptHistory.getScheduleFailureHandle().split(";");
+            int retries = Integer.parseInt(scheduleFailureHandleArr[0]);
+            int intervals = Integer.parseInt(scheduleFailureHandleArr[1]);
+            int currRetries = Integer.parseInt(scheduleFailureHandleArr[2]);
+            if (currRetries >= retries) {
                 return;
             }
-            Date startAt = DateUtils.addMinutes(new Date(), node.intervals());
+            Date startAt = DateUtils.addMinutes(new Date(), intervals);
             ScriptHistory retryScriptHistory = ScriptHistory.builder()
                     .scheduleId(scriptHistory.getScheduleId())
                     .scheduleTopNodeId(scriptHistory.getScheduleTopNodeId())
-                    .scheduleSnapshotId(scriptHistory.getScheduleSnapshotId())
                     .scheduleInstanceId(scriptHistory.getScheduleInstanceId())
-                    .scheduleRetryNum(scriptHistory.getScheduleRetryNum() != null ? scriptHistory.getScheduleRetryNum() + 1 : 1)
-                    .scheduleHistoryMode(Constant.HistoryMode.RETRY)
-                    .scheduleHistoryTime(startAt)
+                    .scheduleFailureHandle(retries + ";" + intervals + (currRetries + 1))
+                    .scheduleSupplement(false)
+                    .scheduleOperateTime(startAt)
+                    .previousScheduleTopNodeId(scriptHistory.getPreviousScheduleTopNodeId())
                     .scriptId(scriptHistory.getScriptId())
+                    .scriptName(scriptHistory.getScriptName())
                     .scriptType(scriptHistory.getScriptType())
-                    .agentId(scriptHistory.getAgentId())
                     .clusterId(scriptHistory.getClusterId())
+                    .agentId(scriptHistory.getAgentId())
                     .timeout(scriptHistory.getTimeout())
                     .content(scriptHistory.getContent())
                     .createTime(scriptHistory.getCreateTime())

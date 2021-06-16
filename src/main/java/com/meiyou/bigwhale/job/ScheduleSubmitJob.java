@@ -2,9 +2,7 @@ package com.meiyou.bigwhale.job;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.entity.ScriptHistory;
-import com.meiyou.bigwhale.entity.ScheduleSnapshot;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
-import com.meiyou.bigwhale.service.ScheduleSnapshotService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -13,7 +11,6 @@ import org.springframework.data.domain.Sort;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -26,77 +23,85 @@ public class ScheduleSubmitJob implements Job {
 
     @Autowired
     private ScriptHistoryService scriptHistoryService;
-    @Autowired
-    private ScheduleSnapshotService scheduleSnapshotService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
         List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery("state=" + Constant.JobState.WAITING_PARENT_,
                 new Sort(Sort.Direction.ASC, "createTime"));
         for (ScriptHistory scriptHistory : scriptHistories) {
-            ScheduleSnapshot scheduleSnapshot = scheduleSnapshotService.findById(scriptHistory.getScheduleSnapshotId());
-            ScheduleSnapshot.Topology.Node previousNode = scheduleSnapshot.analyzePreviousNode(scriptHistory.getScheduleTopNodeId());
-            if (previousNode == null) {
-                // 根节点
-                ScriptHistoryShellRunnerJob.build(scriptHistory);
+            String state;
+            if (scriptHistory.getPreviousScheduleTopNodeId() == null) {
+                state = Constant.JobState.INITED;
             } else {
-                String previousNodeState = getPreviousNodeState(scriptHistory.getScheduleId(), previousNode, scriptHistory.getScheduleInstanceId());
+                String previousNodeState = previousNodeState(scriptHistory.getScheduleId(), scriptHistory.getScheduleInstanceId(), scriptHistory.getPreviousScheduleTopNodeId());
                 switch (previousNodeState) {
                     case Constant.JobState.SUCCEEDED:
-                        scriptHistory.updateState(Constant.JobState.INITED);
-                        scriptHistoryService.save(scriptHistory);
-                        ScriptHistoryShellRunnerJob.build(scriptHistory);
+                        state = Constant.JobState.INITED;
                         break;
                     case Constant.JobState.FAILED:
-                        scriptHistory.updateState(Constant.JobState.PARENT_FAILED_);
-                        scriptHistory.setFinishTime(new Date());
-                        scriptHistoryService.save(scriptHistory);
-                        markNextNodeFailed(scheduleSnapshot, scriptHistory.getScheduleTopNodeId(), scriptHistory.getScheduleInstanceId());
+                        state = Constant.JobState.PARENT_FAILED_;
                         break;
                     case Constant.JobState.RUNNING:
-                        break;
                     default:
+                        continue;
                 }
+            }
+            scriptHistory.updateState(state);
+            if (Constant.JobState.INITED.equals(state)) {
+                scriptHistory = scriptHistoryService.save(scriptHistory);
+                ScriptHistoryShellRunnerJob.build(scriptHistory);
+            } else {
+                scriptHistory.setFinishTime(new Date());
+                scriptHistoryService.save(scriptHistory);
             }
         }
     }
 
     /**
      * @param scheduleId
-     * @param previousNode
      * @param scheduleInstanceId
-     * @return 0 成功 1 失败 2 执行中
+     * @param previousScheduleTopNodeId
+     * @return
      */
-    private String getPreviousNodeState(Integer scheduleId, ScheduleSnapshot.Topology.Node previousNode, String scheduleInstanceId) {
-        List<ScriptHistory> previousScriptHistories = scriptHistoryService.findByQuery("scheduleId=" + scheduleId +
-                ";scheduleTopNodeId=" + previousNode.id +
+    private String previousNodeState(Integer scheduleId, String scheduleInstanceId, String previousScheduleTopNodeId) {
+        List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + scheduleId +
+                ";scheduleTopNodeId=" + previousScheduleTopNodeId +
                 ";scheduleInstanceId=" + scheduleInstanceId);
-        for (ScriptHistory previousScriptHistory : previousScriptHistories) {
-            if (previousScriptHistory.isRunning()) {
+        sort(scriptHistories);
+        for (ScriptHistory scriptHistory : scriptHistories) {
+            if (scriptHistory.isRunning()) {
                 return Constant.JobState.RUNNING;
             }
-            if (Constant.JobState.SUCCEEDED.equals(previousScriptHistory.getState())) {
+            if (Constant.JobState.SUCCEEDED.equals(scriptHistory.getState())) {
                 return Constant.JobState.SUCCEEDED;
             }
         }
-        previousScriptHistories = previousScriptHistories.stream().filter(previousScriptHistory -> previousScriptHistory.getScheduleRetryNum() != null).collect(Collectors.toList());
-        if (previousScriptHistories.size() < previousNode.retries()) {
-            return Constant.JobState.RUNNING;
+        scriptHistories = scriptHistories.stream().filter(scriptHistory -> !scriptHistory.getScheduleSupplement()).collect(Collectors.toList());
+        if (!scriptHistories.isEmpty()) {
+            ScriptHistory scriptHistory = scriptHistories.get(0);
+            String [] scheduleFailureHandleArr = scriptHistory.getScheduleFailureHandle().split(";");
+            int failureRetries = Integer.parseInt(scheduleFailureHandleArr[0]);
+            int currFailureRetries = Integer.parseInt(scheduleFailureHandleArr[2]);
+            if (currFailureRetries < failureRetries) {
+                // 一般失败后便会进入重试流程，如果最后一个任务结束30S之后还没有进入重试流程，则直接走失败判断流程
+                if ((System.currentTimeMillis() - scriptHistory.getFinishTime().getTime()) < 30000) {
+                    return Constant.JobState.RUNNING;
+                }
+            }
         }
         return Constant.JobState.FAILED;
     }
 
-    private void markNextNodeFailed(ScheduleSnapshot scheduleSnapshot, String scheduleTopNodeId, String scheduleInstanceId) {
-        Map<String, ScheduleSnapshot.Topology.Node> nextNodeIdToObj = scheduleSnapshot.analyzeNextNode(scheduleTopNodeId);
-        for (Map.Entry<String, ScheduleSnapshot.Topology.Node> entry : nextNodeIdToObj.entrySet()) {
-            ScriptHistory nextScriptHistory = scriptHistoryService.findOneByQuery("scheduleId=" + scheduleSnapshot.getScheduleId() +
-                    ";scheduleTopNodeId=" + entry.getKey() +
-                    ";scheduleInstanceId=" + scheduleInstanceId);
-            nextScriptHistory.updateState(Constant.JobState.PARENT_FAILED_);
-            nextScriptHistory.setFinishTime(new Date());
-            scriptHistoryService.save(nextScriptHistory);
-            markNextNodeFailed(scheduleSnapshot, nextScriptHistory.getScheduleTopNodeId(), scheduleInstanceId);
-        }
+    private void sort(List<ScriptHistory> scriptHistories) {
+        // 降序
+        scriptHistories.sort((i1, i2) -> {
+            if (i1.getId() > i2.getId()) {
+                return -1;
+            } else if (i1.getId() < i2.getId()) {
+                return 1;
+            }
+            return 0;
+        });
     }
 
 }

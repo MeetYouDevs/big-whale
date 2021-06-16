@@ -70,8 +70,10 @@ public class PlatformTimeoutJob extends AbstractNoticeableJob implements Job {
                     ScriptHistory scriptHistory = scriptHistoryService.findNoScheduleLatestByScriptId(script.getId());
                     if (scriptHistory.getJobId() != null) {
                         Cluster cluster = clusterService.findById(scriptHistory.getClusterId());
-                        YarnApiUtils.killApp(cluster.getYarnUrl(), scriptHistory.getJobId());
-                        yarnAppService.deleteByQuery("clusterId=" + scriptHistory.getClusterId() + ";appId=" + scriptHistory.getJobId());
+                        boolean success = YarnApiUtils.killApp(cluster.getYarnUrl(), scriptHistory.getJobId());
+                        if (success) {
+                            yarnAppService.deleteByQuery("clusterId=" + scriptHistory.getClusterId() + ";appId=" + scriptHistory.getJobId());
+                        }
                     }
                     notice("调度平台-实时任务【" + script.getName() + "】监控", "系统任务运行超时");
                     SchedulerUtils.interrupt(jobKey.getName(), jobKey.getGroup());

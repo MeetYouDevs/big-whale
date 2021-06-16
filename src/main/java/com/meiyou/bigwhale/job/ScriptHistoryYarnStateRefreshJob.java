@@ -2,13 +2,10 @@ package com.meiyou.bigwhale.job;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
-import com.meiyou.bigwhale.dto.DtoScript;
-import com.meiyou.bigwhale.dto.DtoScriptHistory;
 import com.meiyou.bigwhale.entity.Cluster;
-import com.meiyou.bigwhale.entity.Script;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.service.ClusterService;
-import com.meiyou.bigwhale.service.ScriptService;
+import com.meiyou.bigwhale.service.ScriptHistoryService;
 import com.meiyou.bigwhale.util.YarnApiUtils;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
@@ -24,9 +21,9 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
     private volatile boolean interrupted = false;
 
     @Autowired
-    private ClusterService clusterService;
+    private ScriptHistoryService scriptHistoryService;
     @Autowired
-    private ScriptService scriptService;
+    private ClusterService clusterService;
 
     @Override
     public void interrupt() {
@@ -42,10 +39,6 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
         // 遍历集群
         Iterable<Cluster> clusters = clusterService.findAll();
         for (Cluster cluster : clusters) {
-            List<Script> scripts = scriptService.findByQuery("clusterId=" + cluster.getId());
-            if (scripts.isEmpty()) {
-                continue;
-            }
             List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery("clusterId=" + cluster.getId() + ";jobFinalStatus=UNDEFINED");
             if (scriptHistories.isEmpty()) {
                 continue;
@@ -57,33 +50,25 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
                 continue;
             }
             httpYarnApps.removeIf(httpYarnApp -> !httpYarnApp.getName().contains(".bw_instance_") && !httpYarnApp.getName().contains(".bw_test_instance_"));
-            Map<Integer, Script> scriptId2ObjMap = new HashMap<>();
-            scripts.forEach(script -> scriptId2ObjMap.put(script.getId(), script));
-            Map<String, ScriptHistory> scriptUserAndQueueAndName2ScriptHistoryMap = new HashMap<>();
+            Map<String, ScriptHistory> yarnParamsToScriptHistoryMap = new HashMap<>();
             scriptHistories.forEach(scriptHistory -> {
-                String user;
-                if (scriptHistory.getScriptId() != null) {
-                    Script script = scriptId2ObjMap.get(scriptHistory.getScriptId());
-                    user = script != null ? script.getUser() : String.valueOf(scriptHistory.getScriptId());
-                } else {
-                    user = DtoScriptHistory.extractUser(scriptHistory.getOutputs());
-                }
-                String [] arr = DtoScript.extractQueueAndApp(scriptHistory.getScriptType(), scriptHistory.getContent());
-                String queue = arr[0];
+                String [] jobParams = scriptHistory.getJobParams().split(";");
+                String user = jobParams[0];
+                String queue = jobParams[1];
                 if (queue != null && !"root".equals(queue) && !queue.startsWith("root.")) {
                     queue = "root." + queue;
                 }
-                String app = arr[1];
-                String key = user + "$" + queue + "$" + app;
-                scriptUserAndQueueAndName2ScriptHistoryMap.put(key, scriptHistory);
+                String app = jobParams[2];
+                String key = user + ";" + queue + ";" + app;
+                yarnParamsToScriptHistoryMap.put(key, scriptHistory);
             });
             Set<Integer> matchIds = new HashSet<>();
             for (HttpYarnApp httpYarnApp : httpYarnApps) {
-                String key = httpYarnApp.getUser() + "$" + httpYarnApp.getQueue() + "$" + httpYarnApp.getName();
-                if (!scriptUserAndQueueAndName2ScriptHistoryMap.containsKey(key)) {
+                String key = httpYarnApp.getUser() + ";" + httpYarnApp.getQueue() + ";" + httpYarnApp.getName();
+                if (!yarnParamsToScriptHistoryMap.containsKey(key)) {
                     continue;
                 }
-                ScriptHistory scriptHistory = scriptUserAndQueueAndName2ScriptHistoryMap.get(key);
+                ScriptHistory scriptHistory = yarnParamsToScriptHistoryMap.get(key);
                 if (key.contains(".bw_test_instance_")) {
                     YarnApiUtils.killApp(cluster.getYarnUrl(), httpYarnApp.getId());
                     scriptHistory.updateState(Constant.JobState.SUCCEEDED);
@@ -97,7 +82,7 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             }
             scriptHistories.forEach(scriptHistory -> {
                 if (!matchIds.contains(scriptHistory.getId())) {
-                    updateNoMatchScriptHistory(cluster.getYarnUrl(), scriptHistory, scriptUserAndQueueAndName2ScriptHistoryMap);
+                    updateNoMatchScriptHistory(cluster.getYarnUrl(), scriptHistory);
                 }
             });
         }
@@ -115,50 +100,44 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
         }
         scriptHistory.setJobId(httpYarnApp.getId());
         scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
-        scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
         scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
         scriptHistoryService.save(scriptHistory);
     }
 
-    private void updateNoMatchScriptHistory(String yarnUrl, ScriptHistory scriptHistory, Map<String, ScriptHistory> scriptUserAndQueueAndName2ScriptHistoryMap) {
-        for (Map.Entry<String, ScriptHistory> entry : scriptUserAndQueueAndName2ScriptHistoryMap.entrySet()) {
-            if (scriptHistory.getId().equals(entry.getValue().getId())) {
-                String [] arr = entry.getKey().split("\\$");
-                HttpYarnApp httpYarnApp = YarnApiUtils.getLastNoActiveApp(yarnUrl, arr[0], arr[1], arr[2], 3);
-                if (httpYarnApp != null) {
-                    if ("FINISHED".equals(httpYarnApp.getState())) {
-                        scriptHistory.updateState(httpYarnApp.getFinalStatus());
+    private void updateNoMatchScriptHistory(String yarnUrl, ScriptHistory scriptHistory) {
+        String [] jobParams = scriptHistory.getJobParams().split(";");
+        HttpYarnApp httpYarnApp = YarnApiUtils.getLastNoActiveApp(yarnUrl, jobParams[0], jobParams[1], jobParams[2], 3);
+        if (httpYarnApp != null) {
+            if ("FINISHED".equals(httpYarnApp.getState())) {
+                scriptHistory.updateState(httpYarnApp.getFinalStatus());
+            } else {
+                scriptHistory.updateState(httpYarnApp.getState());
+            }
+            scriptHistory.setJobId(httpYarnApp.getId());
+            scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
+            scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
+            if ("FAILED".equals(httpYarnApp.getFinalStatus())) {
+                if (httpYarnApp.getDiagnostics() != null) {
+                    if (httpYarnApp.getDiagnostics().length() > 61440) {
+                        scriptHistory.setErrors(httpYarnApp.getDiagnostics().substring(0, 61440));
                     } else {
-                        scriptHistory.updateState(httpYarnApp.getState());
-                    }
-                    scriptHistory.setJobId(httpYarnApp.getId());
-                    scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
-                    scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
-                    if ("FAILED".equals(httpYarnApp.getFinalStatus())) {
-                        if (httpYarnApp.getDiagnostics() != null) {
-                            if (httpYarnApp.getDiagnostics().length() > 61440) {
-                                scriptHistory.setErrors(httpYarnApp.getDiagnostics().substring(0, 61440));
-                            } else {
-                                scriptHistory.setErrors(httpYarnApp.getDiagnostics());
-                            }
-                        }
-                    }
-                    scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
-                    scriptHistory.setFinishTime(new Date(httpYarnApp.getFinishedTime()));
-                } else {
-                    scriptHistory.updateState(Constant.JobState.FAILED);
-                    scriptHistory.setJobFinalStatus("UNKNOWN");
-                    scriptHistory.setFinishTime(new Date());
-                }
-                scriptHistoryService.save(scriptHistory);
-                if (!"SUCCEEDED".equals(scriptHistory.getJobFinalStatus())) {
-                    if (Constant.ScriptType.SPARK_BATCH.equals(scriptHistory.getScriptType())) {
-                        retryCurrentNode(scriptHistory, String.format(Constant.ErrorType.SPARK_BATCH_UNUSUAL, scriptHistory.getJobFinalStatus()));
-                    } else if ( Constant.ScriptType.FLINK_BATCH.equals(scriptHistory.getScriptType())) {
-                        retryCurrentNode(scriptHistory, String.format(Constant.ErrorType.FLINK_BATCH_UNUSUAL, scriptHistory.getJobFinalStatus()));
+                        scriptHistory.setErrors(httpYarnApp.getDiagnostics());
                     }
                 }
-                break;
+            }
+            scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
+            scriptHistory.setFinishTime(new Date(httpYarnApp.getFinishedTime()));
+        } else {
+            scriptHistory.updateState(Constant.JobState.FAILED);
+            scriptHistory.setJobFinalStatus("UNKNOWN");
+            scriptHistory.setFinishTime(new Date());
+        }
+        scriptHistoryService.save(scriptHistory);
+        if (!"SUCCEEDED".equals(scriptHistory.getJobFinalStatus())) {
+            if (Constant.ScriptType.SPARK_BATCH.equals(scriptHistory.getScriptType())) {
+                retryCurrentNode(scriptHistory, String.format(Constant.ErrorType.SPARK_BATCH_UNUSUAL, scriptHistory.getJobFinalStatus()));
+            } else if (Constant.ScriptType.FLINK_BATCH.equals(scriptHistory.getScriptType())) {
+                retryCurrentNode(scriptHistory, String.format(Constant.ErrorType.FLINK_BATCH_UNUSUAL, scriptHistory.getJobFinalStatus()));
             }
         }
     }
