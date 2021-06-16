@@ -148,6 +148,11 @@
                                 $('.instance-operate button').attr('disabled', 'disabled')
                             }
                         });
+                        if (JSON.stringify(tree).indexOf('label-info') !== -1) {
+                            if (!$scope.autoRefresh.enabled) {
+                                $scope.onAutoRefresh();
+                            }
+                        }
                     }, 50);
 
                 });
@@ -188,8 +193,8 @@
             }).then(function (result) {
                 if (result.value) {
                     $http.post('../script_history/rerun.api', {
+                        scheduleId: $scope.node['scheduleId_'],
                         scheduleTopNodeId: $scope.node['nodeId_'],
-                        scheduleSnapshotId: $scope.node['snapshotId_'],
                         scheduleInstanceId: $scope.instance
                     }).success(function () {
                         swal({

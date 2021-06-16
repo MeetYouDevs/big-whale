@@ -18,15 +18,13 @@ public abstract class AbstractNoticeableJob {
     @Autowired
     private UserService userService;
     @Autowired
-    private ScriptService scriptService;
-    @Autowired
     private ClusterService clusterService;
     @Autowired
     private AgentService agentService;
     @Autowired
     private NoticeService noticeService;
     @Autowired
-    private ScheduleSnapshotService scheduleSnapshotService;
+    private ScheduleService scheduleService;
     @Autowired
     private MonitorService monitorService;
 
@@ -35,6 +33,11 @@ public abstract class AbstractNoticeableJob {
         noticeService.sendDingding(new String[0], msg);
     }
 
+    /**
+     * 统一按照最后的配置进行报警处理
+     * @param scriptHistory
+     * @param errorType
+     */
     protected void notice(ScriptHistory scriptHistory, String errorType) {
         User user = userService.findById(scriptHistory.getCreateBy());
         String userName = user.getNickname() == null ? user.getUsername() : user.getNickname();
@@ -42,21 +45,24 @@ public abstract class AbstractNoticeableJob {
         String email = null;
         String dingDingHooks = null;
         if (scriptHistory.getScheduleId() != null) {
-            Script script = scriptService.findById(scriptHistory.getScriptId());
-            ScheduleSnapshot scheduleSnapshot = scheduleSnapshotService.findById(scriptHistory.getScheduleSnapshotId());
-            taskName = scheduleSnapshot.getName() + " - " + script.getName();
-            email = scheduleSnapshot.getSendEmail() ? user.getEmail() : null;
-            dingDingHooks = scheduleSnapshot.getDingdingHooks();
+            Schedule schedule = scheduleService.findById(scriptHistory.getScheduleId());
+            if (schedule == null) {
+                return;
+            }
+            taskName = schedule.getName() + " - " + scriptHistory.getScriptName();
+            email = schedule.getSendEmail() ? user.getEmail() : null;
+            dingDingHooks = schedule.getDingdingHooks();
         } else if (scriptHistory.getMonitorId() != null) {
-            Script script = scriptService.findById(scriptHistory.getScriptId());
             Monitor monitor = monitorService.findById(scriptHistory.getMonitorId());
-            taskName = "实时任务" + " - " + script.getName();
+            if (monitor == null) {
+                return;
+            }
+            taskName = "实时任务" + " - " + scriptHistory.getScriptName();
             email = monitor.getSendEmail() ? user.getEmail() : null;
             dingDingHooks = monitor.getDingdingHooks();
         } else if (scriptHistory.getScriptId() != null){
             // 手动执行
-            Script script = scriptService.findById(scriptHistory.getScriptId());
-            taskName = script.getName();
+            taskName = scriptHistory.getScriptName();
             email = user.getEmail();
         }
         if (StringUtils.isBlank(email) && StringUtils.isBlank(dingDingHooks)) {

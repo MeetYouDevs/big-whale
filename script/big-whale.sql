@@ -441,6 +441,29 @@ CREATE TABLE IF NOT EXISTS `yarn_app` (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
 
+
+ALTER TABLE `script`
+	CHANGE COLUMN `monitor_id` `monitor_id` INT(11) NULL DEFAULT NULL AFTER `type`,
+	CHANGE COLUMN `monitor_enabled` `monitor_enabled` BIT(1) NULL DEFAULT NULL AFTER `monitor_id`,
+	CHANGE COLUMN `cluster_id` `cluster_id` INT(11) NULL DEFAULT NULL AFTER `schedule_top_node_id`;
+
+
+ALTER TABLE `script_history`
+	CHANGE COLUMN `monitor_id` `monitor_id` INT(11) NULL DEFAULT NULL AFTER `id`,
+	CHANGE COLUMN `schedule_retry_num` `schedule_failure_handle` VARCHAR(255) NULL DEFAULT NULL AFTER `schedule_instance_id`,
+	CHANGE COLUMN `schedule_history_mode` `schedule_supplement` BIT NULL DEFAULT NULL COLLATE 'utf8_general_ci' AFTER `schedule_failure_handle`,
+	CHANGE COLUMN `schedule_history_time` `schedule_operate_time` DATETIME NULL DEFAULT NULL AFTER `schedule_supplement`,
+	ADD COLUMN `previous_schedule_top_node_id` VARCHAR(255) NULL DEFAULT NULL AFTER `schedule_operate_time`,
+	ADD COLUMN `script_name` VARCHAR(255) NOT NULL AFTER `script_id`,
+	CHANGE COLUMN `cluster_id` `cluster_id` INT(11) NULL DEFAULT NULL AFTER `script_type`,
+	CHANGE COLUMN `state` `state` VARCHAR(255) NOT NULL COLLATE 'utf8_general_ci' AFTER `content`,
+	CHANGE COLUMN `steps` `steps` VARCHAR(255) NOT NULL COLLATE 'utf8_general_ci' AFTER `state`,
+	ADD COLUMN `job_params` VARCHAR(255) NULL DEFAULT NULL AFTER `finish_time`,
+	DROP COLUMN `schedule_snapshot_id`;
+
+
+DROP TABLE `schedule_snapshot`;
+
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -13,8 +13,6 @@ public interface Constant {
         String PYTHON = "python";
         String SPARK_BATCH = "sparkbatch";
         String FLINK_BATCH = "flinkbatch";
-
-        // --- 监控 ---
         String SPARK_STREAM = "sparkstream";
         String FLINK_STREAM = "flinkstream";
     }
@@ -42,23 +40,12 @@ public interface Constant {
         String KILLED = "KILLED";
         String FAILED = "FAILED";
         String TIMEOUT = "TIMEOUT";
-        String SUBMITTING_TIMEOUT = "SUBMITTING_TIMEOUT";
-        String SUBMITTING_FAILED = "SUBMITTING_FAILED";
         /**
          * 调度扩展执行状态
          */
         String UN_CONFIRMED_ = "UN_CONFIRMED";
         String WAITING_PARENT_ = "WAITING_PARENT";
         String PARENT_FAILED_ = "PARENT_FAILED";
-    }
-
-    /**
-     * 任务调度历史实例处理模式
-     */
-    interface HistoryMode {
-        String RETRY = "retry";
-        String RERUN = "rerun";
-        String SUPPLEMENT = "supplement";
     }
 
     /**

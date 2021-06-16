@@ -27,18 +27,18 @@ public class Script {
     private String name;
     private String description;
     private String type;
-    private Integer scheduleId;
-    /**
-     * 拓扑节点ID
-     */
-    private String scheduleTopNodeId;
     private Integer monitorId;
     /**
      * 列表查询字段
      */
     private Boolean monitorEnabled;
-    private Integer agentId;
+    private Integer scheduleId;
+    /**
+     * 拓扑节点ID
+     */
+    private String scheduleTopNodeId;
     private Integer clusterId;
+    private Integer agentId;
     private Integer timeout;
     private String content;
     private String input;

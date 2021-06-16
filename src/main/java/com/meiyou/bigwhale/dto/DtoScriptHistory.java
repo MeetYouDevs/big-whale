@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Data
@@ -19,6 +18,12 @@ public class DtoScriptHistory extends AbstractPageDto {
     private static final Pattern PROXY_USER_PATTERN = Pattern.compile("proxy user: ([\\w-.,]+)");
 
     private Integer id;
+
+    /**
+     * 监控
+     */
+    private Integer monitorId;
+
     /**
      * 调度
      */
@@ -27,39 +32,34 @@ public class DtoScriptHistory extends AbstractPageDto {
      * 拓扑节点ID
      */
     private String scheduleTopNodeId;
-    private Integer scheduleSnapshotId;
     private String scheduleInstanceId;
-    private Integer scheduleRetryNum;
-    /**
-     * 历史模式
-     * retry 重试 rerun 重跑 supplement 补数
-     */
-    private String scheduleHistoryMode;
-    private Date scheduleHistoryTime;
-
-    /**
-     * 监控
-     */
-    private Integer monitorId;
+    private String scheduleFailureHandle;
+    private Boolean scheduleSupplement;
+    private Date scheduleOperateTime;
+    private String previousScheduleTopNodeId;
 
     private Integer scriptId;
+    private String scriptName;
     private String scriptType;
-    private Integer agentId;
     private Integer clusterId;
-    private String content;
+    private Integer agentId;
     private Integer timeout;
+    private String content;
+    private String state;
+    private String steps;
     private String outputs;
     private String errors;
     private Date createTime;
     private Integer createBy;
     private Date startTime;
     private Date finishTime;
-    private String state;
-    private String steps;
 
+
+    /* ----- yarn 相关字段 ----- */
     /**
-     * for spark or flink job
+     * user;queue;name
      */
+    private String jobParams;
     private String jobId;
     private String jobUrl;
     private String jobFinalStatus;
@@ -88,15 +88,6 @@ public class DtoScriptHistory extends AbstractPageDto {
                 Constant.JobState.SUBMITTED.equals(state) ||
                 Constant.JobState.ACCEPTED.equals(state) ||
                 Constant.JobState.RUNNING.equals(state);
-    }
-
-    public static String extractUser(String outputs) {
-        String proxyUser = null;
-        Matcher matcher = PROXY_USER_PATTERN.matcher(outputs);
-        if (matcher.find()) {
-            proxyUser = matcher.group(1);
-        }
-        return proxyUser;
     }
 
 }

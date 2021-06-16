@@ -173,6 +173,7 @@
             }).then(function (result) {
                 if (result.value) {
                     $http.post('./kill.api', {
+                        clusterId: item.clusterId,
                         appId: item.appId
                     }).success(function () {
                         $scope.reload();

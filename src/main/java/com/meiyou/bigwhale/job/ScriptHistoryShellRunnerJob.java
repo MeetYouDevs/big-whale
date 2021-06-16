@@ -6,10 +6,10 @@ import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.config.SshConfig;
-import com.meiyou.bigwhale.dto.DtoScript;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.service.AgentService;
 import com.meiyou.bigwhale.service.ClusterService;
+import com.meiyou.bigwhale.service.ScriptHistoryService;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
@@ -52,6 +52,8 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
     private Connection conn;
 
     @Autowired
+    private ScriptHistoryService scriptHistoryService;
+    @Autowired
     private AgentService agentService;
     @Autowired
     private ClusterService clusterService;
@@ -93,11 +95,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
                 return;
             }
             LOGGER.error(e.getMessage(), e);
-            if (scriptHistory.getSteps().contains(Constant.JobState.SUBMITTED)) {
-                scriptHistory.updateState(Constant.JobState.FAILED);
-            } else {
-                scriptHistory.updateState(Constant.JobState.SUBMITTING_FAILED);
-            }
+            scriptHistory.updateState(Constant.JobState.FAILED);
             scriptHistory.setFinishTime(new Date());
             scriptHistory.setErrors(e.getMessage());
             scriptHistoryService.save(scriptHistory);
@@ -142,7 +140,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
                     }
                     scriptHistory.setJobFinalStatus("UNDEFINED");
                 } else {
-                    scriptHistory.updateState(Constant.JobState.SUBMITTING_FAILED);
+                    scriptHistory.updateState(Constant.JobState.FAILED);
                     scriptHistory.setFinishTime(new Date());
                 }
                 scriptHistoryService.save(scriptHistory);
@@ -321,18 +319,18 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
             cmd = arr[arr.length - 1];
             commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s %s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
         } else {
-            String [] arr = DtoScript.extractQueueAndApp(scriptHistory.getScriptType(), scriptHistory.getContent());
+            String [] jobParams = scriptHistory.getJobParams().split(";");
             if (Constant.ScriptType.SPARK_BATCH.equals(scriptHistory.getScriptType()) || Constant.ScriptType.SPARK_STREAM.equals(scriptHistory.getScriptType())) {
-                if (scriptHistory.getContent().indexOf("--queue " + arr[0]) > scriptHistory.getContent().indexOf("--name " + arr[1])) {
-                    cmd = arr[1] + ".*" + arr[0];
+                if (scriptHistory.getContent().indexOf("--queue " + jobParams[1]) > scriptHistory.getContent().indexOf("--name " + jobParams[2])) {
+                    cmd = jobParams[2] + ".*" + jobParams[1];
                 } else {
-                    cmd = arr[0] + ".*" + arr[1];
+                    cmd = jobParams[1] + ".*" + jobParams[2];
                 }
             } else {
-                if (scriptHistory.getContent().indexOf("-yqu " + arr[0]) > scriptHistory.getContent().indexOf("-ynm " + arr[1])) {
-                    cmd = arr[1] + ".*" + arr[0];
+                if (scriptHistory.getContent().indexOf("-yqu " + jobParams[1]) > scriptHistory.getContent().indexOf("-ynm " + jobParams[2])) {
+                    cmd = jobParams[2] + ".*" + jobParams[1];
                 } else {
-                    cmd = arr[0] + ".*" + arr[1];
+                    cmd = jobParams[1] + ".*" + jobParams[2];
                 }
             }
             commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s.*%s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";

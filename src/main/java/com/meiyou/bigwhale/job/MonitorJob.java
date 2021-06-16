@@ -63,7 +63,6 @@ public class MonitorJob extends AbstractNoticeableJob implements InterruptableJo
         // 手动启动的任务，后面才开启的监控，设置一下监控ID
         if (scriptHistory.getMonitorId() == null) {
             scriptHistory.setMonitorId(monitorId);
-            scriptHistoryService.save(scriptHistory);
         }
         if (Constant.JobState.INITED.equals(scriptHistory.getState()) ||
                 Constant.JobState.SUBMITTING.equals(scriptHistory.getState())) {
@@ -192,7 +191,12 @@ public class MonitorJob extends AbstractNoticeableJob implements InterruptableJo
         if (scriptHistory != null && scriptHistory.isRunning()) {
             return true;
         }
-        return scriptService.execute(script, monitor);
+        scriptHistory = scriptService.generateHistory(script, monitor);
+        if (scriptHistory != null) {
+            ScriptHistoryShellRunnerJob.build(scriptHistory);
+            return true;
+        }
+        return false;
     }
 
     public static void build(Monitor monitor) {

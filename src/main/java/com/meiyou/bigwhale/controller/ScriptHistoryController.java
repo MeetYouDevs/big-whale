@@ -4,12 +4,12 @@ import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.Msg;
 import com.meiyou.bigwhale.data.domain.PageRequest;
 import com.meiyou.bigwhale.dto.DtoScriptHistory;
+import com.meiyou.bigwhale.entity.Schedule;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.job.ScriptHistoryShellRunnerJob;
 import com.meiyou.bigwhale.security.LoginUser;
 import com.meiyou.bigwhale.service.ScheduleService;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
-import com.meiyou.bigwhale.service.ScriptService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/script_history")
@@ -36,8 +38,6 @@ public class ScriptHistoryController extends BaseController{
     private ScriptHistoryService scriptHistoryService;
     @Autowired
     private ScheduleService scheduleService;
-    @Autowired
-    private ScriptService scriptService;
 
     @RequestMapping(value = "/page.api", method = RequestMethod.POST)
     public Msg page(@RequestBody DtoScriptHistory req) {
@@ -79,17 +79,20 @@ public class ScriptHistoryController extends BaseController{
             String displayName;
             if (scriptHistory.getScriptId() != null) {
                 if (scriptHistory.getScheduleId() != null) {
-                    displayName = scheduleService.findById(scriptHistory.getScheduleId()).getName() + " - " +
-                            scriptService.findById(scriptHistory.getScriptId()).getName();
-                    if (scriptHistory.getScheduleHistoryMode() != null) {
-                        displayName += " - " + scriptHistory.getScheduleHistoryMode();
+                    Schedule schedule = scheduleService.findById(scriptHistory.getScheduleId());
+                    if (schedule != null) {
+                        displayName = schedule.getName() + " - " +
+                                scriptHistory.getScriptName();
+                    } else {
+                        displayName = "?" + " - " +
+                                scriptHistory.getScriptName();
                     }
-                    if (scriptHistory.getScheduleRetryNum() != null) {
-                        displayName += scriptHistory.getScheduleRetryNum();
+                    if (scriptHistory.getScheduleSupplement() != null && scriptHistory.getScheduleSupplement() ) {
+                        displayName += "(补数)";
                     }
                 } else {
                     displayName = "实时任务" + " - " +
-                            scriptService.findById(scriptHistory.getScriptId()).getName();
+                            scriptHistory.getScriptName();
                 }
             } else {
                 displayName = "Edit Test";
@@ -102,35 +105,27 @@ public class ScriptHistoryController extends BaseController{
 
     @RequestMapping(value = "/rerun.api", method = RequestMethod.POST)
     public Msg rerun(@RequestBody DtoScriptHistory req) {
-        ScriptHistory scriptHistory = scriptHistoryService.findOneByQuery(
-                "scheduleTopNodeId=" + req.getScheduleTopNodeId() +
-                ";scheduleSnapshotId=" + req.getScheduleSnapshotId() +
-                ";scheduleInstanceId=" + req.getScheduleInstanceId() +
-                ";scheduleHistoryMode-");
-        if (scriptHistory == null) {
+        List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery(
+                "scheduleId=" + req.getScheduleId() +
+                        ";scheduleTopNodeId=" + req.getScheduleTopNodeId() +
+                        ";scheduleInstanceId=" + req.getScheduleInstanceId());
+        // 升序
+        scriptHistories.sort(Comparator.comparing(ScriptHistory::getId));
+        scriptHistories = scriptHistories.stream().filter(scriptHistory -> !scriptHistory.getScheduleSupplement()).collect(Collectors.toList());
+        if (scriptHistories.isEmpty()) {
             return failed("补数节点不能重跑");
         }
-        ScriptHistory rerunScriptHistory = ScriptHistory.builder()
-                .scheduleId(scriptHistory.getScheduleId())
-                .scheduleTopNodeId(scriptHistory.getScheduleTopNodeId())
-                .scheduleSnapshotId(scriptHistory.getScheduleSnapshotId())
-                .scheduleInstanceId(scriptHistory.getScheduleInstanceId())
-                .scheduleHistoryMode(Constant.HistoryMode.RERUN)
-                .scheduleHistoryTime(new Date())
-                .scriptId(scriptHistory.getScriptId())
-                .scriptType(scriptHistory.getScriptType())
-                .agentId(scriptHistory.getAgentId())
-                .clusterId(scriptHistory.getClusterId())
-                .timeout(scriptHistory.getTimeout())
-                .content(scriptHistory.getContent())
-                .createTime(scriptHistory.getCreateTime())
-                .createBy(scriptHistory.getCreateBy())
-                .build();
-        rerunScriptHistory.updateState(Constant.JobState.UN_CONFIRMED_);
-        rerunScriptHistory.updateState(Constant.JobState.WAITING_PARENT_);
-        rerunScriptHistory.updateState(Constant.JobState.INITED);
-        rerunScriptHistory = scriptHistoryService.save(rerunScriptHistory);
-        ScriptHistoryShellRunnerJob.build(rerunScriptHistory);
+        ScriptHistory scriptHistory = scriptHistories.get(0);
+        if (scriptHistory.getCreateTime().after(new Date())) {
+            return failed();
+        }
+        scriptHistory.resetState();
+        scriptHistory.setScheduleOperateTime(new Date());
+        scriptHistory.updateState(Constant.JobState.UN_CONFIRMED_);
+        scriptHistory.updateState(Constant.JobState.WAITING_PARENT_);
+        scriptHistory.updateState(Constant.JobState.INITED);
+        scriptHistory = scriptHistoryService.save(scriptHistory);
+        ScriptHistoryShellRunnerJob.build(scriptHistory);
         return success();
     }
 

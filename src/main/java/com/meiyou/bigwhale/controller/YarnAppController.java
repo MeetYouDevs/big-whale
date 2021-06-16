@@ -63,7 +63,7 @@ public class YarnAppController extends BaseController {
         Cluster cluster = clusterService.findById(appInfo.getClusterId());
         boolean success = YarnApiUtils.killApp(cluster.getYarnUrl(), appInfo.getAppId());
         if (success) {
-            yarnAppService.deleteByQuery("appId=" + req.getAppId());
+            yarnAppService.deleteByQuery("clusterId=" + req.getClusterId() + ";appId=" + req.getAppId());
             return success();
         }
         return failed();

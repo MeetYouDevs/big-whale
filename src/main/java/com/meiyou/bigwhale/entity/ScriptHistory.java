@@ -20,6 +20,12 @@ public class ScriptHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    /**
+     * 监控
+     */
+    private Integer monitorId;
+
     /**
      * 调度
      */
@@ -28,39 +34,33 @@ public class ScriptHistory {
      * 拓扑节点ID
      */
     private String scheduleTopNodeId;
-    private Integer scheduleSnapshotId;
     private String scheduleInstanceId;
-    private Integer scheduleRetryNum;
-    /**
-     * 历史模式
-     * retry 重试 rerun 重跑 supplement 补数
-     */
-    private String scheduleHistoryMode;
-    private Date scheduleHistoryTime;
-
-    /**
-     * 监控
-     */
-    private Integer monitorId;
+    private String scheduleFailureHandle;
+    private Boolean scheduleSupplement;
+    private Date scheduleOperateTime;
+    private String previousScheduleTopNodeId;
 
     private Integer scriptId;
+    private String scriptName;
     private String scriptType;
-    private Integer agentId;
     private Integer clusterId;
+    private Integer agentId;
     private Integer timeout;
     private String content;
+    private String state;
+    private String steps;
     private String outputs;
     private String errors;
     private Date createTime;
     private Integer createBy;
     private Date startTime;
     private Date finishTime;
-    private String state;
-    private String steps;
 
+    /* ----- yarn 相关字段 ----- */
     /**
-     * for spark or flink job
+     * user;queue;name
      */
+    private String jobParams;
     private String jobId;
     private String jobUrl;
     private String jobFinalStatus;
@@ -74,6 +74,22 @@ public class ScriptHistory {
                 this.steps = this.steps.split("]")[0] + ",\"" + state + "\"]";
             }
         }
+    }
+
+    public void resetState() {
+        this.state = null;
+        this.steps = null;
+        this.outputs = null;
+        this.errors = null;
+        this.startTime = null;
+        this.finishTime = null;
+        this.jobId = null;
+        this.jobUrl = null;
+        this.jobFinalStatus = null;
+    }
+
+    public void updateParams(String yarnProxyUser, String yarnQueue, String yarnName) {
+        this.jobParams = yarnProxyUser + ";" + yarnQueue + ";" + yarnName;
     }
 
     public boolean isRunning() {
