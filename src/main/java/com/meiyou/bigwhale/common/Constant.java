@@ -95,4 +95,12 @@ public interface Constant {
      */
     String DINGDING_ROBOT_URL = "https://oapi.dingtalk.com/robot/send?access_token=";
 
+    /**
+     * YARN resource manager scheduler type
+     */
+    interface YarnResourcemanagerScheduler {
+
+        String CAPACITY_SCHEDULER = "capacityScheduler";
+        String FAIR_SCHEDULER = "fairScheduler";
+    }
 }

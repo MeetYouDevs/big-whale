@@ -2,11 +2,13 @@ package com.meiyou.bigwhale.job;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
+import com.meiyou.bigwhale.common.pojo.SchedulerInfo;
 import com.meiyou.bigwhale.entity.Cluster;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.service.ClusterService;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
 import com.meiyou.bigwhale.util.YarnApiUtils;
+import com.meiyou.bigwhale.util.YarnUtil;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
 import org.quartz.JobExecutionContext;
@@ -43,21 +45,24 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             if (scriptHistories.isEmpty()) {
                 continue;
             }
+            // request Cluster Scheduler API for schedulerType
+            SchedulerInfo scheduler = YarnApiUtils.getYarnSchedulerInfo(cluster.getYarnUrl());
+            if (scheduler == null) {
+                continue;
+            }
             // 请求yarn web url, 获取所有应用
             List<HttpYarnApp> httpYarnApps = YarnApiUtils.getActiveApps(cluster.getYarnUrl());
             // 请求出错，不清理数据
             if (httpYarnApps == null) {
                 continue;
             }
+            String schedulerType = scheduler.getType();
             httpYarnApps.removeIf(httpYarnApp -> !httpYarnApp.getName().contains(".bw_instance_") && !httpYarnApp.getName().contains(".bw_test_instance_"));
             Map<String, ScriptHistory> yarnParamsToScriptHistoryMap = new HashMap<>();
             scriptHistories.forEach(scriptHistory -> {
                 String [] jobParams = scriptHistory.getJobParams().split(";");
                 String user = jobParams[0];
-                String queue = jobParams[1];
-                if (queue != null && !"root".equals(queue) && !queue.startsWith("root.")) {
-                    queue = "root." + queue;
-                }
+                String queue = YarnUtil.getQueueName(schedulerType, jobParams[1]);
                 String app = jobParams[2];
                 String key = user + ";" + queue + ";" + app;
                 yarnParamsToScriptHistoryMap.put(key, scriptHistory);
@@ -82,7 +87,7 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             }
             scriptHistories.forEach(scriptHistory -> {
                 if (!matchIds.contains(scriptHistory.getId())) {
-                    updateNoMatchScriptHistory(cluster.getYarnUrl(), scriptHistory);
+                    updateNoMatchScriptHistory(cluster.getYarnUrl(), scriptHistory, schedulerType);
                 }
             });
         }
@@ -104,9 +109,9 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
         scriptHistoryService.save(scriptHistory);
     }
 
-    private void updateNoMatchScriptHistory(String yarnUrl, ScriptHistory scriptHistory) {
+    private void updateNoMatchScriptHistory(String yarnUrl, ScriptHistory scriptHistory, String schedulerType) {
         String [] jobParams = scriptHistory.getJobParams().split(";");
-        HttpYarnApp httpYarnApp = YarnApiUtils.getLastNoActiveApp(yarnUrl, jobParams[0], jobParams[1], jobParams[2], 3);
+        HttpYarnApp httpYarnApp = YarnApiUtils.getLastNoActiveApp(yarnUrl, schedulerType, jobParams[0], jobParams[1], jobParams[2], 3);
         if (httpYarnApp != null) {
             if ("FINISHED".equals(httpYarnApp.getState())) {
                 scriptHistory.updateState(httpYarnApp.getFinalStatus());
