@@ -459,7 +459,8 @@ ALTER TABLE `script_history`
 	CHANGE COLUMN `state` `state` VARCHAR(255) NOT NULL COLLATE 'utf8_general_ci' AFTER `content`,
 	CHANGE COLUMN `steps` `steps` VARCHAR(255) NOT NULL COLLATE 'utf8_general_ci' AFTER `state`,
 	ADD COLUMN `job_params` VARCHAR(255) NULL DEFAULT NULL AFTER `finish_time`,
-	DROP COLUMN `schedule_snapshot_id`;
+	DROP COLUMN `schedule_snapshot_id`,
+	ADD COLUMN `submit_time` DATETIME NULL DEFAULT NULL AFTER `create_by`;
 
 
 DROP TABLE `schedule_snapshot`;
