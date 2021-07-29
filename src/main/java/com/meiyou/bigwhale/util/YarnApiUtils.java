@@ -1,13 +1,23 @@
 package com.meiyou.bigwhale.util;
 
-import com.alibaba.fastjson.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
 import com.meiyou.bigwhale.common.pojo.BackpressureInfo;
 import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
+import com.meiyou.bigwhale.common.pojo.SchedulerInfo;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class YarnApiUtils {
 
@@ -45,10 +55,8 @@ public class YarnApiUtils {
      * @param retries
      * @return
      */
-    public static HttpYarnApp getActiveApp(String yarnUrl, String user, String queue, String name, int retries) {
-        if (queue != null && !"root".equals(queue) && !queue.startsWith("root.")) {
-            queue = "root." + queue;
-        }
+    public static HttpYarnApp getActiveApp(String yarnUrl, String schedulerType, String user, String queue, String name, int retries) {
+        queue = YarnUtil.getQueueName(schedulerType, queue);
         Map<String, Object> params = new HashMap<>();
         params.put("user", user);
         params.put("queue", queue);
@@ -84,10 +92,8 @@ public class YarnApiUtils {
      * @param retries 重试次数
      * @return
      */
-    public static HttpYarnApp getLastNoActiveApp(String yarnUrl, String user, String queue, String name, int retries) {
-        if (queue != null && !"root".equals(queue) && !queue.startsWith("root.")) {
-            queue = "root." + queue;
-        }
+    public static HttpYarnApp getLastNoActiveApp(String yarnUrl, String schedulerType, String user, String queue, String name, int retries) {
+        queue = YarnUtil.getQueueName(schedulerType, queue);
         Map<String, Object> params = new HashMap<>();
         params.put("user", user);
         params.put("states", "finished,killed,failed");
@@ -295,8 +301,24 @@ public class YarnApiUtils {
         return false;
     }
 
+    /**
+     * <a href="https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/ResourceManagerRest.html#Cluster_Scheduler_API">cluster scheduler API</a>
+     */
+    public static SchedulerInfo getYarnSchedulerInfo(String yarnUrl) {
+        OkHttpUtils.Result result = OkHttpUtils.doGet(getSchedulerUrl(yarnUrl), Collections.emptyMap(), HEADERS);
+        if (result.isSuccessful && StringUtils.isNotEmpty(result.content)) {
+            JSONObject jsonObject = JSON.parseObject(JSON.parseObject(result.content).getString("scheduler"));
+            return JSON.parseObject(jsonObject.getString("schedulerInfo"), SchedulerInfo.class);
+        }
+        return null;
+    }
+
     private static String getAppsUrl(String yarnUrl) {
         return appendUrl(yarnUrl) + "ws/v1/cluster/apps";
+    }
+
+    private static String getSchedulerUrl(String yarnUrl) {
+        return appendUrl(yarnUrl) + "ws/v1/cluster/scheduler";
     }
 
     private static String appendUrl(String url) {
