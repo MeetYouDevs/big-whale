@@ -29,14 +29,8 @@ public class ScriptHistoryServiceImpl extends AbstractMysqlPagingAndSortingQuery
     public boolean execTimeout(ScriptHistory scriptHistory) {
         Date ago = DateUtils.addMinutes(new Date(), -scriptHistory.getTimeout());
         // 执行超时
-        Date time;
-        if (scriptHistory.getStartTime() != null) {
-            time = scriptHistory.getStartTime();
-        } else if (scriptHistory.getScheduleOperateTime() != null) {
-            time = scriptHistory.getScheduleOperateTime();
-        } else {
-            time = scriptHistory.getCreateTime();
-        }
+        // submitTime is definitely not null here
+        Date time = scriptHistory.getSubmitTime();
         return time.compareTo(ago) <= 0;
     }
 

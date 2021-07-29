@@ -6,7 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.util.Date;
 
 @Data
@@ -53,6 +57,7 @@ public class ScriptHistory {
     private String errors;
     private Date createTime;
     private Integer createBy;
+    private Date submitTime;
     private Date startTime;
     private Date finishTime;
 
@@ -73,6 +78,9 @@ public class ScriptHistory {
             if (!this.steps.contains(state)) {
                 this.steps = this.steps.split("]")[0] + ",\"" + state + "\"]";
             }
+        }
+        if (state.equals(Constant.JobState.INITED)) {
+            this.submitTime = new Date();
         }
     }
 

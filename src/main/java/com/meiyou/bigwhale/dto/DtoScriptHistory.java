@@ -4,12 +4,14 @@ import com.meiyou.bigwhale.common.Constant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.regex.Pattern;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -51,9 +53,9 @@ public class DtoScriptHistory extends AbstractPageDto {
     private String errors;
     private Date createTime;
     private Integer createBy;
+    private Date submitTime;
     private Date startTime;
     private Date finishTime;
-
 
     /* ----- yarn 相关字段 ----- */
     /**
