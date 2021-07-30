@@ -466,20 +466,20 @@ DROP TABLE `schedule_snapshot`;
 
 
 ALTER TABLE `script_history`
-DROP COLUMN `schedule_supplement`,
-DROP COLUMN `schedule_operate_time`,
-ADD COLUMN `schedule_runnable` bit NULL AFTER `schedule_failure_handle`,
-ADD COLUMN `schedule_retry` bit NULL AFTER `schedule_runnable`,
-ADD COLUMN `schedule_empty` bit NULL AFTER `schedule_retry`,
-ADD COLUMN `schedule_rerun` bit NULL AFTER `schedule_empty`,
-ADD COLUMN `business_time` datetime NOT NULL AFTER `create_by`,
-ADD COLUMN `delay_time` datetime NULL AFTER `business_time`,
-ADD COLUMN `submit_time` datetime NULL AFTER `delay_time`;
+ DROP COLUMN `schedule_supplement`,
+ DROP COLUMN `schedule_operate_time`,
+ ADD COLUMN `schedule_runnable` bit NULL AFTER `schedule_failure_handle`,
+ ADD COLUMN `schedule_retry` bit NULL AFTER `schedule_runnable`,
+ ADD COLUMN `schedule_empty` bit NULL AFTER `schedule_retry`,
+ ADD COLUMN `schedule_rerun` bit NULL AFTER `schedule_empty`,
+ ADD COLUMN `business_time` datetime NOT NULL AFTER `create_by`,
+ ADD COLUMN `delay_time` datetime NULL AFTER `business_time`,
+ ADD COLUMN `submit_time` datetime NULL AFTER `delay_time`;
 
 
 ALTER TABLE `script_history`
-ADD INDEX `schedule_runnable_index` (`schedule_runnable`) USING BTREE,
-ADD INDEX `delay_time_index` (`delay_time`) USING BTREE;
+ ADD INDEX `schedule_runnable_index` (`schedule_runnable`) USING BTREE,
+ ADD INDEX `delay_time_index` (`delay_time`) USING BTREE;
 
 
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
