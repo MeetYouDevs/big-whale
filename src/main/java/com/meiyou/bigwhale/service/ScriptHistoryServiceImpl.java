@@ -1,43 +1,40 @@
 package com.meiyou.bigwhale.service;
 
-import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.data.service.AbstractMysqlPagingAndSortingQueryService;
 import com.meiyou.bigwhale.entity.ScriptHistory;
-import org.apache.commons.lang.time.DateUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
 @Service
 public class ScriptHistoryServiceImpl extends AbstractMysqlPagingAndSortingQueryService<ScriptHistory, Integer> implements ScriptHistoryService {
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public ScriptHistory findNoScheduleLatestByScriptId(Integer scriptId) {
-        return findOneByQuery("scriptId=" + scriptId + ";scheduleId-", new Sort(Sort.Direction.DESC, "createTime"));
+    public void deleteFuture(Integer scheduleId, Date date) {
+        jdbcTemplate.update("DELETE FROM " +
+                "   script_history " +
+                "WHERE " +
+                "   schedule_id = ? AND " +
+                "   business_time > ?;", scheduleId, date);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void switchScheduleRunnable(Integer id, boolean scheduleRunnable) {
+        jdbcTemplate.update("UPDATE script_history SET schedule_runnable = ? WHERE id = ?;", scheduleRunnable, id);
     }
 
     @Override
-    public void missingScheduling(ScriptHistory scriptHistory) {
-        scriptHistory.updateState(Constant.JobState.FAILED);
-        scriptHistory.setFinishTime(new Date());
-        scriptHistory.setErrors("Missing scheduling");
-        save(scriptHistory);
-    }
-
-    @Override
-    public boolean execTimeout(ScriptHistory scriptHistory) {
-        Date ago = DateUtils.addMinutes(new Date(), -scriptHistory.getTimeout());
-        // 执行超时
-        Date time;
-        if (scriptHistory.getStartTime() != null) {
-            time = scriptHistory.getStartTime();
-        } else if (scriptHistory.getScheduleOperateTime() != null) {
-            time = scriptHistory.getScheduleOperateTime();
-        } else {
-            time = scriptHistory.getCreateTime();
-        }
-        return time.compareTo(ago) <= 0;
+    public ScriptHistory findScriptLatest(Integer scriptId) {
+        return findOneByQuery("scriptId=" + scriptId, new Sort(Sort.Direction.DESC, "id"));
     }
 
 }

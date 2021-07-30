@@ -6,7 +6,6 @@ import com.meiyou.bigwhale.data.domain.PageRequest;
 import com.meiyou.bigwhale.dto.DtoScriptHistory;
 import com.meiyou.bigwhale.entity.Schedule;
 import com.meiyou.bigwhale.entity.ScriptHistory;
-import com.meiyou.bigwhale.job.ScriptHistoryShellRunnerJob;
 import com.meiyou.bigwhale.security.LoginUser;
 import com.meiyou.bigwhale.service.ScheduleService;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
@@ -15,6 +14,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -23,10 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/script_history")
@@ -87,12 +85,17 @@ public class ScriptHistoryController extends BaseController{
                         displayName = "?" + " - " +
                                 scriptHistory.getScriptName();
                     }
-                    if (scriptHistory.getScheduleSupplement() != null && scriptHistory.getScheduleSupplement() ) {
-                        displayName += "(补数)";
+                    if (scriptHistory.getScheduleRetry()) {
+                        displayName += "(重试 - " + scriptHistory.getScheduleFailureHandle().split(";")[2] + ")";
+                    }
+                    if (scriptHistory.getScheduleEmpty()) {
+                        displayName += "(空跑)";
+                    }
+                    if (scriptHistory.getScheduleRerun()) {
+                        displayName += "(重跑)";
                     }
                 } else {
-                    displayName = "实时任务" + " - " +
-                            scriptHistory.getScriptName();
+                    displayName = scriptHistory.getScriptName();
                 }
             } else {
                 displayName = "Edit Test";
@@ -108,25 +111,65 @@ public class ScriptHistoryController extends BaseController{
         List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery(
                 "scheduleId=" + req.getScheduleId() +
                         ";scheduleTopNodeId=" + req.getScheduleTopNodeId() +
-                        ";scheduleInstanceId=" + req.getScheduleInstanceId());
-        // 升序
-        scriptHistories.sort(Comparator.comparing(ScriptHistory::getId));
-        scriptHistories = scriptHistories.stream().filter(scriptHistory -> !scriptHistory.getScheduleSupplement()).collect(Collectors.toList());
-        if (scriptHistories.isEmpty()) {
-            return failed("补数节点不能重跑");
-        }
-        ScriptHistory scriptHistory = scriptHistories.get(0);
-        if (scriptHistory.getCreateTime().after(new Date())) {
+                        ";scheduleInstanceId=" + req.getScheduleInstanceId(), new Sort(Sort.Direction.ASC, "id"));
+        ScriptHistory firstScriptHistory = scriptHistories.get(0);
+        ScriptHistory latestScriptHistory = scriptHistories.get(scriptHistories.size() - 1);
+        if (Constant.JobState.UN_CONFIRMED_.equals(latestScriptHistory.getState()) ||
+                latestScriptHistory.isRunning()) {
             return failed();
         }
-        scriptHistory.resetState();
-        scriptHistory.setScheduleOperateTime(new Date());
-        scriptHistory.updateState(Constant.JobState.UN_CONFIRMED_);
-        scriptHistory.updateState(Constant.JobState.WAITING_PARENT_);
-        scriptHistory.updateState(Constant.JobState.INITED);
-        scriptHistory = scriptHistoryService.save(scriptHistory);
-        ScriptHistoryShellRunnerJob.build(scriptHistory);
+        ScriptHistory rerunScriptHistory = new ScriptHistory();
+        BeanUtils.copyProperties(firstScriptHistory, rerunScriptHistory);
+        rerunScriptHistory.reset();
+        rerunScriptHistory.setScheduleRerun(true);
+        rerunScriptHistory.setCreateTime(new Date());
+        rerunScriptHistory.updateState(Constant.JobState.UN_CONFIRMED_);
+        rerunScriptHistory.updateState(Constant.JobState.TIME_WAIT_);
+        rerunScriptHistory.setDelayTime(new Date());
+        scriptHistoryService.save(rerunScriptHistory);
+        updateChildren(latestScriptHistory);
         return success();
+    }
+
+    @RequestMapping(value = "/empty.api", method = RequestMethod.POST)
+    public Msg empty(@RequestBody DtoScriptHistory req) {
+        List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery(
+                "scheduleId=" + req.getScheduleId() +
+                        ";scheduleTopNodeId=" + req.getScheduleTopNodeId() +
+                        ";scheduleInstanceId=" + req.getScheduleInstanceId(), new Sort(Sort.Direction.ASC, "id"));
+        ScriptHistory firstScriptHistory = scriptHistories.get(0);
+        ScriptHistory latestScriptHistory = scriptHistories.get(scriptHistories.size() - 1);
+        if (!Constant.JobState.KILLED.equals(latestScriptHistory.getState()) &&
+                !Constant.JobState.FAILED.equals(latestScriptHistory.getState()) &&
+                !Constant.JobState.TIMEOUT.equals(latestScriptHistory.getState())) {
+            return failed("状态错误");
+        }
+        // 无须提交
+        ScriptHistory emptyScriptHistory = new ScriptHistory();
+        BeanUtils.copyProperties(firstScriptHistory, emptyScriptHistory);
+        emptyScriptHistory.reset();
+        emptyScriptHistory.setScheduleEmpty(true);
+        emptyScriptHistory.setCreateTime(new Date());
+        emptyScriptHistory.updateState(Constant.JobState.UN_CONFIRMED_);
+        emptyScriptHistory.updateState(Constant.JobState.TIME_WAIT_);
+        emptyScriptHistory.setDelayTime(new Date());
+        emptyScriptHistory.updateState(Constant.JobState.SUCCEEDED);
+        emptyScriptHistory.setFinishTime(new Date());
+        scriptHistoryService.save(emptyScriptHistory);
+        updateChildren(latestScriptHistory);
+        return success();
+    }
+
+    private void updateChildren(ScriptHistory scriptHistory) {
+        List<ScriptHistory> childrenScriptHistories = scriptHistoryService.findByQuery("scheduleId=" + scriptHistory.getScheduleId() +
+                ";scheduleInstanceId=" + scriptHistory.getScheduleInstanceId() +
+                ";previousScheduleTopNodeId=" + scriptHistory.getScheduleTopNodeId());
+        for (ScriptHistory childrenScriptHistory : childrenScriptHistories) {
+            if (!childrenScriptHistory.getScheduleRunnable()) {
+                scriptHistoryService.switchScheduleRunnable(childrenScriptHistory.getId(), true);
+                updateChildren(childrenScriptHistory);
+            }
+        }
     }
 
 }

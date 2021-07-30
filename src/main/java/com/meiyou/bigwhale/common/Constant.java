@@ -24,14 +24,21 @@ public interface Constant {
         String COMMON = "common";
         String MONITOR = "monitor";
         String SCHEDULE = "schedule";
-        String SCRIPT_HISTORY = "scriptHistory";
+        String SCRIPT_JOB = "scriptJob";
     }
 
     /**
      * 执行状态
      */
     interface JobState {
-        String INITED = "INITED";
+
+        /**
+         * 调度扩展执行状态
+         */
+        String UN_CONFIRMED_ = "UN_CONFIRMED";
+        String TIME_WAIT_ = "TIME_WAIT";
+
+        String SUBMIT_WAIT = "SUBMIT_WAIT";
         String SUBMITTING = "SUBMITTING";
         String SUBMITTED = "SUBMITTED";
         String ACCEPTED = "ACCEPTED";
@@ -40,12 +47,7 @@ public interface Constant {
         String KILLED = "KILLED";
         String FAILED = "FAILED";
         String TIMEOUT = "TIMEOUT";
-        /**
-         * 调度扩展执行状态
-         */
-        String UN_CONFIRMED_ = "UN_CONFIRMED";
-        String WAITING_PARENT_ = "WAITING_PARENT";
-        String PARENT_FAILED_ = "PARENT_FAILED";
+
     }
 
     /**
@@ -77,6 +79,7 @@ public interface Constant {
         String FLINK_STREAM_UNUSUAL_RESTART = "flink实时任务异常(%s)，已重启";
         String FLINK_STREAM_UNUSUAL_RESTART_FAILED = "flink实时任务异常(%s)，重启失败";
 
+        String SERVER_UNEXPECTED_EXIT = "服务异常退出";
         String APP_DUPLICATE = "应用重复";
         String APP_NO_RUNNING = "应用未运行";
         String APP_MEMORY_OVERLIMIT = "内存超限";

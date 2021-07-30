@@ -1,16 +1,14 @@
-package com.meiyou.bigwhale.job.system;
+package com.meiyou.bigwhale.scheduler.system;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.entity.*;
-import com.meiyou.bigwhale.job.AbstractNoticeableJob;
-import com.meiyou.bigwhale.job.ScriptHistoryYarnStateRefreshJob;
+import com.meiyou.bigwhale.scheduler.AbstractNoticeable;
+import com.meiyou.bigwhale.scheduler.ScriptJobYarnStateRefresher;
 import com.meiyou.bigwhale.service.*;
 import com.meiyou.bigwhale.util.YarnApiUtils;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Date;
@@ -22,9 +20,7 @@ import java.util.List;
  * @description file description
  */
 @DisallowConcurrentExecution
-public class PlatformTimeoutJob extends AbstractNoticeableJob implements Job {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PlatformTimeoutJob.class);
+public class PlatformTimeoutChecker extends AbstractNoticeable implements Job {
 
     @Autowired
     private MonitorService monitorService;
@@ -43,7 +39,7 @@ public class PlatformTimeoutJob extends AbstractNoticeableJob implements Job {
         try {
             executionContexts = SchedulerUtils.getScheduler().getCurrentlyExecutingJobs();
         } catch (SchedulerException e) {
-            LOGGER.error(e.getMessage(), e);
+            e.printStackTrace();
             return;
         }
         Date current = new Date();
@@ -53,11 +49,11 @@ public class PlatformTimeoutJob extends AbstractNoticeableJob implements Job {
                 JobKey jobKey = executionContext.getJobDetail().getKey();
                 //yarn应用列表更新
                 if (Constant.JobGroup.COMMON.equals(jobKey.getGroup())) {
-                    if (ActiveYarnAppRefreshJob.class.getSimpleName().equals(jobKey.getName())) {
+                    if (ActiveYarnAppRefresher.class.getSimpleName().equals(jobKey.getName())) {
                         notice("调度平台-Yarn应用列表更新任务", "系统任务运行超时");
                         SchedulerUtils.interrupt(jobKey.getName(), jobKey.getGroup());
                     }
-                    if (ScriptHistoryYarnStateRefreshJob.class.getSimpleName().equals(jobKey.getName())) {
+                    if (ScriptJobYarnStateRefresher.class.getSimpleName().equals(jobKey.getName())) {
                         notice("调度平台-Yarn应用状态更新任务", "系统任务运行超时");
                         SchedulerUtils.interrupt(jobKey.getName(), jobKey.getGroup());
                     }
@@ -67,7 +63,7 @@ public class PlatformTimeoutJob extends AbstractNoticeableJob implements Job {
                     //杀掉应用
                     Monitor monitor = monitorService.findById(Integer.parseInt(jobKey.getName()));
                     Script script = scriptService.findOneByQuery("monitorId=" + monitor.getId());
-                    ScriptHistory scriptHistory = scriptHistoryService.findNoScheduleLatestByScriptId(script.getId());
+                    ScriptHistory scriptHistory = scriptHistoryService.findScriptLatest(script.getId());
                     if (scriptHistory.getJobId() != null) {
                         Cluster cluster = clusterService.findById(scriptHistory.getClusterId());
                         boolean success = YarnApiUtils.killApp(cluster.getYarnUrl(), scriptHistory.getJobId());

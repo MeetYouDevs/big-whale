@@ -1,11 +1,13 @@
 package com.meiyou.bigwhale.util;
 
 import com.meiyou.bigwhale.common.Constant;
+import org.apache.commons.lang.time.DateUtils;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
 import java.util.Date;
 
 /**
@@ -171,25 +173,63 @@ public class SchedulerUtils {
         }
     }
 
-    public static void pauseJob(Object name, String group) {
+    public static boolean checkExists(Object name, String group) {
         JobKey jobKey = new JobKey(String.valueOf(name), group);
         try {
-            if (scheduler.checkExists(jobKey)) {
-                scheduler.pauseJob(jobKey);
-            }
+            return scheduler.checkExists(jobKey);
         } catch (SchedulerException e) {
-            LOGGER.warn("Pause job error, name=" + name + " and group=" + group, e);
+            LOGGER.warn("CheckExists job error, name=" + name + " and group=" + group, e);
         }
+        return false;
     }
 
-    public static void resumeJob(Object name, String group) {
-        JobKey jobKey = new JobKey(String.valueOf(name), group);
-        try {
-            if (scheduler.checkExists(jobKey)) {
-                scheduler.resumeJob(jobKey);
+    /*public static Date getPreviousFireTime(String cron, Date startDate) {
+        Date nextFireTime1 = getNextFireTime(cron, startDate);
+        Date nextFireTime2 = getNextFireTime(cron, nextFireTime1);
+        int intervals = (int) (nextFireTime2.getTime() - nextFireTime1.getTime());
+        Date cal1 = DateUtils.addMilliseconds(nextFireTime1, - intervals);
+        Date cal2 = getNextFireTime(cron, cal1);
+        Date cal3 = getNextFireTime(cron, cal2);
+        Date cal4 = getNextFireTime(cron, cal3);
+        while (!cal4.equals(nextFireTime1)) {
+            cal1 = DateUtils.addMilliseconds(cal1, - intervals);
+            cal2 = getNextFireTime(cron, cal1);
+            cal3 = getNextFireTime(cron, cal2);
+            cal4 = getNextFireTime(cron, cal3);
+            if (cal4.before(nextFireTime1)) {
+                intervals = -1000;
             }
-        } catch (SchedulerException e) {
-            LOGGER.warn("Resume job error, name=" + name + " and group=" + group, e);
+        }
+        return cal2;
+    }*/
+
+    public static Date getNeedFireTime(String cron, Date startDate) {
+        Date nextFireTime1 = getNextFireTime(cron, startDate);
+        Date nextFireTime2 = getNextFireTime(cron, nextFireTime1);
+        int intervals = (int) (nextFireTime2.getTime() - nextFireTime1.getTime());
+        Date cal1 = DateUtils.addMilliseconds(nextFireTime1, - intervals);
+        Date cal2 = getNextFireTime(cron, cal1);
+        Date cal3 = getNextFireTime(cron, cal2);
+        while (!cal3.equals(nextFireTime1)) {
+            cal1 = DateUtils.addMilliseconds(cal1, - intervals);
+            cal2 = getNextFireTime(cron, cal1);
+            cal3 = getNextFireTime(cron, cal2);
+            if (cal3.before(nextFireTime1)) {
+                intervals = -1000;
+            }
+        }
+        return cal2;
+    }
+
+    public static Date getNextFireTime(String cron, Date startDate) {
+        return getCronExpression(cron).getTimeAfter(startDate);
+    }
+
+    private static CronExpression getCronExpression(String cron) {
+        try {
+            return new CronExpression(cron);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 

@@ -1,6 +1,5 @@
 package com.meiyou.bigwhale.controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.Msg;
 import com.meiyou.bigwhale.data.domain.PageRequest;
@@ -9,8 +8,7 @@ import com.meiyou.bigwhale.dto.DtoSchedule;
 import com.meiyou.bigwhale.entity.Script;
 import com.meiyou.bigwhale.entity.Schedule;
 import com.meiyou.bigwhale.entity.ScriptHistory;
-import com.meiyou.bigwhale.job.ScheduleJob;
-import com.meiyou.bigwhale.job.ScriptHistoryShellRunnerJob;
+import com.meiyou.bigwhale.scheduler.workflow.ScheduleJobBuilder;
 import com.meiyou.bigwhale.service.ScheduleService;
 import com.meiyou.bigwhale.security.LoginUser;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
@@ -24,7 +22,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -189,7 +186,32 @@ public class ScheduleController extends BaseController {
             keyword.append("_").append(script.getName()).append("_").append(script.getApp());
         }
         schedule.setKeyword(keyword.toString().replaceAll("_null", "_-"));
-        scheduleService.update(schedule, scripts);
+        if (schedule.getEnabled()) {
+            Date effectTime = schedule.getStartTime().compareTo(now) <= 0 ? now : schedule.getStartTime();
+            Date needFireTime = SchedulerUtils.getNeedFireTime(schedule.generateCron(), effectTime);
+            schedule.setNeedFireTime(needFireTime);
+            Date nextFireTime = SchedulerUtils.getNextFireTime(schedule.generateCron(), effectTime);
+            if (nextFireTime.compareTo(schedule.getEndTime()) <= 0) {
+                schedule.setNextFireTime(nextFireTime);
+            }
+        } else {
+            schedule.setNeedFireTime(null);
+            schedule.setNextFireTime(null);
+        }
+        if (schedule.getId() != null) {
+            SchedulerUtils.interrupt(schedule.getId(), Constant.JobGroup.SCHEDULE);
+            SchedulerUtils.deleteJob(schedule.getId(), Constant.JobGroup.SCHEDULE);
+        }
+        schedule = scheduleService.update(schedule, scripts);
+        scriptHistoryService.deleteFuture(schedule.getId(), new Date());
+        if (schedule.getEnabled()) {
+            if (schedule.getNextFireTime() != null && schedule.getNextFireTime().compareTo(schedule.getEndTime()) <= 0) {
+                DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+                String scheduleInstanceId = dateFormat.format(schedule.getNextFireTime());
+                scriptService.reGenerateHistory(schedule, scheduleInstanceId, null);
+                ScheduleJobBuilder.build(schedule);
+            }
+        }
         return success();
     }
 
@@ -199,8 +221,10 @@ public class ScheduleController extends BaseController {
         if (schedule == null) {
             return failed();
         }
-        SchedulerUtils.deleteJob(req.getId(), Constant.JobGroup.SCHEDULE);
+        SchedulerUtils.interrupt(schedule.getId(), Constant.JobGroup.SCHEDULE);
+        SchedulerUtils.deleteJob(schedule.getId(), Constant.JobGroup.SCHEDULE);
         scheduleService.delete(schedule);
+        scriptHistoryService.deleteFuture(schedule.getId(), new Date());
         return success();
     }
 
@@ -224,7 +248,7 @@ public class ScheduleController extends BaseController {
         }
         Date now = new Date();
         String scheduleInstanceId = new SimpleDateFormat("yyyyMMddHHmmss").format(now);
-        generateScriptHistories(schedule, scheduleInstanceId, null, now, now, false);
+        generateHistory(schedule, scheduleInstanceId, null);
         schedule.setRealFireTime(now);
         scheduleService.save(schedule);
         DtoSchedule dtoSchedule = new DtoSchedule();
@@ -235,33 +259,6 @@ public class ScheduleController extends BaseController {
         return success(result);
     }
 
-    @RequestMapping(value = "/supplement.api", method = RequestMethod.POST)
-    public Msg supplement(@RequestBody JSONObject params) throws ParseException {
-        Integer id = params.getInteger("id");
-        Schedule schedule = scheduleService.findById(id);
-        if (schedule == null) {
-            return failed();
-        }
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-        DateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Date startTime = dateFormat1.parse(params.getString("start"));
-        Date endTime = dateFormat1.parse(params.getString("end"));
-        Date now = new Date();
-        Date needFireTime = ScheduleJob.getNeedFireTime(schedule.generateCron(), startTime);
-        // 获取第一个触发时间
-        while (needFireTime.compareTo(startTime) < 0) {
-            needFireTime = ScheduleJob.getNextFireTime(schedule.generateCron(), needFireTime);
-        }
-        if (needFireTime.compareTo(endTime) > 0) {
-            return failed("时间范围有误");
-        }
-        do {
-            generateScriptHistories(schedule, dateFormat.format(needFireTime), null, needFireTime, now, true);
-            needFireTime = ScheduleJob.getNextFireTime(schedule.generateCron(), needFireTime);
-        } while (needFireTime.compareTo(endTime) < 0);
-        return success();
-    }
-
     @RequestMapping(value = "/treeview.api", method = RequestMethod.GET)
     public Msg treeView(@RequestParam Integer id,
                         @RequestParam String instance) {
@@ -270,9 +267,7 @@ public class ScheduleController extends BaseController {
             return failed();
         }
         Map<String, Object> nodeTree = new HashMap<>();
-        List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery(
-                "scheduleId=" + schedule.getId() +
-                        ";scheduleInstanceId=" + instance,
+        List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + schedule.getId() + ";scheduleInstanceId=" + instance,
                 Sort.by(Sort.Direction.ASC, "id"));
         generateNodeTree(null, scriptHistories, nodeTree);
         return success(Collections.singletonList(nodeTree));
@@ -289,24 +284,12 @@ public class ScheduleController extends BaseController {
         }
     }
 
-    private void generateScriptHistories(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId, Date instanceTime, Date now, boolean supplement) {
+    private void generateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
         Map<String, Schedule.Topology.Node> nodeIdToData = schedule.analyzeNextNode(previousScheduleTopNodeId);
         for (String nodeId : nodeIdToData.keySet()) {
             Script script = scriptService.findOneByQuery("scheduleId=" + schedule.getId() + ";scheduleTopNodeId=" + nodeId);
-            ScriptHistory scriptHistory = scriptService.generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId, supplement ? 2 : 0);
-            scriptHistory.updateState(Constant.JobState.WAITING_PARENT_);
-            if (supplement) {
-                scriptHistory.updateState(Constant.JobState.INITED);
-            }
-            scriptHistory = scriptHistoryService.save(scriptHistory);
-            if (supplement) {
-                if (instanceTime.compareTo(now) <= 0) {
-                    ScriptHistoryShellRunnerJob.build(scriptHistory);
-                } else {
-                    ScriptHistoryShellRunnerJob.build(scriptHistory, instanceTime);
-                }
-            }
-            generateScriptHistories(schedule, scheduleInstanceId, nodeId, instanceTime, now, supplement);
+            scriptService.generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId);
+            generateHistory(schedule, scheduleInstanceId, nodeId);
         }
     }
 
@@ -320,30 +303,38 @@ public class ScheduleController extends BaseController {
         }
         for (List<ScriptHistory> histories : topScriptHistories.values()) {
             String stateTag = StringUtils.join(getStateTag(histories), "");
-            ScriptHistory history = histories.get(0);
+            ScriptHistory firstScriptHistory = histories.get(0);
+            ScriptHistory latestScriptHistory = histories.get(histories.size() - 1);
+            boolean rerunEnabled = !(Constant.JobState.UN_CONFIRMED_.equals(latestScriptHistory.getState()) ||
+                    latestScriptHistory.isRunning());
+            boolean emptyEnabled = !(!Constant.JobState.KILLED.equals(latestScriptHistory.getState()) &&
+                    !Constant.JobState.FAILED.equals(latestScriptHistory.getState()) &&
+                    !Constant.JobState.TIMEOUT.equals(latestScriptHistory.getState()));
             if (previousScheduleTopNodeId == null) {
                 if (stateTag != null) {
-                    nodeTree.put("text", history.getScriptName() + stateTag);
-                    nodeTree.put("rerunEnabled_", !stateTag.contains("label-default"));
+                    nodeTree.put("text", firstScriptHistory.getScriptName() + stateTag);
+                    nodeTree.put("rerunEnabled_", rerunEnabled);
+                    nodeTree.put("emptyEnabled_", emptyEnabled);
                 } else {
-                    nodeTree.put("text", history.getScriptName());
+                    nodeTree.put("text", firstScriptHistory.getScriptName());
                 }
-                nodeTree.put("nodeId_", history.getScheduleTopNodeId());
-                nodeTree.put("scheduleId_", history.getScheduleId());
-                nodeTree.put("icon", "iconfont " + scriptIconClass.get(history.getScriptType()));
+                nodeTree.put("nodeId_", firstScriptHistory.getScheduleTopNodeId());
+                nodeTree.put("scheduleId_", firstScriptHistory.getScheduleId());
+                nodeTree.put("icon", "iconfont " + scriptIconClass.get(firstScriptHistory.getScriptType()));
                 nodeTree.put("state", Collections.singletonMap("expanded", true));
-                generateNodeTree(history.getScheduleTopNodeId(), scriptHistories, nodeTree);
+                generateNodeTree(firstScriptHistory.getScheduleTopNodeId(), scriptHistories, nodeTree);
             } else {
                 Map<String, Object> childNode = new HashMap<>();
                 if (stateTag != null) {
-                    childNode.put("text", history.getScriptName() + stateTag);
-                    childNode.put("rerunEnabled_", !stateTag.contains("label-default"));
+                    childNode.put("text", firstScriptHistory.getScriptName() + stateTag);
+                    childNode.put("rerunEnabled_", rerunEnabled);
+                    childNode.put("emptyEnabled_", emptyEnabled);
                 } else {
-                    childNode.put("text", history.getScriptName());
+                    childNode.put("text", firstScriptHistory.getScriptName());
                 }
-                childNode.put("nodeId_", history.getScheduleTopNodeId());
-                childNode.put("scheduleId_", history.getScheduleId());
-                childNode.put("icon", "iconfont " + scriptIconClass.get(history.getScriptType()));
+                childNode.put("nodeId_", firstScriptHistory.getScheduleTopNodeId());
+                childNode.put("scheduleId_", firstScriptHistory.getScheduleId());
+                childNode.put("icon", "iconfont " + scriptIconClass.get(firstScriptHistory.getScriptType()));
                 childNode.put("state", Collections.singletonMap("expanded", true));
                 List<Map<String, Object>> childNodes = (List<Map<String, Object>>)nodeTree.get("nodes");
                 if (childNodes == null) {
@@ -351,7 +342,7 @@ public class ScheduleController extends BaseController {
                     nodeTree.put("nodes", childNodes);
                 }
                 childNodes.add(childNode);
-                generateNodeTree(history.getScheduleTopNodeId(), scriptHistories, childNode);
+                generateNodeTree(firstScriptHistory.getScheduleTopNodeId(), scriptHistories, childNode);
             }
         }
     }
@@ -361,7 +352,7 @@ public class ScheduleController extends BaseController {
             if (Constant.JobState.UN_CONFIRMED_.equals(scriptHistory.getState())) {
                 return "<span class=\"cube label-default\"></span>";
             }
-            if (Constant.JobState.WAITING_PARENT_.equals(scriptHistory.getState())) {
+            if (Constant.JobState.TIME_WAIT_.equals(scriptHistory.getState())) {
                 return "<span class=\"cube label-warning\"></span>";
             }
             if (scriptHistory.isRunning()) {

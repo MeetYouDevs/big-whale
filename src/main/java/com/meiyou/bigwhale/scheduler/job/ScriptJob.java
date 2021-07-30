@@ -1,18 +1,23 @@
-package com.meiyou.bigwhale.job;
+package com.meiyou.bigwhale.scheduler.job;
 
 import ch.ethz.ssh2.ChannelCondition;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
 import com.meiyou.bigwhale.common.Constant;
+import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
 import com.meiyou.bigwhale.config.SshConfig;
+import com.meiyou.bigwhale.entity.Cluster;
 import com.meiyou.bigwhale.entity.ScriptHistory;
+import com.meiyou.bigwhale.scheduler.AbstractRetryable;
 import com.meiyou.bigwhale.service.AgentService;
 import com.meiyou.bigwhale.service.ClusterService;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
 import com.meiyou.bigwhale.util.SchedulerUtils;
+import com.meiyou.bigwhale.util.YarnApiUtils;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
+import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,17 +43,18 @@ import java.util.regex.Pattern;
  * @description file description
  */
 @DisallowConcurrentExecution
-public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements InterruptableJob {
+public class ScriptJob extends AbstractRetryable implements InterruptableJob {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptHistoryShellRunnerJob.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptJob.class);
 
     private static final Pattern YARN_PATTERN = Pattern.compile("application_\\d+_\\d+");
     private static final Pattern KILL_PATTERN = Pattern.compile("time mark: (\\d+)");
 
+    private JobExecutionContext context;
     private Thread thread;
+    private ScriptHistory scriptHistory;
     private volatile boolean commandFinish = false;
     private volatile boolean interrupted = false;
-    private ScriptHistory scriptHistory;
     private Connection conn;
 
     @Autowired
@@ -71,15 +77,17 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
+        context = jobExecutionContext;
         thread = Thread.currentThread();
         Integer scriptHistoryId = Integer.parseInt(jobExecutionContext.getJobDetail().getKey().getName());
         scriptHistory = scriptHistoryService.findById(scriptHistoryId);
-        if (scriptHistoryService.execTimeout(scriptHistory)) {
+        if ((System.currentTimeMillis() - scriptHistory.getSubmitTime().getTime()) > (scriptHistory.getTimeout() * 60 * 1000)) {
+            scriptHistory.updateState(Constant.JobState.TIMEOUT);
+            scriptHistory.setFinishTime(new Date());
+            scriptHistoryService.save(scriptHistory);
+            interrupted = true;
             return;
         }
-        scriptHistory.updateState(Constant.JobState.SUBMITTING);
-        scriptHistory.setStartTime(new Date());
-        scriptHistoryService.save(scriptHistory);
         String command = scriptHistory.getContent();
         try {
            if (Constant.ScriptType.SHELL.equals(scriptHistory.getScriptType())) {
@@ -96,8 +104,8 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
             }
             LOGGER.error(e.getMessage(), e);
             scriptHistory.updateState(Constant.JobState.FAILED);
-            scriptHistory.setFinishTime(new Date());
             scriptHistory.setErrors(e.getMessage());
+            scriptHistory.setFinishTime(new Date());
             scriptHistoryService.save(scriptHistory);
             //重试
             retryCurrentNode(scriptHistory, Constant.ErrorType.FAILED);
@@ -179,6 +187,7 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
                 scriptHistory.updateState(Constant.JobState.SUBMITTED);
                 scriptHistory.updateState(Constant.JobState.ACCEPTED);
                 scriptHistory.updateState(Constant.JobState.RUNNING);
+                scriptHistory.setStartTime(new Date());
                 scriptHistoryService.save(scriptHistory);
                 //并发执行读取
                 readOutput(session);
@@ -283,13 +292,30 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
     }
 
     private void dealInterrupted() {
-        // 维护已读取的执行日志
-        ScriptHistory dbScriptHistory = scriptHistoryService.findById(scriptHistory.getId());
-        scriptHistory.setState(dbScriptHistory.getState());
-        scriptHistory.setSteps(dbScriptHistory.getSteps());
-        scriptHistory.setFinishTime(dbScriptHistory.getFinishTime());
-        scriptHistory.setJobFinalStatus(dbScriptHistory.getJobFinalStatus());
+        Object timeout = context.getMergedJobDataMap().get("timeout");
+        if (scriptHistory.getClusterId() != null && scriptHistory.getState().equals(Constant.JobState.SUBMITTING)) {
+            Cluster cluster = clusterService.findById(scriptHistory.getClusterId());
+            String [] jobParams = scriptHistory.getJobParams().split(";");
+            HttpYarnApp httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), jobParams[0], jobParams[1], jobParams[2], 3);
+            if (httpYarnApp != null) {
+                scriptHistory.updateState(Constant.JobState.SUBMITTED);
+                scriptHistory.setJobFinalStatus("UNDEFINED");
+                scriptHistoryService.save(scriptHistory);
+                return;
+            }
+        }
+        if (timeout != null) {
+            scriptHistory.updateState(Constant.JobState.TIMEOUT);
+        } else {
+            scriptHistory.updateState(Constant.JobState.KILLED);
+        }
+        scriptHistory.setFinishTime(new Date());
         scriptHistoryService.save(scriptHistory);
+        // 手动kill不重试
+        if (Constant.JobState.TIMEOUT.equals(scriptHistory.getState())) {
+            // 重试
+            retryCurrentNode(scriptHistory, Constant.ErrorType.TIMEOUT);
+        }
     }
 
     private void kill() {
@@ -356,7 +382,15 @@ public class ScriptHistoryShellRunnerJob extends AbstractRetryableJob implements
     }
 
     public static void build(ScriptHistory scriptHistory, Date startDate) {
-        SchedulerUtils.scheduleSimpleJob(ScriptHistoryShellRunnerJob.class, scriptHistory.getId(), Constant.JobGroup.SCRIPT_HISTORY, 0, 0, null, startDate, null);
+        JobDataMap jobDataMap = new JobDataMap();
+        jobDataMap.put("timeout", scriptHistory.getTimeout());
+        jobDataMap.put("submitTime", scriptHistory.getSubmitTime());
+        SchedulerUtils.scheduleSimpleJob(ScriptJob.class, scriptHistory.getId(), Constant.JobGroup.SCRIPT_JOB, 0, 0, jobDataMap, startDate, null);
+    }
+
+    public static void destroy(Object name) {
+        SchedulerUtils.interrupt(name, Constant.JobGroup.SCRIPT_JOB);
+        SchedulerUtils.deleteJob(name, Constant.JobGroup.SCRIPT_JOB);
     }
 
 }

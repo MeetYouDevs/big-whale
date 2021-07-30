@@ -47,7 +47,7 @@
                 <div class="instance-tree">
                     <div class="state">
                         <span class="label label-default">UN_CONFIRMED_</span>
-                        <span class="label label-warning">WAITING_PARENT_</span>
+                        <span class="label label-warning">TIME_WAIT_</span>
                         <span class="label label-info">RUNNING_</span>
                         <span class="label label-success">SUCCEEDED_</span>
                         <span class="label label-danger">FAILED_</span>
@@ -62,6 +62,7 @@
                 <div class="instance-operate">
                     <button id="log" type="button" class="btn btn-primary" disabled="disabled" ng-click="onOpenLog()">日志</button>
                     <button id="rerun" type="button" class="btn btn-primary" disabled="disabled" ng-click="onRerun()">重跑</button>
+                    <button id="empty" type="button" class="btn btn-primary" disabled="disabled" ng-click="onEmpty()">置成功</button>
                 </div>
             </div>
         </div>
@@ -142,6 +143,9 @@
                                 if (node['rerunEnabled_']) {
                                     $('#rerun').removeAttr('disabled')
                                 }
+                                if (node['emptyEnabled_']) {
+                                    $('#empty').removeAttr('disabled')
+                                }
                             },
                             onNodeUnselected: function (event, node) {
                                 $scope.node = null;
@@ -198,7 +202,33 @@
                         scheduleInstanceId: $scope.instance
                     }).success(function () {
                         swal({
-                            title: '重跑成功',
+                            title: '操作成功',
+                            type: 'success',
+                            showConfirmButton: false,
+                            timer: 1500
+                        }).then(function () {
+                            $scope.treeView($scope.instance);
+                        });
+                    })
+                }
+            });
+        };
+
+        $scope.onEmpty = function() {
+            swal({
+                title: '确认置成功？',
+                type: 'question',
+                showConfirmButton: true,
+                showCancelButton: true
+            }).then(function (result) {
+                if (result.value) {
+                    $http.post('../script_history/empty.api', {
+                        scheduleId: $scope.node['scheduleId_'],
+                        scheduleTopNodeId: $scope.node['nodeId_'],
+                        scheduleInstanceId: $scope.instance
+                    }).success(function () {
+                        swal({
+                            title: '操作成功',
                             type: 'success',
                             showConfirmButton: false,
                             timer: 1500

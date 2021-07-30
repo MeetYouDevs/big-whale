@@ -5,7 +5,8 @@ import com.meiyou.bigwhale.common.pojo.Msg;
 import com.meiyou.bigwhale.dto.DtoMonitor;
 import com.meiyou.bigwhale.dto.DtoScript;
 import com.meiyou.bigwhale.entity.*;
-import com.meiyou.bigwhale.job.ScriptHistoryShellRunnerJob;
+import com.meiyou.bigwhale.scheduler.monitor.StreamJobMonitor;
+import com.meiyou.bigwhale.scheduler.job.ScriptJob;
 import com.meiyou.bigwhale.service.MonitorService;
 import com.meiyou.bigwhale.security.LoginUser;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
@@ -145,7 +146,15 @@ public class StreamController extends BaseController {
         if (req.getMonitor().getDingdingHooks() != null && !req.getMonitor().getDingdingHooks().isEmpty()) {
             monitor.setDingdingHooks(StringUtils.join(req.getMonitor().getDingdingHooks(), ","));
         }
-        scriptService.update(script, monitor);
+        if (monitor.getId() != null) {
+            SchedulerUtils.interrupt(monitor.getId(), Constant.JobGroup.MONITOR);
+            SchedulerUtils.deleteJob(monitor.getId(), Constant.JobGroup.MONITOR);
+        }
+        script = scriptService.update(script, monitor);
+        monitor = monitorService.findById(script.getMonitorId());
+        if (monitor.getEnabled()) {
+            StreamJobMonitor.build(monitor);
+        }
         return success();
     }
 
@@ -156,6 +165,7 @@ public class StreamController extends BaseController {
             return failed();
         }
         Monitor monitor = monitorService.findById(script.getMonitorId());
+        SchedulerUtils.interrupt(monitor.getId(), Constant.JobGroup.MONITOR);
         SchedulerUtils.deleteJob(monitor.getId(), Constant.JobGroup.MONITOR);
         scriptService.delete(script);
         return success();
@@ -167,13 +177,15 @@ public class StreamController extends BaseController {
         if (script == null) {
             return failed();
         }
-        ScriptHistory scriptHistory = scriptHistoryService.findNoScheduleLatestByScriptId(script.getId());
+        ScriptHistory scriptHistory = scriptHistoryService.findScriptLatest(script.getId());
         if (scriptHistory != null && scriptHistory.isRunning()) {
             return failed("任务运行中，请勿重复执行");
         }
         scriptHistory = scriptService.generateHistory(script);
-        if (scriptHistory != null) {
-            ScriptHistoryShellRunnerJob.build(scriptHistory);
+        if (Constant.JobState.SUBMIT_WAIT.equals(scriptHistory.getState())) {
+            scriptHistory.updateState(Constant.JobState.SUBMITTING);
+            scriptHistory = scriptHistoryService.save(scriptHistory);
+            ScriptJob.build(scriptHistory);
         }
         return success(scriptHistory);
     }

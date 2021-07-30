@@ -1,4 +1,4 @@
-package com.meiyou.bigwhale.job;
+package com.meiyou.bigwhale.scheduler;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
 @DisallowConcurrentExecution
-public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob implements InterruptableJob {
+public class ScriptJobYarnStateRefresher extends AbstractRetryable implements InterruptableJob {
 
     private Thread thread;
     private volatile boolean interrupted = false;
@@ -89,18 +89,11 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
     }
 
     private void updateMatchScriptHistory(HttpYarnApp httpYarnApp, ScriptHistory scriptHistory) {
-        if ("RUNNING".equals(httpYarnApp.getState()) ||
-                "FINAL_SAVING".equals(httpYarnApp.getState()) ||
-                "FINISHING".equals(httpYarnApp.getState()) ||
-                "KILLING".equals(httpYarnApp.getState())) {
-            scriptHistory.updateState(Constant.JobState.ACCEPTED);
-            scriptHistory.updateState(Constant.JobState.RUNNING);
-        } else {
-            scriptHistory.updateState(httpYarnApp.getState());
-        }
+        scriptHistory.updateState(Constant.JobState.ACCEPTED);
+        scriptHistory.updateState(Constant.JobState.RUNNING);
+        scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
         scriptHistory.setJobId(httpYarnApp.getId());
         scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
-        scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
         scriptHistoryService.save(scriptHistory);
     }
 
@@ -113,9 +106,6 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             } else {
                 scriptHistory.updateState(httpYarnApp.getState());
             }
-            scriptHistory.setJobId(httpYarnApp.getId());
-            scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
-            scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
             if ("FAILED".equals(httpYarnApp.getFinalStatus())) {
                 if (httpYarnApp.getDiagnostics() != null) {
                     if (httpYarnApp.getDiagnostics().length() > 61440) {
@@ -127,10 +117,13 @@ public class ScriptHistoryYarnStateRefreshJob extends AbstractRetryableJob imple
             }
             scriptHistory.setStartTime(new Date(httpYarnApp.getStartedTime()));
             scriptHistory.setFinishTime(new Date(httpYarnApp.getFinishedTime()));
+            scriptHistory.setJobId(httpYarnApp.getId());
+            scriptHistory.setJobUrl(httpYarnApp.getTrackingUrl());
+            scriptHistory.setJobFinalStatus(httpYarnApp.getFinalStatus());
         } else {
             scriptHistory.updateState(Constant.JobState.FAILED);
-            scriptHistory.setJobFinalStatus("UNKNOWN");
             scriptHistory.setFinishTime(new Date());
+            scriptHistory.setJobFinalStatus("UNKNOWN");
         }
         scriptHistoryService.save(scriptHistory);
         if (!"SUCCEEDED".equals(scriptHistory.getJobFinalStatus())) {
