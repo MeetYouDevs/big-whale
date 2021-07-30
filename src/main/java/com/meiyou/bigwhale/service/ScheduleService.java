@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface ScheduleService extends PagingAndSortingQueryService<Schedule, Integer> {
 
-    void update(Schedule entity, List<Script> scriptEntities);
+    Schedule update(Schedule entity, List<Script> scriptEntities);
 
     Page<String> instancePage(DtoSchedule req);
 }

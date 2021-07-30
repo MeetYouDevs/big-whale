@@ -8,7 +8,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.regex.Pattern;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -16,8 +15,6 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DtoScriptHistory extends AbstractPageDto {
-
-    private static final Pattern PROXY_USER_PATTERN = Pattern.compile("proxy user: ([\\w-.,]+)");
 
     private Integer id;
 
@@ -36,8 +33,10 @@ public class DtoScriptHistory extends AbstractPageDto {
     private String scheduleTopNodeId;
     private String scheduleInstanceId;
     private String scheduleFailureHandle;
-    private Boolean scheduleSupplement;
-    private Date scheduleOperateTime;
+    private Boolean scheduleRunnable;
+    private Boolean scheduleRetry;
+    private Boolean scheduleEmpty;
+    private Boolean scheduleRerun;
     private String previousScheduleTopNodeId;
 
     private Integer scriptId;
@@ -53,6 +52,8 @@ public class DtoScriptHistory extends AbstractPageDto {
     private String errors;
     private Date createTime;
     private Integer createBy;
+    private Date businessTime;
+    private Date delayTime;
     private Date submitTime;
     private Date startTime;
     private Date finishTime;
@@ -84,8 +85,8 @@ public class DtoScriptHistory extends AbstractPageDto {
     }
 
     public boolean isRunning() {
-        return  Constant.JobState.WAITING_PARENT_.equals(state) ||
-                Constant.JobState.INITED.equals(state) ||
+        return  Constant.JobState.TIME_WAIT_.equals(state) ||
+                Constant.JobState.SUBMIT_WAIT.equals(state) ||
                 Constant.JobState.SUBMITTING.equals(state) ||
                 Constant.JobState.SUBMITTED.equals(state) ||
                 Constant.JobState.ACCEPTED.equals(state) ||

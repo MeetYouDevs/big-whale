@@ -3,17 +3,14 @@ package com.meiyou.bigwhale.service;
 import com.meiyou.bigwhale.data.service.PagingAndSortingQueryService;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 
+import java.util.Date;
+
 public interface ScriptHistoryService extends PagingAndSortingQueryService<ScriptHistory, Integer> {
 
-    /**
-     * 监控启动
-     * @param scriptId
-     * @return
-     */
-    ScriptHistory findNoScheduleLatestByScriptId(Integer scriptId);
+    void deleteFuture(Integer scheduleId, Date date);
 
-    void missingScheduling(ScriptHistory scriptHistory);
+    void switchScheduleRunnable(Integer id, boolean scheduleRunnable);
 
-    boolean execTimeout(ScriptHistory scriptHistory);
+    ScriptHistory findScriptLatest(Integer scriptId);
 
 }

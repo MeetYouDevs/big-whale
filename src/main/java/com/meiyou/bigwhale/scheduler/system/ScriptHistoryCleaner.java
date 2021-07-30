@@ -1,4 +1,4 @@
-package com.meiyou.bigwhale.job;
+package com.meiyou.bigwhale.scheduler.system;
 
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
@@ -17,7 +17,7 @@ import java.util.List;
  * @description file description
  */
 @DisallowConcurrentExecution
-public class ScriptHistoryClearJob implements Job {
+public class ScriptHistoryCleaner implements Job {
 
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 

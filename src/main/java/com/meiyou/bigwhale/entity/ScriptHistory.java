@@ -40,8 +40,10 @@ public class ScriptHistory {
     private String scheduleTopNodeId;
     private String scheduleInstanceId;
     private String scheduleFailureHandle;
-    private Boolean scheduleSupplement;
-    private Date scheduleOperateTime;
+    private Boolean scheduleRunnable;
+    private Boolean scheduleRetry;
+    private Boolean scheduleEmpty;
+    private Boolean scheduleRerun;
     private String previousScheduleTopNodeId;
 
     private Integer scriptId;
@@ -57,6 +59,8 @@ public class ScriptHistory {
     private String errors;
     private Date createTime;
     private Integer createBy;
+    private Date businessTime;
+    private Date delayTime;
     private Date submitTime;
     private Date startTime;
     private Date finishTime;
@@ -79,16 +83,21 @@ public class ScriptHistory {
                 this.steps = this.steps.split("]")[0] + ",\"" + state + "\"]";
             }
         }
-        if (state.equals(Constant.JobState.INITED)) {
+        if (state.equals(Constant.JobState.SUBMITTING)) {
             this.submitTime = new Date();
         }
     }
 
-    public void resetState() {
+    public void reset() {
+        this.id = null;
+        this.scheduleFailureHandle = null;
         this.state = null;
         this.steps = null;
         this.outputs = null;
         this.errors = null;
+        this.createTime = null;
+        this.delayTime = null;
+        this.submitTime = null;
         this.startTime = null;
         this.finishTime = null;
         this.jobId = null;
@@ -101,8 +110,8 @@ public class ScriptHistory {
     }
 
     public boolean isRunning() {
-        return  Constant.JobState.WAITING_PARENT_.equals(state) ||
-                Constant.JobState.INITED.equals(state) ||
+        return  Constant.JobState.TIME_WAIT_.equals(state) ||
+                Constant.JobState.SUBMIT_WAIT.equals(state) ||
                 Constant.JobState.SUBMITTING.equals(state) ||
                 Constant.JobState.SUBMITTED.equals(state) ||
                 Constant.JobState.ACCEPTED.equals(state) ||

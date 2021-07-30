@@ -1,4 +1,4 @@
-package com.meiyou.bigwhale.job;
+package com.meiyou.bigwhale.scheduler.monitor;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.BackpressureInfo;
@@ -6,6 +6,8 @@ import com.meiyou.bigwhale.entity.Cluster;
 import com.meiyou.bigwhale.entity.Monitor;
 import com.meiyou.bigwhale.entity.Script;
 import com.meiyou.bigwhale.entity.ScriptHistory;
+import com.meiyou.bigwhale.scheduler.AbstractNoticeable;
+import com.meiyou.bigwhale.scheduler.job.ScriptJob;
 import com.meiyou.bigwhale.service.*;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import com.meiyou.bigwhale.util.YarnApiUtils;
@@ -20,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @description file description
  */
 @DisallowConcurrentExecution
-public class MonitorJob extends AbstractNoticeableJob implements InterruptableJob {
+public class StreamJobMonitor extends AbstractNoticeable implements InterruptableJob {
 
     private Thread thread;
     private volatile boolean interrupted = false;
@@ -55,7 +57,7 @@ public class MonitorJob extends AbstractNoticeableJob implements InterruptableJo
         monitor.setRealFireTime(jobExecutionContext.getFireTime());
         monitorService.save(monitor);
         script = scriptService.findOneByQuery("monitorId=" + monitorId);
-        scriptHistory = scriptHistoryService.findNoScheduleLatestByScriptId(script.getId());
+        scriptHistory = scriptHistoryService.findScriptLatest(script.getId());
         if (scriptHistory == null) {
             restart();
             return;
@@ -64,7 +66,7 @@ public class MonitorJob extends AbstractNoticeableJob implements InterruptableJo
         if (scriptHistory.getMonitorId() == null) {
             scriptHistory.setMonitorId(monitorId);
         }
-        if (Constant.JobState.INITED.equals(scriptHistory.getState()) ||
+        if (Constant.JobState.SUBMIT_WAIT.equals(scriptHistory.getState()) ||
                 Constant.JobState.SUBMITTING.equals(scriptHistory.getState())) {
             return;
         }
@@ -187,20 +189,22 @@ public class MonitorJob extends AbstractNoticeableJob implements InterruptableJo
     }
 
     private boolean restart() {
-        ScriptHistory scriptHistory = scriptHistoryService.findNoScheduleLatestByScriptId(script.getId());
+        ScriptHistory scriptHistory = scriptHistoryService.findScriptLatest(script.getId());
         if (scriptHistory != null && scriptHistory.isRunning()) {
             return true;
         }
         scriptHistory = scriptService.generateHistory(script, monitor);
-        if (scriptHistory != null) {
-            ScriptHistoryShellRunnerJob.build(scriptHistory);
+        if (Constant.JobState.SUBMIT_WAIT.equals(scriptHistory.getState())) {
+            scriptHistory.updateState(Constant.JobState.SUBMITTING);
+            scriptHistory = scriptHistoryService.save(scriptHistory);
+            ScriptJob.build(scriptHistory);
             return true;
         }
         return false;
     }
 
     public static void build(Monitor monitor) {
-        SchedulerUtils.scheduleCronJob(MonitorJob.class,
+        SchedulerUtils.scheduleCronJob(StreamJobMonitor.class,
                 monitor.getId(),
                 Constant.JobGroup.MONITOR,
                 monitor.generateCron());

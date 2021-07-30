@@ -1,4 +1,4 @@
-package com.meiyou.bigwhale.job;
+package com.meiyou.bigwhale.scheduler;
 
 import com.meiyou.bigwhale.entity.*;
 import com.meiyou.bigwhale.service.*;
@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @date 2020/4/24
  * @description file description
  */
-public abstract class AbstractNoticeableJob {
+public abstract class AbstractNoticeable {
 
     @Autowired
     private UserService userService;
@@ -57,7 +57,7 @@ public abstract class AbstractNoticeableJob {
             if (monitor == null) {
                 return;
             }
-            taskName = "实时任务" + " - " + scriptHistory.getScriptName();
+            taskName = scriptHistory.getScriptName();
             email = monitor.getSendEmail() ? user.getEmail() : null;
             dingDingHooks = monitor.getDingdingHooks();
         } else if (scriptHistory.getScriptId() != null){

@@ -2,11 +2,16 @@ package com.meiyou.bigwhale.listener;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.entity.*;
-import com.meiyou.bigwhale.job.*;
-import com.meiyou.bigwhale.job.system.PlatformTimeoutJob;
+import com.meiyou.bigwhale.scheduler.*;
+import com.meiyou.bigwhale.scheduler.monitor.StreamJobMonitor;
+import com.meiyou.bigwhale.scheduler.system.PlatformTimeoutChecker;
+import com.meiyou.bigwhale.scheduler.system.ScriptHistoryCleaner;
+import com.meiyou.bigwhale.scheduler.workflow.ScheduleJobBuilder;
+import com.meiyou.bigwhale.scheduler.workflow.ScheduleJobSubmitter;
 import com.meiyou.bigwhale.service.*;
-import com.meiyou.bigwhale.job.system.ActiveYarnAppRefreshJob;
+import com.meiyou.bigwhale.scheduler.system.ActiveYarnAppRefresher;
 import com.meiyou.bigwhale.util.SchedulerUtils;
+import org.apache.commons.lang.time.DateUtils;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +51,7 @@ public class ApplicationReadyListener implements ApplicationListener<Application
     public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent) {
         logger.warn("Starting necessary task");
         // 启动常驻任务
-        startResidentMission();
+        startSystem();
         // 启动监控
         startMonitor();
         // 启动任务调度
@@ -58,37 +63,44 @@ public class ApplicationReadyListener implements ApplicationListener<Application
         }
     }
 
-    private void startResidentMission() {
-        // 启动yarn活跃应用列表更新任务（包含应用重复检测、长时间未运行和内存超限检测）
-        SchedulerUtils.scheduleCronJob(ActiveYarnAppRefreshJob.class, "*/10 * * * * ?");
-        // 启动作业状态更新任务
-        SchedulerUtils.scheduleCronJob(ScriptHistoryYarnStateRefreshJob.class, "*/5 * * * * ?");
-        // 启动脚本执行超时处理任务
-        SchedulerUtils.scheduleCronJob(ScriptHistoryTimeoutJob.class, "*/10 * * * * ?");
-        // 启动执行记录清理任务
-        SchedulerUtils.scheduleCronJob(ScriptHistoryClearJob.class, "0 0 0 */1 * ?");
-        // 平台执行超时处理任务
-        SchedulerUtils.scheduleCronJob(PlatformTimeoutJob.class, "*/10 * * * * ?");
+    private void startSystem() {
+        // yarn活跃应用列表更新（包含应用重复检测、长时间未运行和内存超限检测）
+        SchedulerUtils.scheduleCronJob(ActiveYarnAppRefresher.class, "*/10 * * * * ?");
+        // 平台执行超时处理
+        SchedulerUtils.scheduleCronJob(PlatformTimeoutChecker.class, "*/10 * * * * ?");
+        // 执行记录清理
+        SchedulerUtils.scheduleCronJob(ScriptHistoryCleaner.class, "0 0 0 */1 * ?");
     }
 
     private void startMonitor() {
         List<Monitor> monitors = monitorService.findByQuery("enabled=" + true);
-        monitors.forEach(MonitorJob::build);
+        monitors.forEach(StreamJobMonitor::build);
     }
 
     private void startSchedule() {
         List<Schedule> schedules = scheduleService.findByQuery("enabled=" + true);
         Date now = new Date();
         schedules.forEach(schedule -> {
-            Date nextFireTime = ScheduleJob.getNextFireTime(schedule.generateCron(), schedule.getStartTime().compareTo(now) <= 0 ? now : schedule.getStartTime());
-            String scheduleInstanceId = dateFormat.format(nextFireTime);
-            List<ScriptHistory> scriptHistories = scriptHistoryService.findByQuery("scheduleId=" + schedule.getId() + ";state=" + Constant.JobState.UN_CONFIRMED_);
-            scriptService.reGenerateHistory(schedule, scheduleInstanceId, null, 0, scriptHistories);
-            scriptHistories.forEach(scriptHistoryService::missingScheduling);
-            ScheduleJob.build(schedule);
+            Date nextFireTime = SchedulerUtils.getNextFireTime(schedule.generateCron(), schedule.getStartTime().compareTo(now) <= 0 ? now : schedule.getStartTime());
+            // 生成下个实例
+            if (nextFireTime.compareTo(schedule.getEndTime()) <= 0) {
+                String scheduleInstanceId = dateFormat.format(nextFireTime);
+                ScriptHistory scriptHistory = scriptHistoryService.findOneByQuery("scheduleId=" + schedule.getId() +
+                        ";scheduleInstanceId=" + scheduleInstanceId);
+                if (scriptHistory == null) {
+                    scriptService.reGenerateHistory(schedule, scheduleInstanceId, null);
+                }
+                ScheduleJobBuilder.build(schedule);
+            }
         });
-        // 启动调度记录提交任务
-        SchedulerUtils.scheduleCronJob(ScheduleSubmitJob.class, "*/1 * * * * ?");
+        // 调度作业提交
+        SchedulerUtils.scheduleCronJob(ScheduleJobSubmitter.class, ScheduleJobSubmitter.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/1 * * * * ?");
+        // 脚本执行超时处理
+        SchedulerUtils.scheduleCronJob(ScriptJobTimeoutChecker.class, ScriptJobTimeoutChecker.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/10 * * * * ?");
+        // 作业状态更新
+        SchedulerUtils.scheduleCronJob(ScriptJobYarnStateRefresher.class, ScriptJobYarnStateRefresher.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/5 * * * * ?");
+        // 服务异常退出处理
+        SchedulerUtils.scheduleSimpleJob(ScriptJobExceptionFeedbacker.class, ScriptJobExceptionFeedbacker.class.getSimpleName(), Constant.JobGroup.SCHEDULE, 0, 0, null, DateUtils.addSeconds(new Date(), 60), null);
     }
 
 }

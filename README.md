@@ -8,7 +8,6 @@
 ## 2.特性
 * 基于SSH的脚本执行机制，部署简单快捷，仅需单个服务
 * 基于Yarn Rest Api的任务状态同步机制，对Spark、Flink无版本限制
-* 支持分布式
 * 支持失败重试
 * 支持任务依赖
 * 支持复杂任务编排（DAG）
@@ -85,7 +84,6 @@
 * 点击左侧操作栏“调度实例”可查看调度实例列表、运行状态和节点启动日志  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step11-schedule_instance.png)
 * 点击左侧操作栏“手动执行”可触发调度执行
-* 点击左侧操作栏“历史补数”可运行补数实例
 ## 2.实时任务
 ### 2.1 新增
 * 目前支持“Spark Stream”和“Flink Stream”两种类型的流处理任务  

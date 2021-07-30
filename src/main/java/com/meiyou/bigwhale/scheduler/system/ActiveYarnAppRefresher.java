@@ -1,4 +1,4 @@
-package com.meiyou.bigwhale.job.system;
+package com.meiyou.bigwhale.scheduler.system;
 
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.common.pojo.HttpYarnApp;
@@ -7,7 +7,7 @@ import com.meiyou.bigwhale.entity.YarnApp;
 import com.meiyou.bigwhale.service.ClusterService;
 import com.meiyou.bigwhale.service.ClusterUserService;
 import com.meiyou.bigwhale.service.YarnAppService;
-import com.meiyou.bigwhale.job.AbstractNoticeableJob;
+import com.meiyou.bigwhale.scheduler.AbstractNoticeable;
 import com.meiyou.bigwhale.util.YarnApiUtils;
 import com.meiyou.bigwhale.entity.Cluster;
 import com.meiyou.bigwhale.entity.ClusterUser;
@@ -26,7 +26,7 @@ import java.util.*;
  * @description file description
  */
 @DisallowConcurrentExecution
-public class ActiveYarnAppRefreshJob extends AbstractNoticeableJob implements InterruptableJob {
+public class ActiveYarnAppRefresher extends AbstractNoticeable implements InterruptableJob {
 
     private static int checkAppDuplicateAndNoRunningSkipCount = 0;
     private static int checkAppMemorySkipCount = 0;

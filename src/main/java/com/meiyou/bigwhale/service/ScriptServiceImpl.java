@@ -7,9 +7,7 @@ import com.meiyou.bigwhale.data.service.AbstractMysqlPagingAndSortingQueryServic
 import com.meiyou.bigwhale.dto.DtoScript;
 import com.meiyou.bigwhale.entity.*;
 import com.meiyou.bigwhale.entity.auth.User;
-import com.meiyou.bigwhale.job.MonitorJob;
 import com.meiyou.bigwhale.service.auth.UserService;
-import com.meiyou.bigwhale.util.SchedulerUtils;
 import com.meiyou.bigwhale.util.WebHdfsUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
@@ -131,47 +129,39 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         return null;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public void update(Script entity, Monitor monitorEntity) {
+    public Script update(Script entity, Monitor monitorEntity) {
         Monitor monitor = monitorService.save(monitorEntity);
         if (entity.getMonitorId() == null) {
             entity.setMonitorId(monitor.getId());
         }
-        super.save(entity);
-        SchedulerUtils.deleteJob(monitor.getId(), Constant.JobGroup.MONITOR);
-        if (monitor.getEnabled()) {
-            MonitorJob.build(monitor);
-        }
+        return super.save(entity);
     }
 
     @Override
     public ScriptHistory generateHistory(Script script) {
-        return generateHistory(script, null, null, null, null, null);
+        return generateHistory(script, null, null, null, null);
     }
 
     @Override
     public ScriptHistory generateHistory(Script script, Monitor monitor) {
-        return generateHistory(script, monitor, null, null, null, null);
+        return generateHistory(script, monitor, null, null, null);
     }
 
     @Override
-    public ScriptHistory generateHistory(Script script, Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId, int generateStatus) {
-        return generateHistory(script, null, schedule, scheduleInstanceId, previousScheduleTopNodeId, generateStatus);
+    public ScriptHistory generateHistory(Script script, Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
+        return generateHistory(script, null, schedule, scheduleInstanceId, previousScheduleTopNodeId);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public void reGenerateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId, int generateStatus, List<ScriptHistory> scriptHistories) {
+    public void reGenerateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
         Map<String, Schedule.Topology.Node> nextNodeIdToObj = schedule.analyzeNextNode(previousScheduleTopNodeId);
         for (String nodeId : nextNodeIdToObj.keySet()) {
-            boolean exist = scriptHistories.removeIf(scriptHistory ->
-                    scriptHistory.getScheduleTopNodeId().equals(nodeId) &&
-                            scriptHistory.getScheduleInstanceId().equals(scheduleInstanceId) &&
-                            Objects.equals(scriptHistory.getPreviousScheduleTopNodeId(), previousScheduleTopNodeId));
-            if (!exist) {
-                Script script = findOneByQuery("scheduleId=" + schedule.getId() +  ";scheduleTopNodeId=" + nodeId);
-                generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId, generateStatus);
-            }
-            reGenerateHistory(schedule, scheduleInstanceId, nodeId, generateStatus, scriptHistories);
+            Script script = findOneByQuery("scheduleId=" + schedule.getId() +  ";scheduleTopNodeId=" + nodeId);
+            generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId);
+            reGenerateHistory(schedule, scheduleInstanceId, nodeId);
         }
     }
 
@@ -569,7 +559,7 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         String queueOld = dbScript.getQueue();
         String queueReq = req.getQueue();
         if (!dbScript.getClusterId().equals(req.getClusterId()) || !queueOld.equals(queueReq)) {
-            ScriptHistory scriptHistory = scriptHistoryService.findNoScheduleLatestByScriptId(dbScript.getId());
+            ScriptHistory scriptHistory = scriptHistoryService.findScriptLatest(dbScript.getId());
             return scriptHistory != null && scriptHistory.isRunning();
         }
         return false;
@@ -581,15 +571,12 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
      * @param schedule
      * @param scheduleInstanceId
      * @param previousScheduleTopNodeId
-     * @param generateStatus
-     * @return 0 需确认 1 确认 2补数
      */
     private ScriptHistory generateHistory(Script script,
                                           Monitor monitor,
                                           Schedule schedule,
                                           String scheduleInstanceId,
-                                          String previousScheduleTopNodeId,
-                                          Integer generateStatus) {
+                                          String previousScheduleTopNodeId) {
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
         String suffix;
         if (schedule != null) {
@@ -603,41 +590,35 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         } catch (ParseException e) {
             throw new RuntimeException("Error date format: " + suffix);
         }
-        ScriptHistory scriptHistory;
-        if (schedule != null && generateStatus == 1) {
-            scriptHistory = scriptHistoryService.findOneByQuery("scheduleId=" + schedule.getId() +
-                    ";scheduleTopNodeId=" + script.getScheduleTopNodeId() +
-                    ";scheduleInstanceId=" + scheduleInstanceId);
-        } else {
-            scriptHistory = ScriptHistory.builder()
-                    .scriptId(script.getId())
-                    .scriptName(script.getName())
-                    .scriptType(script.getType())
-                    .clusterId(script.getClusterId())
-                    .agentId(script.getAgentId())
-                    .timeout(script.getTimeout())
-                    .createTime(date)
-                    .createBy(script.getCreateBy())
-                    .build();
-            // 设置yarn参数
-            switch (script.getType()) {
-                case Constant.ScriptType.SPARK_BATCH:
-                case Constant.ScriptType.FLINK_BATCH:
-                case Constant.ScriptType.SPARK_STREAM:
-                case Constant.ScriptType.FLINK_STREAM:
-                    String yarnAppSuffix;
-                    if (script.getId() != null) {
-                        yarnAppSuffix = ".bw_instance_" + (script.isBatch() ? "b" : "s") + suffix;
-                    } else {
-                        yarnAppSuffix = ".bw_test_instance_" + (script.isBatch() ? "b" : "s") + suffix;
-                    }
-                    scriptHistory.updateParams(script.getUser(),
-                            script.getQueue(),
-                            script.getApp() + yarnAppSuffix);
-                    break;
-                default:
-                    break;
-            }
+        ScriptHistory scriptHistory = ScriptHistory.builder()
+                .scriptId(script.getId())
+                .scriptName(script.getName())
+                .scriptType(script.getType())
+                .clusterId(script.getClusterId())
+                .agentId(script.getAgentId())
+                .timeout(script.getTimeout())
+                .createTime(new Date())
+                .createBy(script.getCreateBy())
+                .businessTime(date)
+                .build();
+        // 设置yarn参数
+        switch (script.getType()) {
+            case Constant.ScriptType.SPARK_BATCH:
+            case Constant.ScriptType.FLINK_BATCH:
+            case Constant.ScriptType.SPARK_STREAM:
+            case Constant.ScriptType.FLINK_STREAM:
+                String yarnAppSuffix;
+                if (script.getId() != null) {
+                    yarnAppSuffix = ".bw_instance_" + (script.isBatch() ? "b" : "s") + suffix;
+                } else {
+                    yarnAppSuffix = ".bw_test_instance_" + (script.isBatch() ? "b" : "s") + suffix;
+                }
+                scriptHistory.updateParams(script.getUser(),
+                        script.getQueue(),
+                        script.getApp() + yarnAppSuffix);
+                break;
+            default:
+                break;
         }
         if (monitor != null) {
             scriptHistory.setMonitorId(monitor.getId());
@@ -646,27 +627,20 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
             scriptHistory.setScheduleId(schedule.getId());
             scriptHistory.setScheduleTopNodeId(script.getScheduleTopNodeId());
             scriptHistory.setScheduleInstanceId(scheduleInstanceId);
-            if (generateStatus == 0 || generateStatus == 1) {
-                Schedule.Topology.Node node = schedule.analyzeCurrentNode(script.getScheduleTopNodeId());
-                scriptHistory.setScheduleFailureHandle(node.retries() + ";" + node.intervals() + ";" + 0);
-                scriptHistory.setScheduleSupplement(false);
-            } else if (generateStatus == 2) {
-                scriptHistory.setScheduleSupplement(true);
-                Date now = new Date();
-                scriptHistory.setScheduleOperateTime(date.compareTo(now) <= 0 ? now : date);
-            }
+            Schedule.Topology.Node node = schedule.analyzeCurrentNode(script.getScheduleTopNodeId());
+            scriptHistory.setScheduleFailureHandle(node.retries() + ";" + node.intervals() + ";" + 0);
+            scriptHistory.setScheduleRunnable(true);
+            scriptHistory.setScheduleRetry(false);
+            scriptHistory.setScheduleEmpty(false);
+            scriptHistory.setScheduleRerun(false);
             scriptHistory.setPreviousScheduleTopNodeId(previousScheduleTopNodeId);
         }
         String command = parseCommand(script, scriptHistory, suffix, date);
         scriptHistory.setContent(command);
         if (schedule == null) {
-            scriptHistory.updateState(Constant.JobState.INITED);
+            scriptHistory.updateState(Constant.JobState.SUBMIT_WAIT);
         } else {
-            if (generateStatus == 0 || generateStatus == 2) {
-                scriptHistory.updateState(Constant.JobState.UN_CONFIRMED_);
-            } else {
-                scriptHistory.updateState(Constant.JobState.WAITING_PARENT_);
-            }
+            scriptHistory.updateState(Constant.JobState.UN_CONFIRMED_);
         }
         return scriptHistoryService.save(scriptHistory);
     }
@@ -685,7 +659,7 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
             command += " && ";
             command += "touch " + path;
             command += " && ";
-            command += "echo \"" + content + "\" >> " + path;
+            command += "echo -e \"" + content + "\" >> " + path;
             command += " && ";
             command += "python ";
             command += path;
