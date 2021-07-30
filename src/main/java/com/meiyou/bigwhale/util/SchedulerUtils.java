@@ -183,26 +183,6 @@ public class SchedulerUtils {
         return false;
     }
 
-    /*public static Date getPreviousFireTime(String cron, Date startDate) {
-        Date nextFireTime1 = getNextFireTime(cron, startDate);
-        Date nextFireTime2 = getNextFireTime(cron, nextFireTime1);
-        int intervals = (int) (nextFireTime2.getTime() - nextFireTime1.getTime());
-        Date cal1 = DateUtils.addMilliseconds(nextFireTime1, - intervals);
-        Date cal2 = getNextFireTime(cron, cal1);
-        Date cal3 = getNextFireTime(cron, cal2);
-        Date cal4 = getNextFireTime(cron, cal3);
-        while (!cal4.equals(nextFireTime1)) {
-            cal1 = DateUtils.addMilliseconds(cal1, - intervals);
-            cal2 = getNextFireTime(cron, cal1);
-            cal3 = getNextFireTime(cron, cal2);
-            cal4 = getNextFireTime(cron, cal3);
-            if (cal4.before(nextFireTime1)) {
-                intervals = -1000;
-            }
-        }
-        return cal2;
-    }*/
-
     public static Date getNeedFireTime(String cron, Date startDate) {
         Date nextFireTime1 = getNextFireTime(cron, startDate);
         Date nextFireTime2 = getNextFireTime(cron, nextFireTime1);

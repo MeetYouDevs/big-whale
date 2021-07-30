@@ -477,6 +477,11 @@ ADD COLUMN `delay_time` datetime NULL AFTER `business_time`,
 ADD COLUMN `submit_time` datetime NULL AFTER `delay_time`;
 
 
+ALTER TABLE `script_history`
+ADD INDEX `schedule_runnable_index` (`schedule_runnable`) USING BTREE,
+ADD INDEX `delay_time_index` (`delay_time`) USING BTREE;
+
+
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

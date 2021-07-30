@@ -94,11 +94,11 @@ public class ApplicationReadyListener implements ApplicationListener<Application
             }
         });
         // 调度作业提交
-        SchedulerUtils.scheduleCronJob(ScheduleJobSubmitter.class, Constant.JobGroup.SCHEDULE, "*/1 * * * * ?");
+        SchedulerUtils.scheduleCronJob(ScheduleJobSubmitter.class, ScheduleJobSubmitter.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/1 * * * * ?");
         // 脚本执行超时处理
-        SchedulerUtils.scheduleCronJob(ScriptJobTimeoutChecker.class, Constant.JobGroup.SCHEDULE, "*/10 * * * * ?");
+        SchedulerUtils.scheduleCronJob(ScriptJobTimeoutChecker.class, ScriptJobTimeoutChecker.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/10 * * * * ?");
         // 作业状态更新
-        SchedulerUtils.scheduleCronJob(ScriptJobYarnStateRefresher.class, Constant.JobGroup.SCHEDULE, "*/5 * * * * ?");
+        SchedulerUtils.scheduleCronJob(ScriptJobYarnStateRefresher.class, ScriptJobYarnStateRefresher.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/5 * * * * ?");
         // 服务异常退出处理
         SchedulerUtils.scheduleSimpleJob(ScriptJobExceptionFeedbacker.class, ScriptJobExceptionFeedbacker.class.getSimpleName(), Constant.JobGroup.SCHEDULE, 0, 0, null, DateUtils.addSeconds(new Date(), 60), null);
     }
