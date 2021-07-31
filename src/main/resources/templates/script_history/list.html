@@ -86,6 +86,9 @@
                                 任务名
                             </th>
                             <th>
+                                业务时间
+                            </th>
+                            <th>
                                 启动时间
                             </th>
                             <th>
@@ -113,7 +116,10 @@
                             <td>
                                 <span class="name">{{item.displayName}}</span>
                             </td>
-                            <td>
+                            <td style="min-width: 80px;">
+                                {{item.businessTime}}
+                            </td>
+                            <td style="min-width: 80px;">
                                 {{item.startTime}}
                             </td>
                             <td>
@@ -241,7 +247,7 @@
             if ('UN_CONFIRMED' === item.state) {
                 return 'default'
             }
-            if ('WAITING_PARENT' === item.state) {
+            if ('TIME_WAIT' === item.state) {
                 return 'warning'
             }
             if (item.running) {
