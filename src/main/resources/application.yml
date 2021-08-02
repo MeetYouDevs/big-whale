@@ -33,6 +33,7 @@ spring:
       max-file-size: 200Mb
       max-request-size: 200Mb
   quartz:
+    job-store-type: memory # jdbc延迟过高，统一使用memory，放弃分布式
     properties:
       org:
         quartz:

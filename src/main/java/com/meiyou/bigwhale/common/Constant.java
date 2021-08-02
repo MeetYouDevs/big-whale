@@ -10,7 +10,6 @@ public interface Constant {
      */
     interface ScriptType {
         String SHELL = "shell";
-        String PYTHON = "python";
         String SPARK_BATCH = "sparkbatch";
         String FLINK_BATCH = "flinkbatch";
         String SPARK_STREAM = "sparkstream";

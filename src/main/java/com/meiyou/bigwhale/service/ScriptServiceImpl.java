@@ -149,20 +149,16 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         return generateHistory(script, monitor, null, null, null);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public ScriptHistory generateHistory(Script script, Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
-        return generateHistory(script, null, schedule, scheduleInstanceId, previousScheduleTopNodeId);
+    public void generateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
+        recursiveGenerateHistory(schedule, scheduleInstanceId, previousScheduleTopNodeId);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void reGenerateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
-        Map<String, Schedule.Topology.Node> nextNodeIdToObj = schedule.analyzeNextNode(previousScheduleTopNodeId);
-        for (String nodeId : nextNodeIdToObj.keySet()) {
-            Script script = findOneByQuery("scheduleId=" + schedule.getId() +  ";scheduleTopNodeId=" + nodeId);
-            generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId);
-            reGenerateHistory(schedule, scheduleInstanceId, nodeId);
-        }
+        generateHistory(schedule, scheduleInstanceId, previousScheduleTopNodeId);
     }
 
     @Override
@@ -565,6 +561,15 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
         return false;
     }
 
+    private void recursiveGenerateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
+        Map<String, Schedule.Topology.Node> nextNodeIdToObj = schedule.analyzeNextNode(previousScheduleTopNodeId);
+        for (String nodeId : nextNodeIdToObj.keySet()) {
+            Script script = findOneByQuery("scheduleId=" + schedule.getId() +  ";scheduleTopNodeId=" + nodeId);
+            generateHistory(script, null, schedule, scheduleInstanceId, previousScheduleTopNodeId);
+            recursiveGenerateHistory(schedule, scheduleInstanceId, nodeId);
+        }
+    }
+
     /**
      * @param script
      * @param monitor
@@ -652,17 +657,6 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
             command = content.replace("--name " + script.getApp(), "--name " + scriptHistory.getJobParams().split(";")[2]);
         } else if (Constant.ScriptType.FLINK_BATCH.equals(script.getType()) || Constant.ScriptType.FLINK_STREAM.equals(script.getType())) {
             command = content.replace("-ynm " + script.getApp(), "-ynm " + scriptHistory.getJobParams().split(";")[2]);
-        } else if (Constant.ScriptType.PYTHON.equals(script.getType())) {
-            String dir = "/tmp/trochilus/data/code/" + Math.abs(script.getName().hashCode());
-            String path = dir + "/" + suffix + ".py";
-            command = "mkdir -p " + dir;
-            command += " && ";
-            command += "touch " + path;
-            command += " && ";
-            command += "echo -e \"" + content + "\" >> " + path;
-            command += " && ";
-            command += "python ";
-            command += path;
         } else {
             command = content;
         }

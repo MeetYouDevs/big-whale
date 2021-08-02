@@ -92,8 +92,6 @@ public class ScriptJob extends AbstractRetryable implements InterruptableJob {
         try {
            if (Constant.ScriptType.SHELL.equals(scriptHistory.getScriptType())) {
                runCommonShell(command);
-           } else if (Constant.ScriptType.PYTHON.equals(scriptHistory.getScriptType())) {
-               runPythonShell(command);
            } else {
                runYarnShell(command);
            }
@@ -223,10 +221,6 @@ public class ScriptJob extends AbstractRetryable implements InterruptableJob {
         }
     }
 
-    private void runPythonShell(String command) throws Exception {
-        runCommonShell(command);
-    }
-
     private void readOutput(Session session) {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
         try {
@@ -293,18 +287,18 @@ public class ScriptJob extends AbstractRetryable implements InterruptableJob {
 
     private void dealInterrupted() {
         Object timeout = context.getMergedJobDataMap().get("timeout");
-        if (scriptHistory.getClusterId() != null && scriptHistory.getState().equals(Constant.JobState.SUBMITTING)) {
-            Cluster cluster = clusterService.findById(scriptHistory.getClusterId());
-            String [] jobParams = scriptHistory.getJobParams().split(";");
-            HttpYarnApp httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), jobParams[0], jobParams[1], jobParams[2], 3);
-            if (httpYarnApp != null) {
-                scriptHistory.updateState(Constant.JobState.SUBMITTED);
-                scriptHistory.setJobFinalStatus("UNDEFINED");
-                scriptHistoryService.save(scriptHistory);
-                return;
-            }
-        }
         if (timeout != null) {
+            if (scriptHistory.getClusterId() != null && scriptHistory.getState().equals(Constant.JobState.SUBMITTING)) {
+                Cluster cluster = clusterService.findById(scriptHistory.getClusterId());
+                String [] jobParams = scriptHistory.getJobParams().split(";");
+                HttpYarnApp httpYarnApp = YarnApiUtils.getActiveApp(cluster.getYarnUrl(), jobParams[0], jobParams[1], jobParams[2], 3);
+                if (httpYarnApp != null) {
+                    scriptHistory.updateState(Constant.JobState.SUBMITTED);
+                    scriptHistory.setJobFinalStatus("UNDEFINED");
+                    scriptHistoryService.save(scriptHistory);
+                    return;
+                }
+            }
             scriptHistory.updateState(Constant.JobState.TIMEOUT);
         } else {
             scriptHistory.updateState(Constant.JobState.KILLED);
@@ -339,10 +333,6 @@ public class ScriptJob extends AbstractRetryable implements InterruptableJob {
         String commandTemplate;
         if (Constant.ScriptType.SHELL.equals(scriptHistory.getScriptType())) {
             cmd = scriptHistory.getContent().replaceAll("/\\*", "/\\\\*");
-            commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s %s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
-        } else if (Constant.ScriptType.PYTHON.equals(scriptHistory.getScriptType())) {
-            String [] arr = scriptHistory.getContent().split(" && ");
-            cmd = arr[arr.length - 1];
             commandTemplate = "kill -9 $(ps -eo pid,lstart,cmd | grep '%s %s' | grep -v 'grep' | grep -v 'echo time mark' | awk '{print $1}')";
         } else {
             String [] jobParams = scriptHistory.getJobParams().split(";");
