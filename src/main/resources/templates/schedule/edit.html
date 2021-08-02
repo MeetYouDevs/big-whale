@@ -45,7 +45,6 @@
                             <div class="col-sm-4">
                                 <select class="form-control selectpicker show-tick" ng-model="editItem.script.type" required disabled>
                                     <option value="shell">Shell</option>
-                                    <option value="python">Python</option>
                                     <option value="sparkbatch">Spark Batch</option>
                                     <option value="flinkbatch">Flink Batch</option>
                                 </select>
@@ -71,7 +70,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div ng-if="editItem.script.type == 'shell' || editItem.script.type == 'python'" class="form-group">
+                        <div ng-if="editItem.script.type == 'shell'" class="form-group">
                             <label class="col-sm-2 control-label">
                                 运行代理&nbsp;<B>*</B>
                             </label>
@@ -170,7 +169,7 @@
                     <!-- 脚本 -->
                     <div class="shadow">
                         <ul class="nav nav-tabs" style="margin-bottom: 20px;">
-                            <li role="presentation" class="active" ng-class="{disabled: editItem.script.type == 'shell' || editItem.script.type == 'python'}"><a href="#visual" aria-controls="visual" role="tab" data-toggle="tab">可视化视图</a></li>
+                            <li role="presentation" class="active" ng-class="{disabled: editItem.script.type == 'shell'}"><a href="#visual" aria-controls="visual" role="tab" data-toggle="tab">可视化视图</a></li>
                             <li role="presentation"><a href="#text" aria-controls="text" role="tab" data-toggle="tab">代码视图</a></li>
                         </ul>
                         <div class="tab-content">
@@ -686,24 +685,6 @@
                         }, defNodeProp)
                     },
                     {
-                        name: 'Python',
-                        icon: 'icon-python',
-                        data: Object.assign({
-                            text: 'Python',
-                            icon: '&#xe611',
-                            iconFamily: 'iconfont',
-                            iconColor: '#3573a6',
-                            rect: {
-                                width: 40,
-                                height: 60
-                            },
-                            data: {
-                                retries: 0,
-                                intervals: 1
-                            }
-                        }, defNodeProp)
-                    },
-                    {
                         name: 'Spark Batch',
                         icon: 'icon-spark',
                         data: Object.assign({
@@ -1047,7 +1028,6 @@
 <script th:inline="javascript">
     var scriptTypeText = {
         'shell': 'Shell',
-        'python': 'Python',
         'sparkbatch': 'Spark Batch',
         'flinkbatch': 'Flink Batch'
     };
@@ -1141,7 +1121,7 @@
                 $http.get('./one.api?id=' + scheduleId)
                     .success(function (item) {
                         item.scripts.forEach(function (script) {
-                            if (script.type !== 'shell' && script.type !== 'python') {
+                            if (script.type !== 'shell') {
                                 script.queue_ = script.queue;
                             }
                         });
@@ -1159,16 +1139,6 @@
                 if (topNode.text === 'Shell') {
                     topNode.data.script_ = {
                         type: 'shell',
-                        scheduleTopNodeId: topNode.id,
-                        timeout: 2,
-                        editMode_: 'text',
-                        parent_: topNode.id,
-                        valid_: false
-                    };
-                }
-                if (topNode.text === 'Python') {
-                    topNode.data.script_ = {
-                        type: 'python',
                         scheduleTopNodeId: topNode.id,
                         timeout: 2,
                         editMode_: 'text',
@@ -1227,13 +1197,6 @@
                     var script = scripts[i];
                     if (topNode.id === script.scheduleTopNodeId) {
                         if (script.type === 'shell') {
-                            topNode.data.script_ = Object.assign(script, {
-                                editMode_: 'text',
-                                valid_: true,
-                                parent_: topNode.id
-                            });
-                        }
-                        if (script.type === 'python') {
                             topNode.data.script_ = Object.assign(script, {
                                 editMode_: 'text',
                                 valid_: true,

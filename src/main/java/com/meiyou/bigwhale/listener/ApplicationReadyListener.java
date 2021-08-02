@@ -8,11 +8,11 @@ import com.meiyou.bigwhale.scheduler.system.PlatformTimeoutChecker;
 import com.meiyou.bigwhale.scheduler.system.ScriptHistoryCleaner;
 import com.meiyou.bigwhale.scheduler.workflow.ScheduleJobBuilder;
 import com.meiyou.bigwhale.scheduler.workflow.ScheduleJobSubmitter;
+import com.meiyou.bigwhale.scheduler.workflow.ScheduleJobPreparer;
 import com.meiyou.bigwhale.service.*;
 import com.meiyou.bigwhale.scheduler.system.ActiveYarnAppRefresher;
 import com.meiyou.bigwhale.util.SchedulerUtils;
 import org.apache.commons.lang.time.DateUtils;
-import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,11 +56,15 @@ public class ApplicationReadyListener implements ApplicationListener<Application
         startMonitor();
         // 启动任务调度
         startSchedule();
-        try {
-            SchedulerUtils.getScheduler().start();
-        } catch (SchedulerException e) {
-            logger.error(e.getMessage(), e);
-        }
+
+        // ------------ 作业追踪 ------------
+
+        // 执行超时处理
+        SchedulerUtils.scheduleCronJob(ScriptJobTimeoutChecker.class, "*/10 * * * * ?");
+        // Yarn状态更新
+        SchedulerUtils.scheduleCronJob(ScriptJobYarnStateRefresher.class, "*/10 * * * * ?");
+        // 服务异常退出处理
+        SchedulerUtils.scheduleSimpleJob(ScriptJobExceptionFeedbacker.class, ScriptJobExceptionFeedbacker.class.getSimpleName(), Constant.JobGroup.COMMON, 0, 0, null, DateUtils.addSeconds(new Date(), 60), null);
     }
 
     private void startSystem() {
@@ -93,14 +97,8 @@ public class ApplicationReadyListener implements ApplicationListener<Application
                 ScheduleJobBuilder.build(schedule);
             }
         });
-        // 调度作业提交
+        SchedulerUtils.scheduleCronJob(ScheduleJobPreparer.class, ScheduleJobPreparer.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/5 * * * * ?");
         SchedulerUtils.scheduleCronJob(ScheduleJobSubmitter.class, ScheduleJobSubmitter.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/1 * * * * ?");
-        // 脚本执行超时处理
-        SchedulerUtils.scheduleCronJob(ScriptJobTimeoutChecker.class, ScriptJobTimeoutChecker.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/10 * * * * ?");
-        // 作业状态更新
-        SchedulerUtils.scheduleCronJob(ScriptJobYarnStateRefresher.class, ScriptJobYarnStateRefresher.class.getSimpleName(), Constant.JobGroup.SCHEDULE, "*/5 * * * * ?");
-        // 服务异常退出处理
-        SchedulerUtils.scheduleSimpleJob(ScriptJobExceptionFeedbacker.class, ScriptJobExceptionFeedbacker.class.getSimpleName(), Constant.JobGroup.SCHEDULE, 0, 0, null, DateUtils.addSeconds(new Date(), 60), null);
     }
 
 }

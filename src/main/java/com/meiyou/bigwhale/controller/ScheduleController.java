@@ -41,7 +41,6 @@ public class ScheduleController extends BaseController {
 
     public ScheduleController() {
         scriptIconClass.put("shell", "icon-shell");
-        scriptIconClass.put("python", "icon-python");
         scriptIconClass.put("sparkbatch", "icon-spark");
         scriptIconClass.put("flinkbatch", "icon-flink");
     }
@@ -248,7 +247,7 @@ public class ScheduleController extends BaseController {
         }
         Date now = new Date();
         String scheduleInstanceId = new SimpleDateFormat("yyyyMMddHHmmss").format(now);
-        generateHistory(schedule, scheduleInstanceId, null);
+        scriptService.generateHistory(schedule, scheduleInstanceId, null);
         schedule.setRealFireTime(now);
         scheduleService.save(schedule);
         DtoSchedule dtoSchedule = new DtoSchedule();
@@ -281,15 +280,6 @@ public class ScheduleController extends BaseController {
             BeanUtils.copyProperties(script, dtoScript);
             dtoScripts.add(dtoScript);
             generateScripts(schedule, nodeId, dtoScripts);
-        }
-    }
-
-    private void generateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
-        Map<String, Schedule.Topology.Node> nodeIdToData = schedule.analyzeNextNode(previousScheduleTopNodeId);
-        for (String nodeId : nodeIdToData.keySet()) {
-            Script script = scriptService.findOneByQuery("scheduleId=" + schedule.getId() + ";scheduleTopNodeId=" + nodeId);
-            scriptService.generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId);
-            generateHistory(schedule, scheduleInstanceId, nodeId);
         }
     }
 

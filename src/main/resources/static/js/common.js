@@ -543,7 +543,7 @@ function initScriptEditProp($scope, $timeout) {
     $scope.onTypeChange = function () {
         var script = getScript();
         script.content = '';
-        if (script.type !== 'shell' && script.type !== 'python') {
+        if (script.type !== 'shell') {
             if (script.type === 'sparkstream' || script.type === 'flinkstream') {
                 script.nodeBlackListType_ = 'stream';
                 script.allocateBalancerType_ = 'total';

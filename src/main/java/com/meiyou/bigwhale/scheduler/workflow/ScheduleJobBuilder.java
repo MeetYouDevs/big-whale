@@ -1,7 +1,6 @@
 package com.meiyou.bigwhale.scheduler.workflow;
 
 import com.meiyou.bigwhale.common.Constant;
-import com.meiyou.bigwhale.entity.Script;
 import com.meiyou.bigwhale.entity.ScriptHistory;
 import com.meiyou.bigwhale.entity.Schedule;
 import com.meiyou.bigwhale.service.ScriptHistoryService;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Map;
 
 /**
  * @author Suxy
@@ -49,16 +47,7 @@ public class ScheduleJobBuilder implements Job {
         if (scriptHistory != null) {
             return;
         }
-        generateHistory(schedule, scheduleInstanceId, null);
-    }
-
-    private void generateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId) {
-        Map<String, Schedule.Topology.Node> nextNodeIdToObj = schedule.analyzeNextNode(previousScheduleTopNodeId);
-        for (String nodeId : nextNodeIdToObj.keySet()) {
-            Script script = scriptService.findOneByQuery("scheduleId=" + schedule.getId() +  ";scheduleTopNodeId=" + nodeId);
-            scriptService.generateHistory(script, schedule, scheduleInstanceId, previousScheduleTopNodeId);
-            generateHistory(schedule, scheduleInstanceId, nodeId);
-        }
+        scriptService.generateHistory(schedule, scheduleInstanceId, null);
     }
 
     public static void build(Schedule schedule) {

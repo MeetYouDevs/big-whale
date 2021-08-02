@@ -63,12 +63,12 @@
 # 使用
 ## 1.离线调度
 ### 1.1 新增
-* 目前支持“Shell”、“Python”、“Spark Batch”和“Flink Batch”四种类型的批处理任务
+* 目前支持“Shell”、“Spark Batch”和“Flink Batch”四种类型的批处理任务
 * 通过拖拽左侧工具栏相应的批处理任务图标，可添加相应的DAG节点  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step6-schedule_shell_node_setting.png)  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step7-schedule_sparkbatch_node_setting.png)
   * 支持时间参数```${now} ${now - 1d} ${now - 1h@yyyyMMddHHmmss}```等（d天、h时、m分、s秒、@yyyyMMddHHmmss为格式化参数）
-  * 非“Shell”和“Python”类型的批处理任务应上传与之处理类型相对应的程序包，此处为Spark批处理任务打成的jar包
+  * 非“Shell”类型的批处理任务应上传与之处理类型相对应的程序包，此处为Spark批处理任务打成的jar包
   * “资源选项”可不填
   * 代码有两种编辑模式，“可视化视图”和“代码视图”，可互相切换
   * 点击“测试”可测试当前节点是否正确配置并可以正常运行
@@ -107,14 +107,6 @@
 ```
 ```
 <告警信息>
-代理: agent1
-类型: 脚本执行超时
-用户: admin
-任务: 调度示例1 - python_test
-时间: 2021-03-05 15:20:32
-```
-```
-<告警信息>
 集群: 集群1
 类型: spark离线任务异常(FAILED)
 用户: admin
@@ -126,13 +118,13 @@
 集群: 集群1
 类型: spark实时任务批次积压，已重启
 用户: admin
-任务: 实时任务 - sparkstream_test
+任务: sparkstream_test
 时间: 2021-03-05 15:30:41
 ```
 * 除上述告警信息外还有其他告警信息此处不一一列举
 # Change log
 * v1.1开始支持DAG
 * v1.2开始支持DAG节点失败重试
-* v1.3调度引擎进行重构升级，不支持从旧版本升级上来，原有旧版本的任务请手动进行迁移
+* v1.3调度引擎进行重构升级，不支持从旧版本升级上来，原有旧版本的任务请手动进行迁移，离线调度移除“Python”类型脚本支持
 # License
 The project is licensed under the [Apache 2 license](https://github.com/MeetYouDevs/big-whale/blob/master/LICENSE).

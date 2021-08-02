@@ -23,8 +23,6 @@ spring:
           starttls:
             enable: false
             required: false
-  quartz:
-    job-store-type: jdbc
 
 logging:
   level:

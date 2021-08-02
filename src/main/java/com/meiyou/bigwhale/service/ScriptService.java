@@ -20,7 +20,7 @@ public interface ScriptService extends PagingAndSortingQueryService<Script, Inte
 
     ScriptHistory generateHistory(Script script, Monitor monitor);
 
-    ScriptHistory generateHistory(Script script, Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId);
+    void generateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId);
 
     void reGenerateHistory(Schedule schedule, String scheduleInstanceId, String previousScheduleTopNodeId);
 
