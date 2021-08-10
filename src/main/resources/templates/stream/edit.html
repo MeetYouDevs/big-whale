@@ -670,32 +670,42 @@
             if (!streamForm.checkValidity()) {
                 return streamForm.reportValidity();
             }
-            if ($scope.editItem.editMode_ === 'visual') {
-                $scope.parseVisual($scope.editItem);
-            }
-            var req = angular.copy($scope.editItem);
-            $btnTest.attr('disabled', 'true');
-            $http.post('../script/execute.api', req)
-                .success(function (data) {
-                    $btnTest.removeAttr('disabled');
-                    swal({
-                        title: '脚本执行请求成功',
-                        text: '准备开始执行脚本',
-                        type: 'info',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        position: 'top-end'
-                    }).then(function () {
-                        if (parent.xadmin) {
-                            parent.xadmin.open('执行日志', 'script_history/list.html?id=' + data.id);
-                        } else {
-                            window.open('../script_history/list.html?id=' + data.id);
-                        }
-                    });
-                })
-                .error(function () {
-                    $btnTest.removeAttr('disabled');
-                });
+            swal({
+                title: '确认测试？',
+                text: '测试任务需手动关闭，否则可能导致任务重复',
+                type: 'question',
+                showConfirmButton: true,
+                showCancelButton: true
+            }).then(function (result) {
+                if (result.value) {
+                    if ($scope.editItem.editMode_ === 'visual') {
+                        $scope.parseVisual($scope.editItem);
+                    }
+                    var req = angular.copy($scope.editItem);
+                    $btnTest.attr('disabled', 'true');
+                    $http.post('../script/execute.api', req)
+                        .success(function (data) {
+                            $btnTest.removeAttr('disabled');
+                            swal({
+                                title: '脚本执行请求成功',
+                                text: '准备开始执行脚本',
+                                type: 'info',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                position: 'top-end'
+                            }).then(function () {
+                                if (parent.xadmin) {
+                                    parent.xadmin.open('执行日志', 'script_history/list.html?id=' + data.id);
+                                } else {
+                                    window.open('../script_history/list.html?id=' + data.id);
+                                }
+                            });
+                        })
+                        .error(function () {
+                            $btnTest.removeAttr('disabled');
+                        });
+                }
+            });
         };
 
         //保存

@@ -49,7 +49,7 @@ public class ScriptJobYarnStateRefresher extends AbstractRetryable implements In
             if (httpYarnApps == null) {
                 continue;
             }
-            httpYarnApps.removeIf(httpYarnApp -> !httpYarnApp.getName().contains(".bw_instance_") && !httpYarnApp.getName().contains(".bw_test_instance_"));
+            httpYarnApps.removeIf(httpYarnApp -> !httpYarnApp.getName().contains(".bw_instance_"));
             Map<String, ScriptHistory> yarnParamsToScriptHistoryMap = new HashMap<>();
             scriptHistories.forEach(scriptHistory -> {
                 String [] jobParams = scriptHistory.getJobParams().split(";");
@@ -69,15 +69,7 @@ public class ScriptJobYarnStateRefresher extends AbstractRetryable implements In
                     continue;
                 }
                 ScriptHistory scriptHistory = yarnParamsToScriptHistoryMap.get(key);
-                if (key.contains(".bw_test_instance_")) {
-                    YarnApiUtils.killApp(cluster.getYarnUrl(), httpYarnApp.getId());
-                    scriptHistory.updateState(Constant.JobState.SUCCEEDED);
-                    scriptHistory.setJobFinalStatus(Constant.JobState.KILLED);
-                    scriptHistory.setFinishTime(new Date());
-                    scriptHistoryService.save(scriptHistory);
-                } else {
-                    updateMatchScriptHistory(httpYarnApp, scriptHistory);
-                }
+                updateMatchScriptHistory(httpYarnApp, scriptHistory);
                 matchIds.add(scriptHistory.getId());
             }
             scriptHistories.forEach(scriptHistory -> {

@@ -616,7 +616,7 @@ public class ScriptServiceImpl extends AbstractMysqlPagingAndSortingQueryService
                 if (script.getId() != null) {
                     yarnAppSuffix = ".bw_instance_" + (script.isBatch() ? "b" : "s") + suffix;
                 } else {
-                    yarnAppSuffix = ".bw_test_instance_" + (script.isBatch() ? "b" : "s") + suffix;
+                    yarnAppSuffix = ".bw_instance_" + (script.isBatch() ? "b_test" : "s_test") + suffix;
                 }
                 scriptHistory.updateParams(script.getUser(),
                         script.getQueue(),
