@@ -63,7 +63,7 @@
 # 使用
 ## 1.离线调度
 ### 1.1 新增
-* 目前支持“Shell”、“Spark Batch”和“Flink Batch”四种类型的批处理任务
+* 目前支持“Shell”、“Spark Batch”和“Flink Batch”三种类型的批处理任务
 * 通过拖拽左侧工具栏相应的批处理任务图标，可添加相应的DAG节点  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step6-schedule_shell_node_setting.png)  
 ![image](https://gitee.com/meetyoucrop/big-whale/raw/master/doc/images/step7-schedule_sparkbatch_node_setting.png)
