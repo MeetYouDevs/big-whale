@@ -1,6 +1,7 @@
 package com.meiyou.bigwhale.service;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.meiyou.bigwhale.common.Constant;
 import com.meiyou.bigwhale.config.DingdingConfig;
 import com.meiyou.bigwhale.util.OkHttpUtils;
@@ -41,7 +42,7 @@ public class NoticeServiceImpl implements NoticeService {
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         simpleMailMessage.setFrom(from);
         simpleMailMessage.setTo(to);
-        simpleMailMessage.setSubject("巨鲸平台告警");
+        simpleMailMessage.setSubject("巨鲸任务调度平台");
         simpleMailMessage.setText(content);
         try {
             javaMailSender.send(simpleMailMessage);
@@ -78,7 +79,13 @@ public class NoticeServiceImpl implements NoticeService {
             atMap.put("atMobiles", ats);
             reqBody.put("at", atMap);
         }
-        OkHttpUtils.doPost(Constant.DINGDING_ROBOT_URL + token, OkHttpUtils.MEDIA_JSON, JSON.toJSONString(reqBody), null);
+        OkHttpUtils.Result result = OkHttpUtils.doPost(Constant.DINGDING_ROBOT_URL + token, OkHttpUtils.MEDIA_JSON, JSON.toJSONString(reqBody), null);
+        if (result.isSuccessful) {
+            JSONObject obj = JSON.parseObject(result.content);
+            if (obj.getIntValue("errcode") != 0) {
+                LOGGER.error("dingding alarm failed with error message: [" + obj.getString("errmsg") + "], use console\n" + content);
+            }
+        }
     }
 
     @Override

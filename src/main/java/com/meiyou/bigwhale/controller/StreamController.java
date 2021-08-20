@@ -181,7 +181,8 @@ public class StreamController extends BaseController {
         if (scriptHistory != null && scriptHistory.isRunning()) {
             return failed("任务运行中，请勿重复执行");
         }
-        scriptHistory = scriptService.generateHistory(script);
+        Monitor monitor = monitorService.findById(script.getMonitorId());
+        scriptHistory = scriptService.generateHistory(script, monitor);
         if (Constant.JobState.SUBMIT_WAIT.equals(scriptHistory.getState())) {
             scriptHistory.updateState(Constant.JobState.SUBMITTING);
             scriptHistory = scriptHistoryService.save(scriptHistory);
