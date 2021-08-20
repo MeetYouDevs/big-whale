@@ -50,11 +50,11 @@ public class PlatformTimeoutChecker extends AbstractNoticeable implements Job {
                 //yarn应用列表更新
                 if (Constant.JobGroup.COMMON.equals(jobKey.getGroup())) {
                     if (ActiveYarnAppRefresher.class.getSimpleName().equals(jobKey.getName())) {
-                        notice("调度平台-Yarn应用列表更新任务", "系统任务运行超时");
+                        notice("系统任务-Yarn应用列表更新", "系统任务运行超时");
                         SchedulerUtils.interrupt(jobKey.getName(), jobKey.getGroup());
                     }
                     if (ScriptJobYarnStateRefresher.class.getSimpleName().equals(jobKey.getName())) {
-                        notice("调度平台-Yarn应用状态更新任务", "系统任务运行超时");
+                        notice("系统任务-Yarn应用状态更新", "系统任务运行超时");
                         SchedulerUtils.interrupt(jobKey.getName(), jobKey.getGroup());
                     }
                 }
@@ -71,7 +71,7 @@ public class PlatformTimeoutChecker extends AbstractNoticeable implements Job {
                             yarnAppService.deleteByQuery("clusterId=" + scriptHistory.getClusterId() + ";appId=" + scriptHistory.getJobId());
                         }
                     }
-                    notice("调度平台-实时任务【" + script.getName() + "】监控", "系统任务运行超时");
+                    notice("实时任务【" + script.getName() + "】监控", "监控任务运行超时");
                     SchedulerUtils.interrupt(jobKey.getName(), jobKey.getGroup());
                 }
             }

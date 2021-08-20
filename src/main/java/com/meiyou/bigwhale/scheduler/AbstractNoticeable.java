@@ -60,10 +60,6 @@ public abstract class AbstractNoticeable {
             taskName = scriptHistory.getScriptName();
             email = monitor.getSendEmail() ? user.getEmail() : null;
             dingDingHooks = monitor.getDingdingHooks();
-        } else if (scriptHistory.getScriptId() != null){
-            // 手动执行
-            taskName = scriptHistory.getScriptName();
-            email = user.getEmail();
         }
         if (StringUtils.isBlank(email) && StringUtils.isBlank(dingDingHooks)) {
             return;

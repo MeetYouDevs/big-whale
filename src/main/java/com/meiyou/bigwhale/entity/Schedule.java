@@ -72,30 +72,6 @@ public class Schedule {
         }
     }
 
-    public String generateCompareTopology() {
-        Topology top = JSON.parseObject(topology, Topology.class);
-        List<Map<String, String>> nodes = new ArrayList<>();
-        List<Map<String, String>> lines = new ArrayList<>();
-        top.nodes.forEach(node -> {
-            Map<String, String> nodeMap = new HashMap<>();
-            nodeMap.put("id", node.id);
-            nodes.add(nodeMap);
-        });
-        top.lines.forEach(line -> {
-            Map<String, String> lineMap = new HashMap<>();
-            lineMap.put("id", line.id);
-            lineMap.put("fromId", line.fromId());
-            lineMap.put("toId", line.toId());
-            lines.add(lineMap);
-        });
-        nodes.sort(Comparator.comparing(node -> node.get("id")));
-        lines.sort(Comparator.comparing(line -> line.get("id")));
-        Map<String, Object> topMap = new HashMap<>();
-        topMap.put("nodes", nodes);
-        topMap.put("lines", lines);
-        return JSON.toJSONString(topMap);
-    }
-
     public Topology.Node analyzeCurrentNode(String currentNodeId) {
         Topology top = JSON.parseObject(topology, Topology.class);
         for (Topology.Node node : top.nodes) {
