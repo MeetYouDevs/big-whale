@@ -83,7 +83,13 @@ public class StreamController extends BaseController {
 
     @RequestMapping(value = "/one.api", method = RequestMethod.GET)
     public Msg one(@RequestParam Integer id) {
-        Script script = scriptService.findById(id);
+        LoginUser currentUser = getCurrentUser();
+        Script script;
+        if (!currentUser.isRoot()) {
+            script = scriptService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + id);
+        } else {
+            script = scriptService.findById(id);
+        }
         if (script == null) {
             return failed();
         }
@@ -160,7 +166,13 @@ public class StreamController extends BaseController {
 
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)
     public Msg delete(@RequestBody DtoScript req) {
-        Script script = scriptService.findById(req.getId());
+        LoginUser currentUser = getCurrentUser();
+        Script script;
+        if (!currentUser.isRoot()) {
+            script = scriptService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + req.getId());
+        } else {
+            script = scriptService.findById(req.getId());
+        }
         if (script == null) {
             return failed();
         }
@@ -173,7 +185,13 @@ public class StreamController extends BaseController {
 
     @RequestMapping(value = "/run.api", method = RequestMethod.POST)
     public Msg run(@RequestBody DtoScript req) {
-        Script script = scriptService.findById(req.getId());
+        LoginUser currentUser = getCurrentUser();
+        Script script;
+        if (!currentUser.isRoot()) {
+            script = scriptService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + req.getId());
+        } else {
+            script = scriptService.findById(req.getId());
+        }
         if (script == null) {
             return failed();
         }

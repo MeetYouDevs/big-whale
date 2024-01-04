@@ -98,7 +98,13 @@ public class ScheduleController extends BaseController {
 
     @RequestMapping(value = "/one.api", method = RequestMethod.GET)
     public Msg one(@RequestParam Integer id) {
-        Schedule schedule = scheduleService.findById(id);
+        LoginUser currentUser = getCurrentUser();
+        Schedule schedule;
+        if (!currentUser.isRoot()) {
+            schedule = scheduleService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + id);
+        } else {
+            schedule = scheduleService.findById(id);
+        }
         if (schedule == null) {
             return failed();
         }
@@ -216,7 +222,13 @@ public class ScheduleController extends BaseController {
 
     @RequestMapping(value = "/delete.api", method = RequestMethod.POST)
     public Msg delete(@RequestBody DtoSchedule req) {
-        Schedule schedule = scheduleService.findById(req.getId());
+        LoginUser currentUser = getCurrentUser();
+        Schedule schedule;
+        if (!currentUser.isRoot()) {
+            schedule = scheduleService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + req.getId());
+        } else {
+            schedule = scheduleService.findById(req.getId());
+        }
         if (schedule == null) {
             return failed();
         }
@@ -229,7 +241,13 @@ public class ScheduleController extends BaseController {
 
     @RequestMapping(value = "/instance.api", method = RequestMethod.POST)
     public Msg instance(@RequestBody DtoSchedule req) {
-        Schedule schedule = scheduleService.findById(req.getId());
+        LoginUser currentUser = getCurrentUser();
+        Schedule schedule;
+        if (!currentUser.isRoot()) {
+            schedule = scheduleService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + req.getId());
+        } else {
+            schedule = scheduleService.findById(req.getId());
+        }
         if (schedule == null) {
             return failed();
         }
@@ -241,7 +259,13 @@ public class ScheduleController extends BaseController {
 
     @RequestMapping(value = "/run.api", method = RequestMethod.POST)
     public Msg run(@RequestBody DtoSchedule req) {
-        Schedule schedule = scheduleService.findById(req.getId());
+        LoginUser currentUser = getCurrentUser();
+        Schedule schedule;
+        if (!currentUser.isRoot()) {
+            schedule = scheduleService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + req.getId());
+        } else {
+            schedule = scheduleService.findById(req.getId());
+        }
         if (schedule == null) {
             return failed();
         }
@@ -261,7 +285,13 @@ public class ScheduleController extends BaseController {
     @RequestMapping(value = "/treeview.api", method = RequestMethod.GET)
     public Msg treeView(@RequestParam Integer id,
                         @RequestParam String instance) {
-        Schedule schedule = scheduleService.findById(id);
+        LoginUser currentUser = getCurrentUser();
+        Schedule schedule;
+        if (!currentUser.isRoot()) {
+            schedule = scheduleService.findOneByQuery("createBy=" + currentUser.getId() + ";id=" + id);
+        } else {
+            schedule = scheduleService.findById(id);
+        }
         if (schedule == null) {
             return failed();
         }

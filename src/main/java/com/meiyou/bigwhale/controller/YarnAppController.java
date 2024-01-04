@@ -56,7 +56,13 @@ public class YarnAppController extends BaseController {
 
     @RequestMapping(value = "/kill.api", method = RequestMethod.POST)
     public Msg kill(@RequestBody DtoYarnApp req) {
-        YarnApp appInfo = yarnAppService.findOneByQuery("appId=" + req.getAppId());
+        LoginUser currentUser = getCurrentUser();
+        YarnApp appInfo;
+        if (!currentUser.isRoot()) {
+            appInfo = yarnAppService.findOneByQuery("userId=" + currentUser.getId() + ";appId=" + req.getAppId());
+        } else {
+            appInfo = yarnAppService.findOneByQuery("appId=" + req.getAppId());
+        }
         if (appInfo == null) {
             return failed();
         }

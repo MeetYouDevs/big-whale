@@ -36,6 +36,10 @@ public class ScriptController extends BaseController {
         if (req.getId() == null) {
             req.setCreateTime(now);
             req.setCreateBy(currentUser.getId());
+        } else {
+            if (!currentUser.isRoot() && !currentUser.getId().equals(req.getCreateBy())) {
+                return failed("无权限执行");
+            }
         }
         msg = scriptService.validate(req);
         if (msg != null) {
