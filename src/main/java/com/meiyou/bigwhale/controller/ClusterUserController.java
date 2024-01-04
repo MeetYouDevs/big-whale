@@ -39,6 +39,10 @@ public class ClusterUserController extends BaseController {
     @RequestMapping(value = "/find_one.api", method = RequestMethod.GET)
     public Msg findOne(@RequestParam String clusterId,
                        @RequestParam String userId) {
+        LoginUser currentUser = getCurrentUser();
+        if (!currentUser.isRoot()) {
+            userId = currentUser.getId().toString();
+        }
         ClusterUser clusterUser = clusterUserService.findOneByQuery("clusterId=" + clusterId + ";userId=" + userId);
         return success(clusterUser);
     }
